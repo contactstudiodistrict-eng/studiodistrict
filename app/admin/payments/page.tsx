@@ -11,10 +11,12 @@ export default async function AdminPaymentsPage() {
   const { data: admin } = await supabase.from('admin_users').select('id').eq('id', user.id).single()
   if (!admin) redirect('/')
 
-  const [{ data: payments }, { data: payouts }] = await Promise.all([
+  const [{ data: rawPayments }, { data: rawPayouts }] = await Promise.all([
     supabase.from('payments').select('*, bookings(booking_ref, customer_name, studios(studio_name))').order('created_at', { ascending: false }).limit(50),
     supabase.from('payouts').select('*, studios(studio_name, owner_name)').order('created_at', { ascending: false }).limit(50),
   ])
+  const payments = rawPayments as any[] | null
+  const payouts = rawPayouts as any[] | null
 
   const totalCollected = (payments || []).filter(p => p.status === 'paid').reduce((s, p) => s + p.amount, 0)
   const totalCommission = (payments || []).filter(p => p.status === 'paid').reduce((s, p) => s + p.platform_commission, 0)

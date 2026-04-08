@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { toast } from 'sonner'
 
 const STATUS_CHIP: Record<string, string> = {
@@ -20,6 +20,10 @@ type Studio = {
 }
 
 export default function AdminStudiosPage() {
+  return <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400">Loading…</div>}><AdminStudiosInner /></Suspense>
+}
+
+function AdminStudiosInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status') || 'all'

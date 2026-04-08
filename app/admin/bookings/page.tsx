@@ -32,7 +32,8 @@ export default async function AdminBookingsPage({ searchParams }: { searchParams
   if (statusFilter !== 'all') query = query.eq('status', statusFilter)
   if (searchParams.q)         query = query.ilike('customer_name', `%${searchParams.q}%`)
 
-  const { data: bookings } = await query
+  const { data: rawBookings } = await query
+  const bookings = rawBookings as any[] | null
 
   function formatDate(d: string) {
     return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })

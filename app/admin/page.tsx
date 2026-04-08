@@ -18,8 +18,8 @@ export default async function AdminPage() {
     { count: pendingStudios },
     { count: totalBookings },
     { count: pendingBookings },
-    { data: recentBookings },
-    { data: pendingStudiosList },
+    { data: rawRecentBookings },
+    { data: rawPendingStudios },
   ] = await Promise.all([
     supabase.from('studios').select('*', { count: 'exact', head: true }),
     supabase.from('studios').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -32,6 +32,8 @@ export default async function AdminPage() {
     supabase.from('studios').select('id, studio_name, owner_name, area, studio_type, created_at')
       .eq('status', 'pending').order('created_at', { ascending: false }),
   ])
+  const recentBookings = rawRecentBookings as any[] | null
+  const pendingStudiosList = rawPendingStudios as any[] | null
 
   return (
     <div className="min-h-screen bg-gray-50">
