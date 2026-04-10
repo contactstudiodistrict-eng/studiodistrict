@@ -1,12 +1,13 @@
 // app/bookings/[id]/pay/page.tsx — Server Component
-// This page is shown when Razorpay is not yet configured
-// Once Razorpay is set up, this will redirect to the actual Razorpay payment link
+// Creates a Razorpay payment link and redirects the customer to it
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createRazorpayPaymentLink } from '@/lib/razorpay'
 import { formatINR } from '@/lib/pricing'
 
 export default async function PaymentPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
+  const adminClient = createAdminClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/login?next=/bookings/${params.id}/pay`)
@@ -26,6 +27,54 @@ export default async function PaymentPage({ params }: { params: { id: string } }
 
   const studio = (booking as any).studios
 
+  // If Razorpay is configured, create link and redirect
+  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    try {
+      // Check if a payment record with an existing link exists (avoid duplicate links)
+      const { data: existingPayment } = await adminClient
+        .from('payments')
+        .select('razorpay_link_url, status')
+        .eq('booking_id', params.id)
+        .eq('status', 'pending')
+        .not('razorpay_link_url', 'is', null)
+        .single()
+
+      let paymentUrl = existingPayment?.razorpay_link_url
+
+      if (!paymentUrl) {
+        // Create a new Razorpay payment link
+        const link = await createRazorpayPaymentLink({
+          bookingId: params.id,
+          bookingRef: booking.booking_ref,
+          customerName: booking.customer_name,
+          customerPhone: booking.customer_phone,
+          customerEmail: booking.customer_email ?? undefined,
+          totalAmountRupees: booking.total_amount,
+          description: `${studio.studio_name} · ${booking.booking_date} · ${booking.booking_ref}`,
+        })
+
+        paymentUrl = link.short_url
+
+        // Upsert payment record
+        await adminClient.from('payments').upsert({
+          booking_id: params.id,
+          razorpay_link_id: link.id,
+          razorpay_link_url: link.short_url,
+          amount: booking.total_amount,
+          platform_commission: booking.platform_fee,
+          gst_on_commission: booking.gst_amount,
+          status: 'pending',
+        }, { onConflict: 'booking_id' })
+      }
+
+      redirect(paymentUrl)
+    } catch (err: any) {
+      console.error('[Pay page] Razorpay error:', err.message)
+      // Fall through to show manual page on error
+    }
+  }
+
+  // Fallback — Razorpay not configured or failed
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-sm w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -67,10 +116,9 @@ export default async function PaymentPage({ params }: { params: { id: string } }
             </div>
           </div>
 
-          {/* Razorpay coming soon notice */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700 mb-5">
-            <div className="font-semibold mb-1">🔧 Razorpay integration coming soon</div>
-            <div>Payment processing will be available once Razorpay credentials are configured. Your booking is confirmed and will be held.</div>
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-700 mb-5">
+            <div className="font-semibold mb-1">⚠️ Payment system unavailable</div>
+            <div>Please contact the studio directly to complete your payment. Your slot is reserved.</div>
           </div>
 
           <a href={`/bookings/${params.id}`}
