@@ -5,6 +5,7 @@ import { StudioGrid } from '@/components/studio/StudioGrid'
 import { SearchFilters } from '@/components/studio/SearchFilters'
 import { SiteHeader } from '@/components/shared/SiteHeader'
 import { HeroBanner } from '@/components/shared/HeroBanner'
+import { SiteFooter } from '@/components/shared/SiteFooter'
 import type { Studio } from '@/types/database.types'
 
 interface SearchParams {
@@ -89,6 +90,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           </Suspense>
         </section>
       </main>
+
+      <SiteFooter />
 
       {/* Mobile: List your studio CTA */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 px-4 pt-3"

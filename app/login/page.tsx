@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { SiteFooter } from '@/components/shared/SiteFooter'
 
 type Step = 'input' | 'email_sent'
 
@@ -196,6 +197,7 @@ function LoginForm() {
           <a href="/privacy" style={{ color:'#65a30d', textDecoration:'none' }}>Privacy Policy</a>
         </p>
       </div>
+      <SiteFooter />
     </div>
   )
 }

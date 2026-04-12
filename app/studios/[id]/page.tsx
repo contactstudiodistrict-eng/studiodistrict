@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { SiteHeader } from '@/components/shared/SiteHeader'
+import { SiteFooter } from '@/components/shared/SiteFooter'
 import { ImageGallery } from '@/components/studio/ImageGallery'
 import { AmenitiesGrid } from '@/components/studio/AmenitiesGrid'
 import { EquipmentList } from '@/components/studio/EquipmentList'
@@ -245,6 +246,8 @@ export default async function StudioProfilePage({ params }: Props) {
           </div>
         </div>
       </main>
+
+      <SiteFooter />
 
       {/* Mobile sticky booking CTA */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 safe-bottom"
