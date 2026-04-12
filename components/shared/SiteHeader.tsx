@@ -10,8 +10,8 @@ export function SiteHeader() {
   const pathname = usePathname()
   const supabase = createClient()
 
-  const [user, setUser]       = useState<User | null>(null)
-  const [profile, setProfile] = useState<{ full_name: string | null; role: string } | null>(null)
+  const [user, setUser]         = useState<User | null>(null)
+  const [profile, setProfile]   = useState<{ full_name: string | null; role: string } | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [loading, setLoading]   = useState(true)
 
@@ -21,119 +21,120 @@ export function SiteHeader() {
       if (data.user) fetchProfile(data.user.id)
       else setLoading(false)
     })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null
       setUser(u)
       if (u) fetchProfile(u.id)
       else { setProfile(null); setLoading(false) }
     })
-
     return () => subscription.unsubscribe()
   }, [])
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from('users')
-      .select('full_name, role')
-      .eq('id', userId)
-      .single()
+    const { data } = await supabase.from('users').select('full_name, role').eq('id', userId).single()
     setProfile(data)
     setLoading(false)
   }
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
-    setMenuOpen(false)
-    router.push('/')
-    router.refresh()
+    setUser(null); setProfile(null); setMenuOpen(false)
+    router.push('/'); router.refresh()
   }
 
-  const displayName = profile?.full_name?.split(' ')[0]
-    || user?.email?.split('@')[0]
-    || 'Account'
-
-  const initial = displayName.charAt(0).toUpperCase()
-  const isOwner = profile?.role === 'studio_owner'
-  const isAdmin = profile?.role === 'admin'
+  const displayName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'
+  const initial     = displayName.charAt(0).toUpperCase()
+  const isOwner     = profile?.role === 'studio_owner'
+  const isAdmin     = profile?.role === 'admin'
 
   return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #f1f5f9', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <header className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
 
         {/* Logo */}
-        <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: '0', fontFamily: 'var(--font-space-grotesk), system-ui, sans-serif', fontSize: '20px', fontWeight: '700', letterSpacing: '-0.03em' }}>
-          <span style={{ color: '#0f172a' }}>Studio</span>
-          <span style={{ color: '#84cc16' }}>District</span>
+        <a href="/" className="flex-shrink-0 font-sans font-bold text-xl tracking-tight no-underline"
+          style={{ letterSpacing: '-0.03em', textDecoration: 'none' }}>
+          <span className="text-ink-900">Studio</span><span className="text-brand-500">District</span>
         </a>
 
-        {/* Nav links — desktop */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '24px', fontSize: '14px', color: '#64748b' }}>
-          <a href="/" style={{ color: pathname === '/' ? '#65a30d' : '#64748b', textDecoration: 'none', fontWeight: pathname === '/' ? '600' : '400' }}>
+        {/* Nav links — hidden on mobile */}
+        <nav className="hidden md:flex items-center gap-6 text-sm text-slate-500">
+          <a href="/" className={`no-underline font-medium transition-colors hover:text-brand-600 ${pathname === '/' ? 'text-brand-600' : 'text-slate-500'}`}
+            style={{ textDecoration: 'none' }}>
             Discover
           </a>
-          <a href="/studio/onboard" style={{ color: '#64748b', textDecoration: 'none' }}>
+          <a href="/studio/onboard" className="text-slate-500 hover:text-brand-600 transition-colors"
+            style={{ textDecoration: 'none' }}>
             List your studio
           </a>
           {isAdmin && (
-            <a href="/admin" style={{ color: '#7c3aed', textDecoration: 'none', fontWeight: '600' }}>
+            <a href="/admin" className="text-violet-600 font-semibold hover:text-violet-700 transition-colors"
+              style={{ textDecoration: 'none' }}>
               Admin ⚡
             </a>
           )}
         </nav>
 
-        {/* Right side — auth */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-
+        {/* Right: auth */}
+        <div className="flex items-center gap-2">
           {loading ? (
-            <div style={{ width: '80px', height: '34px', background: '#f1f5f9', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <div className="w-20 h-8 bg-slate-100 rounded-lg animate-pulse" />
           ) : user ? (
-            /* ── Logged in ── */
-            <div style={{ position: 'relative' }}>
+            <div className="relative">
               <button
                 onClick={() => setMenuOpen(o => !o)}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px 6px 6px', border: '1px solid #e2e8f0', borderRadius: '99px', background: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>
-                <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#84cc16,#65a30d)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '13px', fontWeight: '700', flexShrink: 0 }}>
+                className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 border border-slate-200 rounded-full bg-white hover:border-slate-300 transition-colors cursor-pointer"
+                style={{ fontFamily: 'inherit' }}>
+                {/* Avatar */}
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg,#84cc16,#65a30d)' }}>
                   {initial}
                 </div>
-                <span style={{ fontSize: '13px', fontWeight: '500', color: '#334155', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {/* Name — hidden on very small screens */}
+                <span className="hidden sm:block text-sm font-medium text-slate-700 max-w-[90px] truncate">
                   {displayName}
                 </span>
-                <span style={{ color: '#94a3b8', fontSize: '10px' }}>▼</span>
+                <span className="text-slate-400 text-[10px]">▼</span>
               </button>
 
               {/* Dropdown */}
               {menuOpen && (
                 <>
-                  <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                  <div onClick={() => setMenuOpen(false)} className="fixed inset-0 z-40" />
+                  <div className="absolute right-0 top-[calc(100%+8px)] w-56 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden">
 
-                  <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: '220px', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
-
-                    <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ fontWeight: '600', fontSize: '14px', color: '#0f172a', marginBottom: '2px' }}>{displayName}</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email || user.phone}</div>
+                    {/* User info */}
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <div className="font-semibold text-sm text-ink-900">{displayName}</div>
+                      <div className="text-xs text-slate-400 truncate mt-0.5">{user.email || user.phone}</div>
                       {(isOwner || isAdmin) && (
-                        <div style={{ marginTop: '6px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '99px', background: isAdmin ? '#ede9fe' : '#f0fdf4', color: isAdmin ? '#7c3aed' : '#65a30d', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                            {isAdmin ? '⚡ Admin' : '🏠 Studio Owner'}
-                          </span>
-                        </div>
+                        <span className={`inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide
+                          ${isAdmin ? 'bg-violet-100 text-violet-700' : 'bg-brand-100 text-brand-700'}`}>
+                          {isAdmin ? '⚡ Admin' : '🏠 Studio Owner'}
+                        </span>
                       )}
                     </div>
 
-                    <div style={{ padding: '6px' }}>
-                      <MenuItem href="/dashboard" icon="📅" label="My Bookings" onClick={() => setMenuOpen(false)} active={pathname === '/dashboard'} />
-                      {isOwner && <MenuItem href="/studio/dashboard" icon="🏠" label="My Studio" onClick={() => setMenuOpen(false)} active={pathname === '/studio/dashboard'} />}
-                      {!isOwner && <MenuItem href="/studio/onboard" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />}
-                      {isAdmin && <MenuItem href="/admin" icon="⚙️" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
+                    {/* Nav links on mobile — shown here */}
+                    <div className="md:hidden border-b border-slate-100">
+                      <DropItem href="/" icon="🔍" label="Discover" onClick={() => setMenuOpen(false)} active={pathname === '/'} />
+                      <DropItem href="/studio/onboard" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />
+                      {isAdmin && <DropItem href="/admin" icon="⚡" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
                     </div>
 
-                    <div style={{ padding: '6px', borderTop: '1px solid #f1f5f9' }}>
+                    {/* Menu items */}
+                    <div className="p-1.5">
+                      <DropItem href="/dashboard" icon="📅" label="My Bookings" onClick={() => setMenuOpen(false)} active={pathname === '/dashboard'} />
+                      {isOwner && <DropItem href="/studio/dashboard" icon="🏠" label="My Studio" onClick={() => setMenuOpen(false)} active={pathname === '/studio/dashboard'} />}
+                      {!isOwner && <DropItem href="/studio/onboard" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />}
+                      {isAdmin && <DropItem href="/admin" icon="⚙️" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
+                    </div>
+
+                    <div className="p-1.5 border-t border-slate-100">
                       <button onClick={handleSignOut}
-                        style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '13px', color: '#ef4444', fontFamily: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span>🚪</span> Sign out
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        style={{ border: 'none', background: 'none', fontFamily: 'inherit', textAlign: 'left' }}>
+                        🚪 Sign out
                       </button>
                     </div>
                   </div>
@@ -141,29 +142,27 @@ export function SiteHeader() {
               )}
             </div>
           ) : (
-            /* ── Logged out ── */
             <a href={`/login?next=${encodeURIComponent(pathname)}`}
-              style={{ padding: '8px 18px', borderRadius: '8px', background: '#84cc16', color: '#fff', fontSize: '13px', fontWeight: '700', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              className="px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-bold hover:bg-brand-600 transition-colors whitespace-nowrap"
+              style={{ textDecoration: 'none' }}>
               Sign in
             </a>
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-      `}</style>
     </header>
   )
 }
 
-function MenuItem({ href, icon, label, onClick, active }: { href: string; icon: string; label: string; onClick: () => void; active: boolean }) {
+function DropItem({ href, icon, label, onClick, active }: {
+  href: string; icon: string; label: string; onClick: () => void; active: boolean
+}) {
   return (
     <a href={href} onClick={onClick}
-      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: active ? '600' : '400', color: active ? '#65a30d' : '#334155', background: active ? '#f0fdf4' : 'transparent', transition: 'background .12s' }}
-      onMouseOver={e => { if (!active) e.currentTarget.style.background = '#f8fafc' }}
-      onMouseOut={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
-      <span style={{ fontSize: '15px' }}>{icon}</span>
+      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors
+        ${active ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
+      style={{ textDecoration: 'none' }}>
+      <span className="text-base">{icon}</span>
       {label}
     </a>
   )

@@ -47,12 +47,12 @@ export default async function DashboardPage() {
   return (
     <>
       <SiteHeader />
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-serif text-gray-900">
+      <main className="max-w-3xl mx-auto px-4 py-5 sm:py-8">
+        <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink-900 tracking-tight">
             Hey {profile?.full_name?.split(' ')[0] || 'there'} 👋
           </h1>
-          <p className="text-gray-500 text-sm mt-1">Your studio bookings</p>
+          <p className="text-slate-400 text-sm mt-0.5">Your studio bookings</p>
         </div>
 
         {/* Upcoming */}
@@ -75,17 +75,20 @@ export default async function DashboardPage() {
                 const studio = (b as any).studios
                 return (
                   <Link key={b.id} href={`/bookings/${b.id}`}
-                    className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 hover:border-brand-200 hover:shadow-sm transition-all">
-                    <div className="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center text-2xl flex-shrink-0">📸</div>
+                    className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-slate-100 hover:border-brand-200 hover:shadow-sm transition-all active:bg-slate-50">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-50 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0 mt-0.5">📸</div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 truncate">{studio?.studio_name}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {formatDate(b.booking_date)} · {formatTime(b.start_time)} · {b.shoot_type}
+                      <div className="font-semibold text-ink-900 truncate text-sm sm:text-base">{studio?.studio_name}</div>
+                      <div className="text-xs text-slate-400 mt-0.5 truncate">
+                        {formatDate(b.booking_date)} · {formatTime(b.start_time)}
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${badge.classes}`}>{badge.label}</span>
+                        <span className="text-xs text-slate-400">{b.shoot_type}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <span className="text-sm font-bold text-gray-900">{formatINR(b.total_amount)}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${badge.classes}`}>{badge.label}</span>
+                    <div className="flex-shrink-0 text-right">
+                      <span className="text-sm font-bold text-ink-900">{formatINR(b.total_amount)}</span>
                     </div>
                   </Link>
                 )

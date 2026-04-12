@@ -136,18 +136,18 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
 
   // ── Shared styles ────────────────────────────────────────────────────────
   const s = {
-    wrap:    { fontFamily: 'system-ui,sans-serif', maxWidth: '560px', margin: '0 auto' } as React.CSSProperties,
-    card:    { background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '24px', marginBottom: '16px' } as React.CSSProperties,
-    label:   { display: 'block', fontSize: '11px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: '6px' },
-    input:   { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '11px 14px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color .15s' },
-    select:  { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '11px 14px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, background: '#fff', appearance: 'none' as const },
-    btn:     { width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '600', fontFamily: 'inherit', background: '#84cc16', color: '#fff', transition: 'background .15s' } as React.CSSProperties,
-    btnGhost:{ flex: 1, padding: '13px', borderRadius: '12px', border: '1px solid #e5e7eb', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit', background: '#fff', color: '#374151' } as React.CSSProperties,
-    btnOff:  { width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: '600', fontFamily: 'inherit', background: '#d9f99d', color: '#fff', cursor: 'not-allowed' } as React.CSSProperties,
+    wrap:    { fontFamily: 'system-ui,sans-serif', maxWidth: '560px', margin: '0 auto', paddingBottom: '80px' } as React.CSSProperties,
+    card:    { background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '20px', marginBottom: '14px' } as React.CSSProperties,
+    label:   { display: 'block', fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: '6px' },
+    input:   { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color .15s' },
+    select:  { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, background: '#fff', appearance: 'none' as const },
+    btn:     { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#84cc16', color: '#fff', transition: 'background .15s' } as React.CSSProperties,
+    btnGhost:{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #e5e7eb', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit', background: '#fff', color: '#374151' } as React.CSSProperties,
+    btnOff:  { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#d9f99d', color: '#fff', cursor: 'not-allowed' } as React.CSSProperties,
     row2:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } as React.CSSProperties,
     field:   { marginBottom: '14px' } as React.CSSProperties,
-    errBox:  { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '11px 14px', color: '#dc2626', fontSize: '13px', marginBottom: '14px', display: 'flex', gap: '8px', alignItems: 'flex-start' } as React.CSSProperties,
-    priceRow:{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#6b7280', padding: '5px 0' } as React.CSSProperties,
+    errBox:  { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 14px', color: '#dc2626', fontSize: '14px', marginBottom: '14px', display: 'flex', gap: '8px', alignItems: 'flex-start' } as React.CSSProperties,
+    priceRow:{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#64748b', padding: '5px 0' } as React.CSSProperties,
   }
 
   function fDate(d: string) {

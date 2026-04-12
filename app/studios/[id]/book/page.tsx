@@ -26,13 +26,14 @@ export default async function BookPage({ params }: Props) {
   return (
     <>
       <SiteHeader />
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <a href={`/studios/${params.id}`} className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 mb-4">
+      <main className="max-w-2xl mx-auto px-4 py-5 sm:py-8">
+        <div className="mb-5 sm:mb-8">
+          <a href={`/studios/${params.id}`} className="text-sm text-slate-400 hover:text-slate-600 flex items-center gap-1 mb-3"
+            style={{ textDecoration: 'none' }}>
             ← Back to studio
           </a>
-          <h1 className="text-2xl font-serif text-gray-900">Book a Slot</h1>
-          <p className="text-gray-500 text-sm mt-1">{studio.studio_name} · {studio.area}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-ink-900 tracking-tight">Book a Slot</h1>
+          <p className="text-slate-400 text-sm mt-0.5">{studio.studio_name} · {studio.area}</p>
         </div>
         <BookingForm studio={studio} userId={user.id} />
       </main>

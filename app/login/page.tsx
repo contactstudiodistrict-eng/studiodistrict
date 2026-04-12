@@ -80,7 +80,7 @@ function LoginForm() {
   }
 
   const card: React.CSSProperties = { background:'#fff', borderRadius:'16px', border:'1px solid #e5e7eb', padding:'28px', boxShadow:'0 2px 12px rgba(0,0,0,0.06)' }
-  const inp: React.CSSProperties  = { width:'100%', border:'1px solid #e5e7eb', borderRadius:'10px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'inherit', boxSizing:'border-box' }
+  const inp: React.CSSProperties  = { width:'100%', border:'1px solid #e5e7eb', borderRadius:'10px', padding:'12px 14px', fontSize:'16px', outline:'none', fontFamily:'inherit', boxSizing:'border-box' }
   const btn: React.CSSProperties  = { width:'100%', padding:'13px', borderRadius:'10px', border:'none', cursor:'pointer', fontSize:'14px', fontWeight:'600', fontFamily:'inherit', background:'#84cc16', color:'#fff' }
   const btnOff: React.CSSProperties = { ...btn, background:'#d9f99d', cursor:'not-allowed' }
   const lbl: React.CSSProperties  = { display:'block', fontSize:'11px', fontWeight:'600', color:'#9ca3af', textTransform:'uppercase' as const, letterSpacing:'.06em', marginBottom:'6px' }

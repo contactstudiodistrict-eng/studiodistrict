@@ -53,7 +53,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       <main>
         <HeroBanner />
 
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-24 sm:pb-10">
           {/* Search + filters */}
           <Suspense fallback={<div className="h-14 bg-gray-100 rounded-xl animate-pulse mb-8" />}>
             <SearchFilters initialParams={searchParams} />
@@ -91,10 +91,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       </main>
 
       {/* Mobile: List your studio CTA */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 px-4 pt-3"
+        style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
         <a
           href="/studio/onboard"
-          className="block w-full py-3 text-center rounded-xl bg-brand-500 text-white font-semibold text-sm"
+          className="block w-full py-3.5 text-center rounded-xl bg-brand-500 text-white font-bold text-sm active:bg-brand-700 transition-colors"
+          style={{ textDecoration: 'none' }}
         >
           Own a Studio? List it Free →
         </a>

@@ -31,7 +31,7 @@ export default async function BookingStatusPage({ params }: Props) {
   return (
     <>
       <SiteHeader />
-      <main className="max-w-2xl mx-auto px-4 py-10">
+      <main className="max-w-2xl mx-auto px-4 py-6 sm:py-10 pb-10">
         <BookingStatusCard booking={booking as any} />
       </main>
     </>

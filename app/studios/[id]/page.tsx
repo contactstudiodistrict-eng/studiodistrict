@@ -64,7 +64,7 @@ export default async function StudioProfilePage({ params }: Props) {
   return (
     <>
       <SiteHeader />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-28 lg:pb-8">
         <div className="lg:grid lg:grid-cols-3 lg:gap-10">
 
           {/* ── Left: Studio Info (2/3 width) ── */}
@@ -77,7 +77,7 @@ export default async function StudioProfilePage({ params }: Props) {
             <div className="mt-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-3xl font-serif text-gray-900">{s.studio_name}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">{s.studio_name}</h1>
                   <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
                     <span className="inline-flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-green-400" />
@@ -129,7 +129,7 @@ export default async function StudioProfilePage({ params }: Props) {
 
             {/* Description */}
             <section>
-              <h2 className="text-xl font-serif text-gray-900 mb-3">About this studio</h2>
+              <h2 className="text-lg font-bold text-ink-900 tracking-tight mb-3">About this studio</h2>
               <p className="text-gray-600 leading-relaxed whitespace-pre-line">
                 {s.full_description || s.short_description || 'No description provided.'}
               </p>
@@ -146,7 +146,7 @@ export default async function StudioProfilePage({ params }: Props) {
             {/* Amenities */}
             {s.studio_amenities && (
               <section>
-                <h2 className="text-xl font-serif text-gray-900 mb-4">Amenities</h2>
+                <h2 className="text-lg font-bold text-ink-900 tracking-tight mb-4">Amenities</h2>
                 <AmenitiesGrid amenities={s.studio_amenities} />
               </section>
             )}
@@ -156,7 +156,7 @@ export default async function StudioProfilePage({ params }: Props) {
             {/* Equipment */}
             {s.studio_equipment && (
               <section>
-                <h2 className="text-xl font-serif text-gray-900 mb-4">Equipment</h2>
+                <h2 className="text-lg font-bold text-ink-900 tracking-tight mb-4">Equipment</h2>
                 <EquipmentList equipment={s.studio_equipment} />
               </section>
             )}
@@ -165,11 +165,11 @@ export default async function StudioProfilePage({ params }: Props) {
 
             {/* Pricing */}
             <section>
-              <h2 className="text-xl font-serif text-gray-900 mb-4">Pricing</h2>
+              <h2 className="text-lg font-bold text-ink-900 tracking-tight mb-4">Pricing</h2>
               <div className="rounded-xl border border-gray-200 overflow-hidden">
                 <div className="p-5 bg-white">
                   <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-3xl font-serif text-brand-400">{formatINR(s.price_per_hour)}</span>
+                    <span className="text-3xl font-bold text-brand-600">{formatINR(s.price_per_hour)}</span>
                     <span className="text-gray-500 text-sm">/ hour</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
@@ -205,7 +205,7 @@ export default async function StudioProfilePage({ params }: Props) {
 
             {/* Rules */}
             <section>
-              <h2 className="text-xl font-serif text-gray-900 mb-4">Studio Rules</h2>
+              <h2 className="text-lg font-bold text-ink-900 tracking-tight mb-4">Studio Rules</h2>
               <div className="space-y-2 text-sm text-gray-600">
                 <RuleItem icon="👥" text={`Max ${s.max_people} people per session`} />
                 {s.no_smoking && <RuleItem icon="🚭" text="No smoking inside the studio" />}
@@ -223,7 +223,7 @@ export default async function StudioProfilePage({ params }: Props) {
 
             {/* Working hours */}
             <section>
-              <h2 className="text-xl font-serif text-gray-900 mb-3">Availability</h2>
+              <h2 className="text-lg font-bold text-ink-900 tracking-tight mb-3">Availability</h2>
               <div className="text-sm text-gray-600">
                 <p>
                   <span className="font-medium">Working days: </span>
@@ -247,15 +247,19 @@ export default async function StudioProfilePage({ params }: Props) {
       </main>
 
       {/* Mobile sticky booking CTA */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-bold text-gray-900">{formatINR(s.price_per_hour)}<span className="font-normal text-gray-500 text-sm"> / hr</span></div>
-            <div className="text-xs text-gray-500">min {s.minimum_hours} hrs</div>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 safe-bottom"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <div className="font-bold text-ink-900 text-base">
+              {formatINR(s.price_per_hour)}<span className="font-normal text-slate-400 text-sm"> / hr</span>
+            </div>
+            <div className="text-xs text-slate-400">min {s.minimum_hours} hrs · {s.area}</div>
           </div>
           <a href={`/studios/${s.id}/book`}
-            className="px-6 py-3 rounded-xl bg-brand-400 text-white font-semibold text-sm hover:bg-brand-500 transition-colors">
-            Check Availability
+            className="flex-shrink-0 px-5 py-3 rounded-xl bg-brand-500 text-white font-bold text-sm hover:bg-brand-600 active:bg-brand-700 transition-colors"
+            style={{ textDecoration: 'none' }}>
+            Book Now →
           </a>
         </div>
       </div>

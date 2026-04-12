@@ -123,9 +123,9 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
   }
 
   const c: Record<string, React.CSSProperties> = {
-    card:   { background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', overflow: 'hidden', marginBottom: '12px', fontFamily: 'system-ui,sans-serif' },
-    row:    { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', fontSize: '13px', borderBottom: '1px solid #f9fafb' },
-    prRow:  { display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#6b7280', padding: '4px 0' },
+    card:   { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', marginBottom: '12px', fontFamily: 'system-ui,sans-serif' },
+    row:    { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', fontSize: '14px', borderBottom: '1px solid #f8fafc' },
+    prRow:  { display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#64748b', padding: '5px 0' },
   }
 
   return (
