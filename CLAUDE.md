@@ -117,6 +117,9 @@ ID:     d6568998-2025-4dee-9280-8f347caf7487
 - Customer dashboard — booking history
 - Studio owner dashboard — bookings + confirm/decline buttons
 - Admin panel — studios, bookings, payments management
+- Legal pages: /about, /privacy, /refund-policy, /terms
+- Site footer (SiteFooter component) on all legal + public pages
+- Mobile-first responsive layout across all pages
 
 ---
 

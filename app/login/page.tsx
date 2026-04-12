@@ -190,7 +190,10 @@ function LoginForm() {
         </div>
 
         <p style={{ textAlign:'center', fontSize:'11px', color:'#9ca3af', marginTop:'16px' }}>
-          By signing in, you agree to our Terms and Privacy Policy
+          By signing in, you agree to our{' '}
+          <a href="/terms" style={{ color:'#65a30d', textDecoration:'none' }}>Terms of Service</a>
+          {' '}and{' '}
+          <a href="/privacy" style={{ color:'#65a30d', textDecoration:'none' }}>Privacy Policy</a>
         </p>
       </div>
     </div>
