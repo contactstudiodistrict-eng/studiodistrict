@@ -43,7 +43,7 @@ export function BookingSidebar({ studio }: { studio: Studio }) {
         </div>
 
         <a href={`/studios/${studio.id}/book`}
-          className="block w-full py-4 text-center rounded-xl bg-orange-500 text-white font-bold hover:bg-orange-600 transition-colors">
+          className="block w-full py-4 text-center rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition-colors">
           Check Availability →
         </a>
 

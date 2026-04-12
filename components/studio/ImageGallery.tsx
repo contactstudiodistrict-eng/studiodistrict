@@ -52,7 +52,7 @@ export function ImageGallery({ images, studioName }: { images: string[]; studioN
         <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide">
           {images.map((img, i) => (
             <button key={i} onClick={() => setCurrent(i)} className={`relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all
-              ${i === current ? 'border-orange-400 opacity-100' : 'border-transparent opacity-60 hover:opacity-80'}`}>
+              ${i === current ? 'border-brand-400 opacity-100' : 'border-transparent opacity-60 hover:opacity-80'}`}>
               <Image src={img} alt={`thumb ${i + 1}`} fill className="object-cover" sizes="64px" />
             </button>
           ))}

@@ -81,18 +81,20 @@ function LoginForm() {
 
   const card: React.CSSProperties = { background:'#fff', borderRadius:'16px', border:'1px solid #e5e7eb', padding:'28px', boxShadow:'0 2px 12px rgba(0,0,0,0.06)' }
   const inp: React.CSSProperties  = { width:'100%', border:'1px solid #e5e7eb', borderRadius:'10px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'inherit', boxSizing:'border-box' }
-  const btn: React.CSSProperties  = { width:'100%', padding:'13px', borderRadius:'10px', border:'none', cursor:'pointer', fontSize:'14px', fontWeight:'600', fontFamily:'inherit', background:'#f07020', color:'#fff' }
-  const btnOff: React.CSSProperties = { ...btn, background:'#fed7aa', cursor:'not-allowed' }
+  const btn: React.CSSProperties  = { width:'100%', padding:'13px', borderRadius:'10px', border:'none', cursor:'pointer', fontSize:'14px', fontWeight:'600', fontFamily:'inherit', background:'#84cc16', color:'#fff' }
+  const btnOff: React.CSSProperties = { ...btn, background:'#d9f99d', cursor:'not-allowed' }
   const lbl: React.CSSProperties  = { display:'block', fontSize:'11px', fontWeight:'600', color:'#9ca3af', textTransform:'uppercase' as const, letterSpacing:'.06em', marginBottom:'6px' }
 
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#fff5ee,#fff,#fffbeb)', display:'flex', alignItems:'center', justifyContent:'center', padding:'16px', fontFamily:'system-ui,sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#f0fdf4,#fff,#f7fee7)', display:'flex', alignItems:'center', justifyContent:'center', padding:'16px', fontFamily:'system-ui,sans-serif' }}>
       <div style={{ width:'100%', maxWidth:'380px' }}>
 
         {/* Logo */}
         <div style={{ textAlign:'center', marginBottom:'24px' }}>
-          <a href="/" style={{ fontFamily:'Georgia,serif', fontSize:'30px', color:'#f07020', textDecoration:'none' }}>framr.</a>
-          <p style={{ color:'#6b7280', fontSize:'14px', margin:'6px 0 0' }}>Chennai&apos;s studio booking platform</p>
+          <a href="/" style={{ fontFamily:'var(--font-space-grotesk),system-ui,sans-serif', fontSize:'28px', fontWeight:'700', letterSpacing:'-0.03em', textDecoration:'none', display:'inline-flex', gap:'0' }}>
+            <span style={{ color:'#0f172a' }}>Studio</span><span style={{ color:'#84cc16' }}>District</span>
+          </a>
+          <p style={{ color:'#64748b', fontSize:'14px', margin:'6px 0 0' }}>Chennai&apos;s studio booking platform</p>
         </div>
 
         <div style={card}>
@@ -178,7 +180,7 @@ function LoginForm() {
                   ← Use different email
                 </button>
                 <button type="button" onClick={handleSend} disabled={loading}
-                  style={{ background:'none', border:'none', cursor:'pointer', color:'#f07020', fontSize:'13px', fontFamily:'inherit', padding:0 }}>
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'#84cc16', fontSize:'13px', fontFamily:'inherit', padding:0 }}>
                   Resend email
                 </button>
               </div>

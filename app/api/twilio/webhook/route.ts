@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     if (!isConfirm && !isDecline) {
       return twiml(
-        'Hi! Reply *YES* to confirm a booking or *NO* to decline.\n\nThis is the Framr studio booking platform.'
+        'Hi! Reply *YES* to confirm a booking or *NO* to decline.\n\nThis is the Studio District studio booking platform.'
       )
     }
 
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return new NextResponse('Framr WhatsApp webhook active ✅', { status: 200 })
+  return new NextResponse('Studio District WhatsApp webhook active ✅', { status: 200 })
 }
 
 function twiml(message: string) {

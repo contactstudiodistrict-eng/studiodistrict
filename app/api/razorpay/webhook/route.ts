@@ -1,6 +1,6 @@
 // app/api/razorpay/webhook/route.ts
 // Handles Razorpay payment events
-// Configure in Razorpay Dashboard → Settings → Webhooks → https://framr.in/api/razorpay/webhook
+// Configure in Razorpay Dashboard → Settings → Webhooks → https://studiodistrict.vercel.app/api/razorpay/webhook
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { verifyRazorpayWebhook } from '@/lib/razorpay'

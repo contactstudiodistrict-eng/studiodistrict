@@ -27,9 +27,9 @@ export function StudioCard({ studio }: { studio: any }) {
 
   return (
     <Link href={`/studios/${studio.id}`} className="group block">
-      <div className="rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-200 bg-white">
+      <div className="rounded-2xl border border-ink-200 overflow-hidden hover:shadow-lg hover:border-brand-300 transition-all duration-200 bg-white">
         {/* Thumbnail */}
-        <div className="relative bg-gray-100 overflow-hidden" style={{ height: '192px' }}>
+        <div className="relative bg-ink-100 overflow-hidden" style={{ height: '192px' }}>
           {thumbnail ? (
             <Image
               src={thumbnail}
@@ -39,7 +39,7 @@ export function StudioCard({ studio }: { studio: any }) {
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
           ) : (
-            <div style={{ height: '192px' }} className="flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
+            <div style={{ height: '192px' }} className="flex items-center justify-center bg-gradient-to-br from-ink-100 to-brand-100">
               <span className="text-5xl">{TYPE_EMOJI[studio.studio_type] || '📸'}</span>
             </div>
           )}
@@ -47,7 +47,7 @@ export function StudioCard({ studio }: { studio: any }) {
           {/* Featured badge */}
           {studio.is_featured && (
             <div className="absolute top-2 left-2">
-              <span className="px-2 py-0.5 rounded-full bg-orange-500 text-white text-xs font-semibold">Featured</span>
+              <span className="px-2 py-0.5 rounded-full bg-brand-500 text-white text-xs font-bold">Featured</span>
             </div>
           )}
 
@@ -61,13 +61,13 @@ export function StudioCard({ studio }: { studio: any }) {
 
         {/* Body */}
         <div className="p-4">
-          <h3 className="font-semibold text-gray-900 truncate mb-1">{studio.studio_name}</h3>
+          <h3 className="font-semibold text-ink-900 truncate mb-1">{studio.studio_name}</h3>
 
-          <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+          <div className="flex items-center gap-2 text-xs text-ink-500 mb-3">
             <span>📍 {studio.area}</span>
             {studio.review_count > 0 && (
               <>
-                <span className="w-1 h-1 rounded-full bg-gray-300" />
+                <span className="w-1 h-1 rounded-full bg-ink-300" />
                 <span>⭐ {Number(studio.rating).toFixed(1)} ({studio.review_count})</span>
               </>
             )}
@@ -77,12 +77,12 @@ export function StudioCard({ studio }: { studio: any }) {
           {amenityBadges.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-3">
               {amenityBadges.slice(0, 3).map(badge => (
-                <span key={badge} className="px-1.5 py-0.5 rounded bg-gray-50 text-gray-500 text-xs border border-gray-100">
+                <span key={badge} className="px-1.5 py-0.5 rounded bg-ink-50 text-ink-500 text-xs border border-ink-200">
                   {badge}
                 </span>
               ))}
               {amenityBadges.length > 3 && (
-                <span className="px-1.5 py-0.5 rounded bg-gray-50 text-gray-400 text-xs border border-gray-100">
+                <span className="px-1.5 py-0.5 rounded bg-ink-50 text-ink-400 text-xs border border-ink-200">
                   +{amenityBadges.length - 3}
                 </span>
               )}
@@ -92,12 +92,12 @@ export function StudioCard({ studio }: { studio: any }) {
           {/* Price */}
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-base font-bold text-gray-900">
+              <span className="text-base font-bold text-brand-600">
                 ₹{studio.price_per_hour.toLocaleString('en-IN')}
               </span>
-              <span className="text-gray-400 text-xs"> / hr</span>
+              <span className="text-ink-400 text-xs"> / hr</span>
             </div>
-            <span className="text-xs text-gray-400">min {studio.minimum_hours} hrs</span>
+            <span className="text-xs text-ink-400">min {studio.minimum_hours} hrs</span>
           </div>
         </div>
       </div>

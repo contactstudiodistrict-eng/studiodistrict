@@ -141,9 +141,9 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
     label:   { display: 'block', fontSize: '11px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: '6px' },
     input:   { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '11px 14px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color .15s' },
     select:  { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '11px 14px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, background: '#fff', appearance: 'none' as const },
-    btn:     { width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '600', fontFamily: 'inherit', background: '#f07020', color: '#fff', transition: 'background .15s' } as React.CSSProperties,
+    btn:     { width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '600', fontFamily: 'inherit', background: '#84cc16', color: '#fff', transition: 'background .15s' } as React.CSSProperties,
     btnGhost:{ flex: 1, padding: '13px', borderRadius: '12px', border: '1px solid #e5e7eb', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit', background: '#fff', color: '#374151' } as React.CSSProperties,
-    btnOff:  { width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: '600', fontFamily: 'inherit', background: '#ffd0b5', color: '#fff', cursor: 'not-allowed' } as React.CSSProperties,
+    btnOff:  { width: '100%', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: '600', fontFamily: 'inherit', background: '#d9f99d', color: '#fff', cursor: 'not-allowed' } as React.CSSProperties,
     row2:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } as React.CSSProperties,
     field:   { marginBottom: '14px' } as React.CSSProperties,
     errBox:  { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '11px 14px', color: '#dc2626', fontSize: '13px', marginBottom: '14px', display: 'flex', gap: '8px', alignItems: 'flex-start' } as React.CSSProperties,
@@ -176,12 +176,12 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700',
-                  background: done ? '#22c55e' : active ? '#f07020' : '#f3f4f6',
+                  background: done ? '#22c55e' : active ? '#84cc16' : '#f3f4f6',
                   color: done || active ? '#fff' : '#9ca3af',
-                  border: `2px solid ${done ? '#22c55e' : active ? '#f07020' : '#e5e7eb'}` }}>
+                  border: `2px solid ${done ? '#22c55e' : active ? '#84cc16' : '#e5e7eb'}` }}>
                   {done ? '✓' : n}
                 </div>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: active ? '#f07020' : done ? '#22c55e' : '#9ca3af', display: 'none', whiteSpace: 'nowrap' }}
+                <span style={{ fontSize: '12px', fontWeight: '500', color: active ? '#84cc16' : done ? '#22c55e' : '#9ca3af', display: 'none', whiteSpace: 'nowrap' }}
                   className="sm:block">{label}</span>
               </div>
               {i < steps.length - 1 && (
@@ -201,7 +201,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
       )}
 
       {/* Studio strip */}
-      <div style={{ background: '#fff8f5', border: '1px solid #fed7aa', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+      <div style={{ background: '#f7fee7', border: '1px solid #d9f99d', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
         <span style={{ fontSize: '24px' }}>📸</span>
         <div>
           <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>{studio.studio_name}</div>
@@ -221,7 +221,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
               style={s.input}
-              onFocus={e => e.target.style.borderColor = '#f07020'}
+              onFocus={e => e.target.style.borderColor = '#84cc16'}
               onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
           </div>
 
@@ -231,7 +231,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
               <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
                 min={studio.opening_time} max={studio.closing_time}
                 style={s.input}
-                onFocus={e => e.target.style.borderColor = '#f07020'}
+                onFocus={e => e.target.style.borderColor = '#84cc16'}
                 onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
             </div>
             <div>
@@ -263,8 +263,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
 
           <button type="button" onClick={goToStep2}
             style={s.btn}
-            onMouseOver={e => (e.currentTarget.style.background = '#d05010')}
-            onMouseOut={e => (e.currentTarget.style.background = '#f07020')}>
+            onMouseOver={e => (e.currentTarget.style.background = '#65a30d')}
+            onMouseOut={e => (e.currentTarget.style.background = '#84cc16')}>
             Continue → Your Details
           </button>
         </div>
@@ -281,7 +281,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <label style={s.label}>Full name *</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)}
               placeholder="Arjun Sharma" autoFocus style={s.input}
-              onFocus={e => e.target.style.borderColor = '#f07020'}
+              onFocus={e => e.target.style.borderColor = '#84cc16'}
               onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
           </div>
 
@@ -295,7 +295,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
                 onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 placeholder="9876543210"
                 style={{ ...s.input, borderRadius: '0 10px 10px 0', borderLeft: 'none', flex: 1, width: 'auto' }}
-                onFocus={e => e.target.style.borderColor = '#f07020'}
+                onFocus={e => e.target.style.borderColor = '#84cc16'}
                 onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
             </div>
             <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>Payment link &amp; updates will be sent to this WhatsApp number</div>
@@ -305,7 +305,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <label style={s.label}>Email (optional)</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
               placeholder="arjun@email.com" style={s.input}
-              onFocus={e => e.target.style.borderColor = '#f07020'}
+              onFocus={e => e.target.style.borderColor = '#84cc16'}
               onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
           </div>
 
@@ -330,8 +330,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             </button>
             <button type="button" onClick={goToStep3}
               style={{ ...s.btn, flex: 2 }}
-              onMouseOver={e => (e.currentTarget.style.background = '#d05010')}
-              onMouseOut={e => (e.currentTarget.style.background = '#f07020')}>
+              onMouseOver={e => (e.currentTarget.style.background = '#65a30d')}
+              onMouseOut={e => (e.currentTarget.style.background = '#84cc16')}>
               Review Booking →
             </button>
           </div>
@@ -372,7 +372,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
               <div style={s.priceRow}><span>Security deposit (refundable)</span><span>{formatINR(pricing.securityDeposit)}</span></div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#111827', borderTop: '2px solid #f3f4f6', marginTop: '8px', paddingTop: '10px' }}>
-              <span>Total</span><span style={{ color: '#f07020' }}>{formatINR(pricing.totalAmount)}</span>
+              <span>Total</span><span style={{ color: '#65a30d' }}>{formatINR(pricing.totalAmount)}</span>
             </div>
           </div>
 
@@ -392,8 +392,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             </button>
             <button type="button" onClick={handleSubmit} disabled={submitting}
               style={{ ...(submitting ? s.btnOff : s.btn), flex: 2 }}
-              onMouseOver={e => { if (!submitting) e.currentTarget.style.background = '#d05010' }}
-              onMouseOut={e => { if (!submitting) e.currentTarget.style.background = '#f07020' }}>
+              onMouseOver={e => { if (!submitting) e.currentTarget.style.background = '#65a30d' }}
+              onMouseOut={e => { if (!submitting) e.currentTarget.style.background = '#84cc16' }}>
               {submitting
                 ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />

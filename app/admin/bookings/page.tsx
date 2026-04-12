@@ -7,7 +7,7 @@ import { formatINR } from '@/lib/pricing'
 const STATUS_CHIP: Record<string, string> = {
   pending:          'bg-amber-100 text-amber-700',
   confirmed:        'bg-blue-100 text-blue-700',
-  awaiting_payment: 'bg-orange-100 text-orange-700',
+  awaiting_payment: 'bg-brand-100 text-brand-700',
   paid:             'bg-green-100 text-green-700',
   completed:        'bg-purple-100 text-purple-700',
   declined:         'bg-red-100 text-red-600',
@@ -51,7 +51,7 @@ export default async function AdminBookingsPage({ searchParams }: { searchParams
           {['all','pending','awaiting_payment','paid','completed','declined','cancelled'].map(s => (
             <Link key={s} href={`/admin/bookings?status=${s}`}
               className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors
-                ${statusFilter === s ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                ${statusFilter === s ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
               {s.replace('_', ' ')}
             </Link>
           ))}

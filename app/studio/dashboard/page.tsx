@@ -8,7 +8,7 @@ import Link from 'next/link'
 const STATUS_CHIP: Record<string, { label: string; color: string }> = {
   pending:          { label: 'Pending',         color: 'bg-amber-100 text-amber-700' },
   confirmed:        { label: 'Confirmed',        color: 'bg-blue-100 text-blue-700' },
-  awaiting_payment: { label: 'Awaiting Payment', color: 'bg-orange-100 text-orange-700' },
+  awaiting_payment: { label: 'Awaiting Payment', color: 'bg-brand-100 text-brand-700' },
   paid:             { label: 'Paid ✓',           color: 'bg-green-100 text-green-700' },
   completed:        { label: 'Completed',        color: 'bg-purple-100 text-purple-700' },
   declined:         { label: 'Declined',         color: 'bg-red-100 text-red-600' },
@@ -35,9 +35,9 @@ export default async function OwnerDashboardPage() {
         <main className="max-w-2xl mx-auto px-4 py-16 text-center">
           <div className="text-5xl mb-4">🏠</div>
           <h1 className="text-2xl font-serif text-gray-900 mb-3">No studio listed yet</h1>
-          <p className="text-gray-500 mb-8">List your studio on Framr and start receiving bookings from Chennai creators.</p>
+          <p className="text-gray-500 mb-8">List your studio on Studio District and start receiving bookings from Chennai creators.</p>
           <Link href="/studio/onboard"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors">
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-colors">
             List My Studio →
           </Link>
         </main>
@@ -88,7 +88,7 @@ export default async function OwnerDashboardPage() {
             <p className="text-gray-500 text-sm mt-1">{studios[0].studio_name}</p>
           </div>
           <Link href="/studio/onboard"
-            className="px-4 py-2 rounded-lg border border-orange-300 text-orange-600 text-sm font-medium hover:bg-orange-50 transition-colors">
+            className="px-4 py-2 rounded-lg border border-brand-400 text-brand-600 text-sm font-medium hover:bg-brand-50 transition-colors">
             + Add Studio
           </Link>
         </div>
@@ -101,9 +101,9 @@ export default async function OwnerDashboardPage() {
             { label: 'Pending',       value: String(pendingBookings.length), sub: 'awaiting reply', alert: pendingBookings.length > 0 },
             { label: 'Rating',        value: studios[0].rating ? `⭐ ${Number(studios[0].rating).toFixed(1)}` : '—', sub: `${studios[0].review_count} reviews` },
           ].map((stat, i) => (
-            <div key={i} className={`rounded-xl border p-4 ${stat.highlight ? 'bg-orange-50 border-orange-200' : stat.alert ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'}`}>
+            <div key={i} className={`rounded-xl border p-4 ${stat.highlight ? 'bg-brand-50 border-brand-200' : stat.alert ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'}`}>
               <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{stat.label}</div>
-              <div className={`text-2xl font-bold ${stat.highlight ? 'text-orange-600' : stat.alert ? 'text-amber-600' : 'text-gray-900'}`}>{stat.value}</div>
+              <div className={`text-2xl font-bold ${stat.highlight ? 'text-brand-600' : stat.alert ? 'text-amber-600' : 'text-gray-900'}`}>{stat.value}</div>
               <div className="text-xs text-gray-400 mt-1">{stat.sub}</div>
             </div>
           ))}
@@ -124,7 +124,7 @@ export default async function OwnerDashboardPage() {
               }
               return (
                 <div key={studio.id} className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-2xl flex-shrink-0">📸</div>
+                  <div className="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center text-2xl flex-shrink-0">📸</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-semibold text-gray-900">{studio.studio_name}</span>
@@ -140,7 +140,7 @@ export default async function OwnerDashboardPage() {
                       View listing
                     </Link>
                     <Link href={`/studio/onboard?edit=${studio.id}`}
-                      className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 transition-colors">
+                      className="px-3 py-1.5 rounded-lg bg-brand-500 text-white text-xs font-medium hover:bg-brand-600 transition-colors">
                       Edit
                     </Link>
                   </div>
@@ -166,7 +166,7 @@ export default async function OwnerDashboardPage() {
                       <div className="text-xs text-gray-500 mt-0.5 font-mono">{b.booking_ref}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-orange-600">{formatINR(b.studio_payout_amount)}</div>
+                      <div className="font-bold text-brand-600">{formatINR(b.studio_payout_amount)}</div>
                       <div className="text-xs text-gray-400">your payout</div>
                     </div>
                   </div>

@@ -62,7 +62,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           {/* Results header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-serif text-gray-900">
+              <h2 className="text-2xl font-bold text-ink-900">
                 {searchParams.type
                   ? `${capitalize(searchParams.type)} Studios`
                   : 'Studios in Chennai'}
@@ -73,7 +73,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             </div>
             <a
               href="/studio/onboard"
-              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-brand-400 text-brand-400 text-sm font-medium hover:bg-brand-50 transition-colors"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-brand-500 text-brand-600 text-sm font-medium hover:bg-brand-50 transition-colors"
             >
               + List Your Studio
             </a>
@@ -94,7 +94,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       <div className="sm:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40">
         <a
           href="/studio/onboard"
-          className="block w-full py-3 text-center rounded-xl bg-brand-400 text-white font-semibold text-sm"
+          className="block w-full py-3 text-center rounded-xl bg-brand-500 text-white font-semibold text-sm"
         >
           Own a Studio? List it Free →
         </a>
@@ -136,7 +136,7 @@ function EmptyState({ searchParams }: { searchParams: SearchParams }) {
       </p>
       <a
         href="/"
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-400 text-white text-sm font-medium hover:bg-brand-500 transition-colors"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-600 transition-colors"
       >
         Clear filters
       </a>

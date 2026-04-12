@@ -64,7 +64,7 @@ export default async function DashboardPage() {
             <div className="text-center py-12 bg-gray-50 rounded-2xl border border-gray-100">
               <div className="text-4xl mb-3">📅</div>
               <p className="text-gray-500 text-sm mb-4">No upcoming bookings</p>
-              <Link href="/" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors">
+              <Link href="/" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-600 transition-colors">
                 Browse studios
               </Link>
             </div>
@@ -75,8 +75,8 @@ export default async function DashboardPage() {
                 const studio = (b as any).studios
                 return (
                   <Link key={b.id} href={`/bookings/${b.id}`}
-                    className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 hover:border-orange-200 hover:shadow-sm transition-all">
-                    <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-2xl flex-shrink-0">📸</div>
+                    className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 hover:border-brand-200 hover:shadow-sm transition-all">
+                    <div className="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center text-2xl flex-shrink-0">📸</div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-gray-900 truncate">{studio?.studio_name}</div>
                       <div className="text-xs text-gray-500 mt-0.5">

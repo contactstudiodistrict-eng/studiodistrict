@@ -159,7 +159,7 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
       {/* ── Pay now CTA ── */}
       {booking.status === 'awaiting_payment' && (
         <a href={`/bookings/${booking.id}/pay`}
-          style={{ display: 'block', padding: '15px', borderRadius: '12px', background: '#f07020', color: '#fff', textAlign: 'center', textDecoration: 'none', fontWeight: '700', fontSize: '15px', marginBottom: '12px', boxSizing: 'border-box' }}>
+          style={{ display: 'block', padding: '15px', borderRadius: '12px', background: '#84cc16', color: '#fff', textAlign: 'center', textDecoration: 'none', fontWeight: '700', fontSize: '15px', marginBottom: '12px', boxSizing: 'border-box' }}>
           💳 Pay Now to Lock Your Slot →
         </a>
       )}
@@ -240,8 +240,8 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
           {booking.security_deposit > 0 && (
             <div style={c.prRow}><span>Security deposit (refundable)</span><span>{formatINR(booking.security_deposit)}</span></div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#111827', borderTop: '1px solid #f3f4f6', marginTop: '8px', paddingTop: '10px' }}>
-            <span>Total</span><span style={{ color: '#f07020' }}>{formatINR(booking.total_amount)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#0f172a', borderTop: '1px solid #f1f5f9', marginTop: '8px', paddingTop: '10px' }}>
+            <span>Total</span><span style={{ color: '#65a30d' }}>{formatINR(booking.total_amount)}</span>
           </div>
         </div>
       </div>
@@ -260,7 +260,7 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
               <div key={s.key} style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', flexShrink: 0,
-                    background: done ? '#22c55e' : active ? '#f07020' : '#f3f4f6',
+                    background: done ? '#22c55e' : active ? '#84cc16' : '#f3f4f6',
                     color: done || active ? '#fff' : '#9ca3af' }}>
                     {done ? '✓' : i + 1}
                   </div>
@@ -270,12 +270,12 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
                 </div>
                 <div style={{ paddingBottom: '4px', flex: 1 }}>
                   <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '1px',
-                    color: done ? '#15803d' : active ? '#f07020' : '#9ca3af' }}>
+                    color: done ? '#15803d' : active ? '#65a30d' : '#9ca3af' }}>
                     {s.label}
                     {active && <span style={{ marginLeft: '6px', fontSize: '10px', animation: 'blink 1s infinite' }}>⏳</span>}
                   </div>
                   {dateVal && (
-                    <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
                       {new Date(dateVal).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
                     </div>
                   )}
@@ -306,7 +306,7 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
       )}
 
       {['paid','completed','declined','cancelled'].includes(booking.status) && (
-        <a href="/" style={{ display: 'block', width: '100%', padding: '13px', borderRadius: '10px', background: '#f07020', color: '#fff', textAlign: 'center', textDecoration: 'none', fontWeight: '600', fontSize: '14px', boxSizing: 'border-box' }}>
+        <a href="/" style={{ display: 'block', width: '100%', padding: '13px', borderRadius: '10px', background: '#84cc16', color: '#fff', textAlign: 'center', textDecoration: 'none', fontWeight: '700', fontSize: '14px', boxSizing: 'border-box' }}>
           Browse more studios →
         </a>
       )}

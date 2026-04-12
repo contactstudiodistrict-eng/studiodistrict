@@ -44,7 +44,7 @@ export async function sendBookingRequest(params: {
   const code = params.bookingId.slice(-8)
 
   const body =
-`🎯 *New Booking — Framr*
+`🎯 *New Booking — Studio District*
 
 📸 ${params.studioName}
 👤 ${params.customerName}
@@ -106,7 +106,7 @@ export async function sendBookingConfirmedCustomer(params: {
   ownerPhone:    string
 }) {
   const body =
-`🎉 *Booking Confirmed — Framr*
+`🎉 *Booking Confirmed — Studio District*
 
 📸 *${params.studioName}*
 📍 ${params.address}
@@ -136,7 +136,7 @@ export async function sendPaymentReceivedOwner(params: {
   accountLast4?: string
 }) {
   const body =
-`💰 *Payment Received — Framr*
+`💰 *Payment Received — Studio District*
 
 👤 ${params.customerName}
 📅 ${params.bookingDate} · ${params.timeRange}
@@ -201,7 +201,7 @@ export async function sendAdminNewStudio(params: {
   adminUrl:    string
 }) {
   const body =
-`🏠 *New Studio Submitted — Framr*
+`🏠 *New Studio Submitted — Studio District*
 
 📸 ${params.studioName}
 👤 ${params.ownerName}

@@ -1,4 +1,4 @@
-# Framr — Chennai Studio Booking Platform
+# Studio District — Chennai Studio Booking Platform
 ## Claude Code Project Context
 
 > This file gives Claude Code full context of the project.

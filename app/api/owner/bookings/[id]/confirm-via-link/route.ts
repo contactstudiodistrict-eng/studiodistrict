@@ -109,7 +109,7 @@ function htmlPage(title: string, body: string, color: string): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title} — Framr</title>
+<title>${title} — Studio District</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, sans-serif; background: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
@@ -123,7 +123,7 @@ function htmlPage(title: string, body: string, color: string): string {
 </head>
 <body>
 <div class="card">
-  <div class="brand">framr.</div>
+  <div class="brand">Studio District</div>
   <div class="icon">${title.startsWith("✅") ? "✅" : title.startsWith("❌") ? "❌" : "⚠️"}</div>
   <h1>${title.replace(/^[✅❌⚠️]\s*/, "")}</h1>
   <p>${body}</p>

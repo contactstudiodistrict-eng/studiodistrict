@@ -1,12 +1,12 @@
 // app/layout.tsx
 import type { Metadata } from 'next'
-import { DM_Sans, DM_Serif_Display, Space_Mono } from 'next/font/google'
+import { Space_Grotesk, DM_Serif_Display, Space_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
 import './globals.css'
 
-const dmSans = DM_Sans({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
-  variable: '--font-dm-sans',
+  variable: '--font-space-grotesk',
   display: 'swap',
 })
 
@@ -25,14 +25,14 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: { default: 'Framr — Book Studio Spaces in Chennai', template: '%s | Framr' },
+  title: { default: 'Studio District — Book Studio Spaces in Chennai', template: '%s | Studio District' },
   description: 'Book photography, podcast, video, and music studios in Chennai. Instant availability, transparent pricing.',
   keywords: ['studio rental', 'photography studio', 'podcast studio', 'Chennai', 'book studio'],
   openGraph: {
-    title: 'Framr — Chennai Studio Booking',
+    title: 'Studio District — Chennai Studio Booking',
     description: 'Book the perfect studio for your next shoot in Chennai',
-    url: 'https://framr.in',
-    siteName: 'Framr',
+    url: 'https://studiodistrict.vercel.app',
+    siteName: 'Studio District',
     locale: 'en_IN',
     type: 'website',
   },
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${dmSerif.variable} ${spaceMono.variable}`}>
-      <body className="font-sans bg-white text-gray-900 antialiased">
+    <html lang="en" className={`${spaceGrotesk.variable} ${dmSerif.variable} ${spaceMono.variable}`}>
+      <body className="font-sans bg-white text-ink-900 antialiased">
         {children}
         <Toaster position="top-center" richColors />
       </body>

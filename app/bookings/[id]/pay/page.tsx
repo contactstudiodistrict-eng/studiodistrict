@@ -78,9 +78,11 @@ export default async function PaymentPage({ params }: { params: { id: string } }
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-sm w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-orange-500 px-6 py-5 text-white">
-          <div className="font-serif text-xl mb-1">framr.</div>
-          <div className="text-orange-100 text-sm">Secure payment</div>
+        <div className="bg-ink-900 px-6 py-5 text-white">
+          <div className="font-sans font-bold text-lg tracking-tight mb-1">
+            <span className="text-white">Studio</span><span style={{ color: '#a3e635' }}>District</span>
+          </div>
+          <div className="text-ink-400 text-sm">Secure payment</div>
         </div>
 
         <div className="p-6">
@@ -112,7 +114,7 @@ export default async function PaymentPage({ params }: { params: { id: string } }
             )}
             <div className="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-3 mt-2">
               <span>Total</span>
-              <span className="text-orange-600">{formatINR(booking.total_amount)}</span>
+              <span className="text-brand-600">{formatINR(booking.total_amount)}</span>
             </div>
           </div>
 
@@ -122,7 +124,7 @@ export default async function PaymentPage({ params }: { params: { id: string } }
           </div>
 
           <a href={`/bookings/${params.id}`}
-            className="block w-full py-3 text-center rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors">
+            className="block w-full py-3 text-center rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-colors">
             View Booking Status →
           </a>
         </div>

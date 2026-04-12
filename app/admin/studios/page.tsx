@@ -77,7 +77,7 @@ function AdminStudiosInner() {
           {['all','live','pending','draft','suspended'].map(s => (
             <Link key={s} href={`/admin/studios?status=${s}`}
               className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors
-                ${statusFilter === s ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                ${statusFilter === s ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
               {s}
             </Link>
           ))}

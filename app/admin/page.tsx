@@ -40,11 +40,13 @@ export default async function AdminPage() {
       {/* Admin Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="font-serif text-xl text-orange-500">framr.</span>
-          <span className="px-2 py-0.5 rounded bg-orange-100 text-orange-700 text-xs font-semibold">Admin</span>
+          <span style={{ fontFamily: 'var(--font-space-grotesk)', fontSize: '18px', fontWeight: '700', letterSpacing: '-0.03em' }}>
+            <span style={{ color: '#0f172a' }}>Studio</span><span style={{ color: '#84cc16' }}>District</span>
+          </span>
+          <span className="px-2 py-0.5 rounded bg-brand-100 text-brand-700 text-xs font-bold">Admin</span>
         </div>
         <nav className="flex items-center gap-4 text-sm">
-          <Link href="/admin" className="text-orange-600 font-medium">Overview</Link>
+          <Link href="/admin" className="text-brand-600 font-semibold">Overview</Link>
           <Link href="/admin/studios" className="text-gray-500 hover:text-gray-700">Studios</Link>
           <Link href="/admin/bookings" className="text-gray-500 hover:text-gray-700">Bookings</Link>
           <Link href="/admin/payments" className="text-gray-500 hover:text-gray-700">Payments</Link>
@@ -55,7 +57,7 @@ export default async function AdminPage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Platform Overview</h1>
-          <p className="text-sm text-gray-500 mt-1">Chennai · Framr MVP</p>
+          <p className="text-sm text-gray-500 mt-1">Chennai · Studio District</p>
         </div>
 
         {/* Stats grid */}
@@ -104,7 +106,7 @@ export default async function AdminPage() {
           <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
               <h2 className="font-semibold text-gray-800">Recent Bookings</h2>
-              <Link href="/admin/bookings" className="text-xs text-orange-500 hover:text-orange-600 font-medium">View all →</Link>
+              <Link href="/admin/bookings" className="text-xs text-brand-600 hover:text-brand-700 font-semibold">View all →</Link>
             </div>
             <div className="divide-y divide-gray-50">
               {(!recentBookings || recentBookings.length === 0) ? (

@@ -106,11 +106,13 @@ export default function StudioOnboardPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <a href="/" className="font-serif text-xl text-orange-500">framr.</a>
+          <a href="/" className="font-sans font-bold text-xl tracking-tight" style={{ textDecoration: 'none', letterSpacing: '-0.03em' }}>
+            <span className="text-ink-900">Studio</span><span className="text-brand-500">District</span>
+          </a>
           <span className="text-sm text-gray-500">Step {step} of 10</span>
         </div>
         <div className="h-1 bg-gray-100">
-          <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: `${progress}%` }} />
+          <div className="h-full bg-brand-500 transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
       </header>
 
@@ -120,7 +122,7 @@ export default function StudioOnboardPage() {
           {STEPS.map(s => (
             <button key={s.id} type="button" onClick={() => setStep(s.id)}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                ${step === s.id ? 'bg-orange-500 text-white' : s.id < step ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                ${step === s.id ? 'bg-brand-500 text-white' : s.id < step ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400 border border-gray-100'}`}>
               {s.id < step ? '✓' : s.icon} {s.title}
             </button>
           ))}
@@ -192,8 +194,8 @@ export default function StudioOnboardPage() {
                 </Field>
               </div>
 
-              <div className="mt-4 p-4 bg-orange-50 border border-orange-100 rounded-xl text-sm text-orange-700">
-                💡 Framr charges a 10% platform fee on each booking. This is deducted from the customer&apos;s payment — your listed price is what you receive.
+              <div className="mt-4 p-4 bg-brand-50 border border-brand-100 rounded-xl text-sm text-brand-700">
+                💡 Studio District charges a 10% platform fee on each booking. This is deducted from the customer&apos;s payment — your listed price is what you receive.
               </div>
 
               <div className="mt-4">
@@ -271,9 +273,9 @@ export default function StudioOnboardPage() {
                     {IDEAL_FOR_OPTIONS.map(item => (
                       <button key={item} type="button" onClick={() => toggleIdealFor(item)}
                         className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm transition-all text-left
-                          ${watchIdealFor.includes(item) ? 'border-orange-400 bg-orange-50 text-orange-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                          ${watchIdealFor.includes(item) ? 'border-brand-400 bg-brand-50 text-brand-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                         <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center text-xs
-                          ${watchIdealFor.includes(item) ? 'bg-orange-400 border-orange-400 text-white' : 'border-gray-300'}`}>
+                          ${watchIdealFor.includes(item) ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300'}`}>
                           {watchIdealFor.includes(item) ? '✓' : ''}
                         </span>
                         {item}
@@ -304,10 +306,10 @@ export default function StudioOnboardPage() {
                   { name: 'props',         icon: '🎭', label: 'Props available' },
                 ].map(({ name, icon, label }) => (
                   <label key={name} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
-                    ${watch(name as any) ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                    <input type="checkbox" {...register(name as any)} className="w-4 h-4 accent-orange-500" />
+                    ${watch(name as any) ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input type="checkbox" {...register(name as any)} className="w-4 h-4 accent-brand-500" />
                     <span className="text-lg">{icon}</span>
-                    <span className={`text-sm font-medium ${watch(name as any) ? 'text-orange-700' : 'text-gray-600'}`}>{label}</span>
+                    <span className={`text-sm font-medium ${watch(name as any) ? 'text-brand-700' : 'text-gray-600'}`}>{label}</span>
                   </label>
                 ))}
               </div>
@@ -333,9 +335,9 @@ export default function StudioOnboardPage() {
                   { name: 'camera_rental',   label: 'Camera rental' },
                 ].map(({ name, label }) => (
                   <label key={name} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
-                    ${watch(name as any) ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                    <input type="checkbox" {...register(name as any)} className="w-4 h-4 accent-orange-500" />
-                    <span className={`text-sm font-medium ${watch(name as any) ? 'text-orange-700' : 'text-gray-600'}`}>{label}</span>
+                    ${watch(name as any) ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input type="checkbox" {...register(name as any)} className="w-4 h-4 accent-brand-500" />
+                    <span className={`text-sm font-medium ${watch(name as any) ? 'text-brand-700' : 'text-gray-600'}`}>{label}</span>
                   </label>
                 ))}
               </div>
@@ -371,7 +373,7 @@ export default function StudioOnboardPage() {
                       <span className="text-sm font-medium text-gray-700">{label}</span>
                       <div className="relative">
                         <input type="checkbox" {...register(name as any)} className="sr-only peer" />
-                        <div className="w-10 h-6 rounded-full border border-gray-200 bg-gray-100 peer-checked:bg-orange-400 peer-checked:border-orange-400 transition-all" />
+                        <div className="w-10 h-6 rounded-full border border-gray-200 bg-gray-100 peer-checked:bg-brand-500 peer-checked:border-brand-500 transition-all" />
                         <div className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all peer-checked:translate-x-4" />
                       </div>
                     </label>
@@ -400,7 +402,7 @@ export default function StudioOnboardPage() {
                     {DAYS.map(day => (
                       <button key={day} type="button" onClick={() => toggleDay(day)}
                         className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all
-                          ${watchWorkingDays.includes(day) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                          ${watchWorkingDays.includes(day) ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}>
                         {DAY_LABELS[day]}
                       </button>
                     ))}
@@ -443,7 +445,7 @@ export default function StudioOnboardPage() {
                 </div>
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 space-y-1">
                   <div className="font-semibold">How payouts work</div>
-                  <div>• Framr deducts 10% platform commission</div>
+                  <div>• Studio District deducts 10% platform commission</div>
                   <div>• Remaining amount sent T+1 business day after booking completes</div>
                   <div>• Bank transfer or UPI — your choice</div>
                   <div>• GST TDS deducted as per applicable rates</div>
@@ -473,7 +475,7 @@ export default function StudioOnboardPage() {
                 </div>
 
                 <button type="submit" disabled={submitting}
-                  className="w-full py-4 rounded-xl bg-orange-500 text-white font-bold text-base hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="w-full py-4 rounded-xl bg-brand-500 text-white font-bold text-base hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   {submitting ? 'Submitting…' : 'Submit for Review 🚀'}
                 </button>
               </div>
@@ -490,7 +492,7 @@ export default function StudioOnboardPage() {
                 </button>
               )}
               <button type="button" onClick={() => setStep(s => s + 1)}
-                className={`${step > 1 ? 'flex-[2]' : 'flex-1'} py-3.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors`}>
+                className={`${step > 1 ? 'flex-[2]' : 'flex-1'} py-3.5 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-colors`}>
                 {step === 9 ? 'Review submission →' : 'Next →'}
               </button>
             </div>
@@ -591,7 +593,7 @@ function ImageUploadZone({
     <div>
       <div
         className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
-          ${uploading ? 'border-orange-300 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}`}
+          ${uploading ? 'border-brand-300 bg-brand-50' : 'border-gray-200 hover:border-brand-300'}`}
         onClick={() => !uploading && inputRef.current?.click()}
         onDragOver={e => e.preventDefault()}
         onDrop={e => { e.preventDefault(); if (!uploading && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files) }}
@@ -601,14 +603,14 @@ function ImageUploadZone({
         {uploading ? (
           <div className="space-y-2">
             <div className="text-2xl">⏳</div>
-            <div className="text-sm text-orange-600 font-medium">Uploading…</div>
+            <div className="text-sm text-brand-600 font-medium">Uploading…</div>
           </div>
         ) : (
           <>
             <div className="text-3xl mb-2">{icon}</div>
             <div className="font-medium text-gray-700 text-sm mb-0.5">{label}</div>
             <div className="text-xs text-gray-400 mb-1">{sublabel}</div>
-            <div className="text-xs text-orange-400">Click or drag &amp; drop to upload</div>
+            <div className="text-xs text-brand-400">Click or drag &amp; drop to upload</div>
             {hint && <div className="text-xs text-blue-500 mt-1">{hint}</div>}
           </>
         )}
@@ -643,6 +645,6 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all placeholder:text-gray-300'
+const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-all placeholder:text-gray-300'
 const selectCls = `${inputCls} appearance-none bg-white`
 const prefixCls = 'flex items-center px-4 border border-r-0 border-gray-200 rounded-l-xl bg-gray-50 text-sm text-gray-500 font-medium'

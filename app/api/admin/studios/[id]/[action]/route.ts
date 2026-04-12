@@ -54,7 +54,7 @@ async function handler(req: NextRequest, params: { id: string; action: string })
     await client.messages.create({
       from: process.env.TWILIO_WHATSAPP_FROM!,
       to: `whatsapp:${waPhone}`,
-      body: `🎉 *Your studio is now LIVE on Framr!*\n\n📸 ${studio.studio_name}\n\nCreators in Chennai can now discover and book your studio.\n\n👉 View your listing: ${appUrl}\n\n— Team Framr`,
+      body: `🎉 *Your studio is now LIVE on Studio District!*\n\n📸 ${studio.studio_name}\n\nCreators in Chennai can now discover and book your studio.\n\n👉 View your listing: ${appUrl}\n\n— Team Studio District`,
     }).catch(console.error)
   }
 
