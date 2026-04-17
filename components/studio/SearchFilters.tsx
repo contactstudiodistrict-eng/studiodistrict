@@ -60,6 +60,20 @@ export function SearchFilters({ initialParams }: { initialParams: Record<string,
           {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
 
+        {initialParams.q && (
+          <button
+            onClick={() => {
+              const params = new URLSearchParams()
+              if (type) params.set('type', type)
+              if (area) params.set('area', area)
+              startTransition(() => router.push(`${pathname}?${params.toString()}`))
+            }}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+          >
+            ✕ Clear search
+          </button>
+        )}
+
         {(type || area) && (
           <button
             onClick={() => { setType(''); setArea(''); apply('', '') }}
