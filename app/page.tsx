@@ -10,7 +10,6 @@ import { RecentlyBookedCard } from '@/components/booking/RecentlyBookedCard'
 import { StudioCard } from '@/components/studio/StudioCard'
 import { AnnouncementBanner } from '@/components/banners/AnnouncementBanner'
 import { OfferBanner } from '@/components/banners/OfferBanner'
-import { FeatureCard } from '@/components/banners/FeatureCard'
 import type { Studio, Banner } from '@/types/database.types'
 
 interface SearchParams {
@@ -190,7 +189,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
               <StudioGrid
                 studios={studioList}
                 favouriteIds={favouriteIds}
-                insertCard={featureBanner ? <FeatureCard banner={featureBanner} /> : undefined}
+                featureBanner={featureBanner}
                 insertAtIndex={2}
               />
             ) : (

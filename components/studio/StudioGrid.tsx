@@ -1,20 +1,31 @@
+'use client'
 // components/studio/StudioGrid.tsx
+import { useState } from 'react'
 import { StudioCard } from './StudioCard'
+import { FeatureCard } from '@/components/banners/FeatureCard'
+import type { Banner } from '@/types/database.types'
 
 interface Props {
   studios: any[]
   favouriteIds?: string[]
-  insertCard?: React.ReactNode
+  featureBanner?: Banner | null
   insertAtIndex?: number
 }
 
-export function StudioGrid({ studios, favouriteIds = [], insertCard, insertAtIndex = 2 }: Props) {
+export function StudioGrid({ studios, favouriteIds = [], featureBanner, insertAtIndex = 2 }: Props) {
+  const [showFeatureCard, setShowFeatureCard] = useState(true)
   const favSet = new Set(favouriteIds)
   const cards: React.ReactNode[] = []
 
   studios.forEach((studio, i) => {
-    if (insertCard && i === insertAtIndex) {
-      cards.push(<div key="__feature_card__">{insertCard}</div>)
+    if (featureBanner && showFeatureCard && i === insertAtIndex) {
+      cards.push(
+        <FeatureCard
+          key="__feature_card__"
+          banner={featureBanner}
+          onDismiss={() => setShowFeatureCard(false)}
+        />
+      )
     }
     cards.push(
       <StudioCard
@@ -25,9 +36,14 @@ export function StudioGrid({ studios, favouriteIds = [], insertCard, insertAtInd
     )
   })
 
-  // Insert at end if index >= studios.length
-  if (insertCard && insertAtIndex >= studios.length) {
-    cards.push(<div key="__feature_card__">{insertCard}</div>)
+  if (featureBanner && showFeatureCard && insertAtIndex >= studios.length) {
+    cards.push(
+      <FeatureCard
+        key="__feature_card__"
+        banner={featureBanner}
+        onDismiss={() => setShowFeatureCard(false)}
+      />
+    )
   }
 
   return (

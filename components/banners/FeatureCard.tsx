@@ -3,26 +3,27 @@
 import { useState, useEffect } from 'react'
 import type { Banner } from '@/types/database.types'
 
-export function FeatureCard({ banner }: { banner: Banner }) {
+export function FeatureCard({ banner, onDismiss }: { banner: Banner; onDismiss?: () => void }) {
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     if (!banner.is_dismissable) return
     try {
       const dismissed: string[] = JSON.parse(localStorage.getItem('sd_dismissed_banners') || '[]')
-      if (dismissed.includes(banner.id)) setVisible(false)
+      if (dismissed.includes(banner.id)) { setVisible(false); onDismiss?.() }
     } catch {}
-  }, [banner.id, banner.is_dismissable])
+  }, [banner.id, banner.is_dismissable, onDismiss])
 
   function dismiss(e: React.MouseEvent) {
     e.preventDefault()
-    setVisible(false)
     try {
       const dismissed: string[] = JSON.parse(localStorage.getItem('sd_dismissed_banners') || '[]')
       if (!dismissed.includes(banner.id)) {
         localStorage.setItem('sd_dismissed_banners', JSON.stringify([...dismissed, banner.id]))
       }
     } catch {}
+    setVisible(false)
+    onDismiss?.()
   }
 
   if (!visible) return null
