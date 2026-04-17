@@ -44,7 +44,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   if (searchParams.area)      query = query.ilike('area', `%${searchParams.area}%`)
   if (searchParams.min_price) query = query.gte('price_per_hour', Number(searchParams.min_price))
   if (searchParams.max_price) query = query.lte('price_per_hour', Number(searchParams.max_price))
-  if (searchParams.q)         query = query.ilike('studio_name', `%${searchParams.q}%`)
+  if (searchParams.q)         query = query.or(`studio_name.ilike.%${searchParams.q}%,area.ilike.%${searchParams.q}%`)
 
   // Fetch studios + (if logged in) favourites + recent bookings in parallel
   const [studioResult, favouritesResult, recentResult] = await Promise.all([
