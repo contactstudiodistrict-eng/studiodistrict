@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { SiteHeader } from '@/components/shared/SiteHeader'
+import { ReferralCard } from '@/components/referral/ReferralCard'
 import Link from 'next/link'
 import { formatINR } from '@/lib/pricing'
 
@@ -20,21 +21,45 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/dashboard')
 
-  const { data: profile } = await supabase.from('users').select('full_name').eq('id', user.id).single()
+  const [profileResult, bookingsResult, pendingReviewsResult] = await Promise.all([
+    supabase.from('users').select('full_name, wallet_balance').eq('id', user.id).single(),
+    supabase
+      .from('bookings')
+      .select(`
+        id, booking_ref, status, booking_date, start_time, end_time,
+        shoot_type, total_amount, duration_hours,
+        studios(studio_name, area, thumbnail_url)
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    // Bookings that are paid/completed but have no submitted review
+    supabase
+      .from('bookings')
+      .select(`
+        id, booking_ref, booking_date,
+        studios(studio_name),
+        reviews(id, rating)
+      `)
+      .eq('user_id', user.id)
+      .in('status', ['paid', 'completed'])
+      .order('booking_date', { ascending: false })
+      .limit(5),
+  ])
 
-  const { data: bookings } = await supabase
-    .from('bookings')
-    .select(`
-      id, booking_ref, status, booking_date, start_time, end_time,
-      shoot_type, total_amount, duration_hours,
-      studios(studio_name, area, thumbnail_url)
-    `)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(20)
+  const profile = profileResult.data
+  const bookings = bookingsResult.data || []
 
-  const upcoming = bookings?.filter(b => ['pending','confirmed','awaiting_payment','paid'].includes(b.status)) || []
-  const past = bookings?.filter(b => ['completed','declined','cancelled'].includes(b.status)) || []
+  // Filter to only bookings with no rating submitted
+  const pendingReviews = (pendingReviewsResult.data || []).filter((b: any) => {
+    const rev = b.reviews
+    if (!rev) return true
+    if (Array.isArray(rev)) return rev.length === 0 || rev.every((r: any) => !r.rating)
+    return !rev.rating
+  }).slice(0, 3)
+
+  const upcoming = bookings.filter(b => ['pending','confirmed','awaiting_payment','paid'].includes(b.status))
+  const past = bookings.filter(b => ['completed','declined','cancelled'].includes(b.status))
 
   function formatDate(d: string) {
     return new Date(d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -52,8 +77,45 @@ export default async function DashboardPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-ink-900 tracking-tight">
             Hey {profile?.full_name?.split(' ')[0] || 'there'} 👋
           </h1>
-          <p className="text-slate-400 text-sm mt-0.5">Your studio bookings</p>
+          <div className="flex items-center gap-3 mt-0.5">
+            <p className="text-slate-400 text-sm">Your studio bookings</p>
+            {(profile?.wallet_balance ?? 0) > 0 && (
+              <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                💰 Wallet: ₹{(profile?.wallet_balance ?? 0).toLocaleString('en-IN')}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Referral card */}
+        <ReferralCard />
+
+        {/* Pending reviews */}
+        {pendingReviews.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-base font-semibold text-gray-700 mb-3">Leave a review</h2>
+            <div className="space-y-2">
+              {pendingReviews.map((b: any) => {
+                const studio = b.studios
+                return (
+                  <div key={b.id} className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-ink-900 truncate">{studio?.studio_name}</div>
+                      <div className="text-xs text-slate-400">{formatDate(b.booking_date)}</div>
+                    </div>
+                    <Link
+                      href={`/review/${b.id}`}
+                      className="flex-shrink-0 px-3 py-1.5 bg-amber-400 text-amber-900 rounded-lg text-xs font-bold hover:bg-amber-500 transition-colors"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      ⭐ Rate
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Upcoming */}
         <section className="mb-8">

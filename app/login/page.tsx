@@ -12,6 +12,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') || '/'
+  const refCode = searchParams.get('ref')
   const supabase = createClient()
 
   const [step,    setStep]    = useState<Step>('input')
@@ -19,12 +20,33 @@ function LoginForm() {
   const [otp,     setOtp]     = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Store referral code in localStorage when visiting /login?ref=CODE
+  useEffect(() => {
+    if (refCode) {
+      localStorage.setItem('referralCode', refCode.toUpperCase())
+    }
+  }, [refCode])
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) router.replace(next)
     })
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // Auto-apply referral code if stored
+        const storedCode = localStorage.getItem('referralCode')
+        if (storedCode) {
+          fetch('/api/referral/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: storedCode }),
+          }).then(r => r.json()).then(d => {
+            if (d.success) {
+              toast.success(`Referral code ${storedCode} applied! ₹200 credit after your first booking.`)
+            }
+            localStorage.removeItem('referralCode')
+          }).catch(() => localStorage.removeItem('referralCode'))
+        }
         router.replace(next)
         router.refresh()
       }

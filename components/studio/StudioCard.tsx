@@ -1,6 +1,7 @@
 // components/studio/StudioCard.tsx
 import Image from 'next/image'
 import Link from 'next/link'
+import { FavouriteButton } from './FavouriteButton'
 
 const TYPE_EMOJI: Record<string, string> = {
   photography: '📸', videography: '🎬', audio: '🎙', music: '🎵', mixed: '🎭',
@@ -11,19 +12,25 @@ const TYPE_LABEL: Record<string, string> = {
   audio: 'Podcast Studio', music: 'Music Studio', mixed: 'Multi-use Studio',
 }
 
-export function StudioCard({ studio }: { studio: any }) {
+interface Props {
+  studio: any
+  isFavourited?: boolean
+  bookedCount?: number
+}
+
+export function StudioCard({ studio, isFavourited = false, bookedCount = 0 }: Props) {
   const thumbnail = studio.thumbnail_url
     || studio.studio_images?.find((i: any) => i.is_thumbnail)?.url
     || studio.studio_images?.[0]?.url
 
   const amenities = studio.studio_amenities
   const amenityBadges = []
-  if (amenities?.ac)           amenityBadges.push('AC')
-  if (amenities?.power_backup) amenityBadges.push('UPS')
-  if (amenities?.parking)      amenityBadges.push('Parking')
-  if (amenities?.wifi)         amenityBadges.push('WiFi')
+  if (amenities?.ac)            amenityBadges.push('AC')
+  if (amenities?.power_backup)  amenityBadges.push('UPS')
+  if (amenities?.parking)       amenityBadges.push('Parking')
+  if (amenities?.wifi)          amenityBadges.push('WiFi')
   if (amenities?.natural_light) amenityBadges.push('Natural Light')
-  if (amenities?.makeup_room)  amenityBadges.push('MUA Room')
+  if (amenities?.makeup_room)   amenityBadges.push('MUA Room')
 
   return (
     <Link href={`/studios/${studio.id}`} className="group block">
@@ -51,11 +58,27 @@ export function StudioCard({ studio }: { studio: any }) {
             </div>
           )}
 
-          {/* Type badge */}
-          <div className="absolute bottom-2 left-2">
-            <span className="px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-medium">
-              {TYPE_EMOJI[studio.studio_type]} {TYPE_LABEL[studio.studio_type]}
-            </span>
+          {/* Booked badge */}
+          {bookedCount > 0 && (
+            <div className="absolute bottom-2 left-2">
+              <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium">
+                Booked {bookedCount}×
+              </span>
+            </div>
+          )}
+
+          {/* Type badge (only if no booked badge) */}
+          {bookedCount === 0 && (
+            <div className="absolute bottom-2 left-2">
+              <span className="px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-medium">
+                {TYPE_EMOJI[studio.studio_type]} {TYPE_LABEL[studio.studio_type]}
+              </span>
+            </div>
+          )}
+
+          {/* Favourite button */}
+          <div className="absolute top-2 right-2">
+            <FavouriteButton studioId={studio.id} initialFavourited={isFavourited} />
           </div>
         </div>
 

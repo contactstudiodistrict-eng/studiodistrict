@@ -1,7 +1,7 @@
 'use client'
 // BookingForm.tsx — simple controlled state, no react-hook-form, no silent failures
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { calculatePricing, formatINR } from '@/lib/pricing'
 
 const SHOOT_TYPES = [
@@ -23,10 +23,18 @@ type Studio = {
 
 export function BookingForm({ studio, userId }: { studio: Studio; userId: string }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const rebookId = searchParams.get('rebook')
 
-  const [step, setStep]           = useState(1)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError]         = useState('')
+  const [step, setStep]             = useState(1)
+  const [submitting, setSubmitting]  = useState(false)
+  const [error, setError]           = useState('')
+  const [rebookBanner, setRebookBanner] = useState(false)
+
+  // Wallet
+  const [walletBalance, setWalletBalance]     = useState(0)
+  const [applyWallet, setApplyWallet]         = useState(false)
+  const [walletLoading, setWalletLoading]     = useState(false)
 
   // Form fields — plain controlled state
   const [date,       setDate]       = useState('')
@@ -37,6 +45,32 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const [email,      setEmail]      = useState('')
   const [shootType,  setShootType]  = useState('')
   const [notes,      setNotes]      = useState('')
+
+  // On mount: fetch wallet balance + pre-fill from rebook if present
+  useEffect(() => {
+    // Fetch wallet balance
+    setWalletLoading(true)
+    fetch('/api/wallet')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.balance) setWalletBalance(d.balance) })
+      .finally(() => setWalletLoading(false))
+
+    // Rebook pre-fill
+    if (rebookId) {
+      fetch(`/api/bookings/${rebookId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (!d?.booking) return
+          const b = d.booking
+          if (b.duration_hours) setDuration(b.duration_hours)
+          if (b.shoot_type)     setShootType(b.shoot_type)
+          if (b.customer_name)  setName(b.customer_name)
+          if (b.customer_phone) setPhone(b.customer_phone)
+          if (b.notes)          setNotes(b.notes)
+          setRebookBanner(true)
+        })
+    }
+  }, [rebookId])
 
   // Auto-calculate end time
   function calcEndTime(start: string, hrs: number): string {
@@ -49,6 +83,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
 
   const endTime = calcEndTime(startTime, duration)
   const pricing = calculatePricing(studio.price_per_hour, duration)
+  const walletDiscount = applyWallet ? Math.min(walletBalance, pricing.totalAmount) : 0
+  const finalTotal = pricing.totalAmount - walletDiscount
 
   // ── Step 1 validation ────────────────────────────────────────────────────
   function validateStep1(): string {
@@ -98,17 +134,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
       duration_hours: duration,
       shoot_type:     shootType,
       notes:          notes.trim() || null,
-      pricing: {
-        subtotal:            pricing.subtotal,
-        platformFee:         pricing.platformFee,
-        gstAmount:           pricing.gstAmount,
-        totalAmount:         pricing.totalAmount,
-        securityDeposit:     pricing.securityDeposit,
-        studioPayout:        pricing.studioPayout,
-      },
+      apply_wallet_credit: applyWallet && walletBalance > 0,
     }
-
-    console.log('Submitting booking:', payload)
 
     try {
       const res = await fetch('/api/bookings', {
@@ -118,13 +145,11 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
       })
 
       const result = await res.json()
-      console.log('API response:', res.status, result)
 
       if (!res.ok) {
         throw new Error(result.error || `Server error (${res.status})`)
       }
 
-      // Success — redirect to booking status page
       router.push(`/bookings/${result.booking_id}`)
 
     } catch (err: any) {
@@ -141,7 +166,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
     label:   { display: 'block', fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: '6px' },
     input:   { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color .15s' },
     select:  { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, background: '#fff', appearance: 'none' as const },
-    btn:     { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#84cc16', color: '#fff', transition: 'background .15s' } as React.CSSProperties,
+    btn:     { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#84cc16', color: '#111827', transition: 'background .15s' } as React.CSSProperties,
     btnGhost:{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #e5e7eb', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit', background: '#fff', color: '#374151' } as React.CSSProperties,
     btnOff:  { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#d9f99d', color: '#fff', cursor: 'not-allowed' } as React.CSSProperties,
     row2:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } as React.CSSProperties,
@@ -191,6 +216,14 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           )
         })}
       </div>
+
+      {/* Rebook banner */}
+      {rebookBanner && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #84cc16', borderRadius: '10px', padding: '12px 14px', marginBottom: '14px', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '13px', color: '#166534' }}>
+          <span style={{ fontSize: '16px', flexShrink: 0 }}>♻️</span>
+          <span><strong>Pre-filled from your last booking</strong> · Change any details below</span>
+        </div>
+      )}
 
       {/* Error banner */}
       {error && (
@@ -371,10 +404,53 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             {pricing.securityDeposit > 0 && (
               <div style={s.priceRow}><span>Security deposit (refundable)</span><span>{formatINR(pricing.securityDeposit)}</span></div>
             )}
+            {applyWallet && walletDiscount > 0 && (
+              <div style={{ ...s.priceRow, color: '#16a34a', fontWeight: '600' }}>
+                <span>💰 Wallet credit applied</span>
+                <span>−{formatINR(walletDiscount)}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#111827', borderTop: '2px solid #f3f4f6', marginTop: '8px', paddingTop: '10px' }}>
-              <span>Total</span><span style={{ color: '#65a30d' }}>{formatINR(pricing.totalAmount)}</span>
+              <span>Total</span><span style={{ color: '#65a30d' }}>{formatINR(finalTotal)}</span>
             </div>
           </div>
+
+          {/* Wallet credit toggle */}
+          {!walletLoading && walletBalance > 0 && (
+            <div style={{ background: '#f0fdf4', border: `1px solid ${applyWallet ? '#84cc16' : '#d1fae5'}`, borderRadius: '12px', padding: '14px 16px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <div>
+                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>
+                    💰 You have {formatINR(walletBalance)} wallet credit
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                    {applyWallet
+                      ? `New total: ${formatINR(finalTotal)}`
+                      : 'Apply to this booking?'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setApplyWallet(v => !v)}
+                  style={{
+                    flexShrink: 0,
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    fontFamily: 'inherit',
+                    background: applyWallet ? '#84cc16' : '#e5e7eb',
+                    color: applyWallet ? '#111827' : '#374151',
+                    transition: 'background .15s',
+                  }}
+                >
+                  {applyWallet ? 'Applied ✓' : 'Apply'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* No payment note */}
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px', marginBottom: '16px', display: 'flex', gap: '10px', fontSize: '13px', color: '#15803d' }}>
@@ -396,7 +472,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
               onMouseOut={e => { if (!submitting) e.currentTarget.style.background = '#84cc16' }}>
               {submitting
                 ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
+                    <span style={{ width: '16px', height: '16px', border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#333', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
                     Sending request…
                   </span>
                 : '📩 Send Booking Request'}

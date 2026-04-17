@@ -6,6 +6,8 @@ import { SearchFilters } from '@/components/studio/SearchFilters'
 import { SiteHeader } from '@/components/shared/SiteHeader'
 import { HeroBanner } from '@/components/shared/HeroBanner'
 import { SiteFooter } from '@/components/shared/SiteFooter'
+import { RecentlyBookedCard } from '@/components/booking/RecentlyBookedCard'
+import { StudioCard } from '@/components/studio/StudioCard'
 import type { Studio } from '@/types/database.types'
 
 interface SearchParams {
@@ -20,14 +22,18 @@ interface SearchParams {
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = createClient()
 
-  // Build query from search params
+  // Auth check (non-blocking — null if not logged in)
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Build main studios query
   let query = supabase
     .from('studios')
     .select(`
       id, studio_name, studio_type, area, address,
       price_per_hour, minimum_hours, rating, review_count,
       thumbnail_url, ideal_for, is_featured, short_description,
-      studio_images(url, image_type, is_thumbnail, display_order)
+      studio_images(url, image_type, is_thumbnail, display_order),
+      studio_amenities(ac, power_backup, parking, wifi, natural_light, makeup_room)
     `)
     .eq('status', 'live')
     .order('is_featured', { ascending: false })
@@ -40,13 +46,45 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   if (searchParams.max_price) query = query.lte('price_per_hour', Number(searchParams.max_price))
   if (searchParams.q)         query = query.ilike('studio_name', `%${searchParams.q}%`)
 
-  const { data: studios, error } = await query
+  // Fetch studios + (if logged in) favourites + recent bookings in parallel
+  const [studioResult, favouritesResult, recentResult] = await Promise.all([
+    query,
+    user
+      ? supabase
+          .from('studio_favourites')
+          .select('studio_id, studios(id, studio_name, studio_type, area, price_per_hour, minimum_hours, thumbnail_url, rating, review_count, is_featured, studio_images(url, image_type, is_thumbnail, display_order), studio_amenities(ac, power_backup, parking, wifi, natural_light, makeup_room))')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(8)
+      : Promise.resolve({ data: null }),
+    user
+      ? supabase
+          .from('bookings')
+          .select('id, studio_id, shoot_type, duration_hours, start_time, customer_name, customer_phone, studios(studio_name, area, price_per_hour, thumbnail_url)')
+          .eq('user_id', user.id)
+          .in('status', ['paid', 'completed'])
+          .order('created_at', { ascending: false })
+          .limit(10)
+      : Promise.resolve({ data: null }),
+  ])
 
-  if (error) {
-    console.error('Studio fetch error:', error)
-  }
+  if (studioResult.error) console.error('Studio fetch error:', studioResult.error)
 
-  const studioList = (studios ?? []) as any[]
+  const studioList = (studioResult.data ?? []) as any[]
+
+  // Deduplicate recent bookings by studio_id (keep latest per studio, max 3)
+  const recentRaw = (recentResult.data ?? []) as any[]
+  const seenStudio = new Set<string>()
+  const recentBookings = recentRaw.filter(b => {
+    if (seenStudio.has(b.studio_id)) return false
+    seenStudio.add(b.studio_id)
+    return true
+  }).slice(0, 3)
+
+  // Favourited studios
+  const favRows = (favouritesResult.data ?? []) as any[]
+  const favouriteIds = favRows.map(r => r.studio_id)
+  const favouriteStudios = favRows.map(r => r.studios).filter(Boolean)
 
   return (
     <>
@@ -55,6 +93,49 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         <HeroBanner />
 
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-24 sm:pb-10">
+
+          {/* ── Saved studios section (logged-in users with favourites) ── */}
+          {user && favouriteStudios.length > 0 && (
+            <div className="mb-10">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-ink-900">Your saved studios</h2>
+                <span className="text-sm text-ink-400">{favouriteStudios.length} saved</span>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:overflow-visible"
+                style={{ scrollbarWidth: 'none' }}>
+                {favouriteStudios.map((studio: any) => (
+                  <div key={studio.id} className="flex-shrink-0 w-72 sm:w-auto">
+                    <StudioCard studio={studio} isFavourited={true} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Book again section ── */}
+          {user && recentBookings.length > 0 && (
+            <div className="mb-10">
+              <h2 className="text-xl font-bold text-ink-900 mb-4">Book again</h2>
+              <div className="flex gap-3 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible"
+                style={{ scrollbarWidth: 'none' }}>
+                {recentBookings.map((b: any) => (
+                  <RecentlyBookedCard
+                    key={b.id}
+                    bookingId={b.id}
+                    studioId={b.studio_id}
+                    studioName={b.studios?.studio_name || ''}
+                    area={b.studios?.area || ''}
+                    pricePerHour={b.studios?.price_per_hour || 0}
+                    shootType={b.shoot_type}
+                    durationHours={b.duration_hours}
+                    startTime={b.start_time}
+                    thumbnail={b.studios?.thumbnail_url || ''}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Search + filters */}
           <Suspense fallback={<div className="h-14 bg-gray-100 rounded-xl animate-pulse mb-8" />}>
             <SearchFilters initialParams={searchParams} />
@@ -83,7 +164,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           {/* Studio grid */}
           <Suspense fallback={<StudioGridSkeleton />}>
             {studioList.length > 0 ? (
-              <StudioGrid studios={studioList} />
+              <StudioGrid studios={studioList} favouriteIds={favouriteIds} />
             ) : (
               <EmptyState searchParams={searchParams} />
             )}

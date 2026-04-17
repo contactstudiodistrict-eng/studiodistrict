@@ -120,6 +120,12 @@ ID:     d6568998-2025-4dee-9280-8f347caf7487
 - Legal pages: /about, /privacy, /refund-policy, /terms
 - Site footer (SiteFooter component) on all legal + public pages
 - Mobile-first responsive layout across all pages
+- Favourite studios: heart button on cards + profile, saved section on homepage
+- Recently booked: "Book again" cards on homepage, rebook pre-fill in BookingForm
+- Referral system: unique codes, WhatsApp share, ₹200 wallet credits on first booking
+- Wallet credit: balance shown in header + dashboard, apply toggle at checkout
+- Reviews: token-based no-login review page (/review/[id]), studio profile ratings section, cron job for WhatsApp review requests
+- vercel.json cron: /api/cron/review-requests runs hourly
 
 ---
 

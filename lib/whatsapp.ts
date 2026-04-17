@@ -191,7 +191,48 @@ export async function sendBookingReminder(params: {
   return send(params.customerPhone, body)
 }
 
-// ── 7. New studio → Admin ─────────────────────────────────────────────────
+// ── 7. Review request → Customer ─────────────────────────────────────────
+export async function sendReviewRequest(params: {
+  customerPhone: string
+  customerName: string
+  studioName: string
+  bookingDate: string
+  reviewUrl: string
+}) {
+  const firstName = params.customerName.split(' ')[0]
+  const body =
+`⭐ *How was your shoot at ${params.studioName}?*
+
+Hi ${firstName}! Your session on ${params.bookingDate} is complete.
+We'd love to know how it went.
+
+Rate your experience (takes 30 seconds):
+${params.reviewUrl}
+
+Your feedback helps other creators choose the right studio.
+— Studio District`
+
+  return send(params.customerPhone, body)
+}
+
+// ── 8. Referral reward → Referrer ─────────────────────────────────────────
+export async function sendReferralReward(params: {
+  referrerPhone: string
+  referredName: string
+}) {
+  const body =
+`🎉 *Your referral paid off!*
+
+${params.referredName} just completed their first booking on Studio District.
+
+₹200 has been added to your Studio District wallet. Keep referring!
+
+— Studio District`
+
+  return send(params.referrerPhone, body)
+}
+
+// ── 10. New studio → Admin ─────────────────────────────────────────────────
 export async function sendAdminNewStudio(params: {
   adminPhone:  string
   studioName:  string

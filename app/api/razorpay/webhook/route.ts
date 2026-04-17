@@ -1,6 +1,4 @@
 // app/api/razorpay/webhook/route.ts
-// Handles Razorpay payment events
-// Configure in Razorpay Dashboard → Settings → Webhooks → https://studiodistrict.vercel.app/api/razorpay/webhook
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { verifyRazorpayWebhook } from '@/lib/razorpay'
@@ -11,7 +9,6 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text()
   const signature = req.headers.get('x-razorpay-signature') || ''
 
-  // 1. Verify signature
   if (!verifyRazorpayWebhook(rawBody, signature)) {
     console.error('[Razorpay] Invalid webhook signature')
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
@@ -28,16 +25,15 @@ export async function POST(req: NextRequest) {
 
   const adminClient = createAdminClient()
 
-  // 2. Handle payment_link.paid event
   if (payload.event === 'payment_link.paid') {
     try {
-      const linkEntity = payload.payload?.payment_link?.entity
+      const linkEntity    = payload.payload?.payment_link?.entity
       const paymentEntity = payload.payload?.payment?.entity
 
-      const bookingId = linkEntity?.notes?.booking_id
-      const rzpPaymentId = paymentEntity?.id
-      const rzpLinkId = linkEntity?.id
-      const amountPaise = paymentEntity?.amount
+      const bookingId     = linkEntity?.notes?.booking_id
+      const rzpPaymentId  = paymentEntity?.id
+      const rzpLinkId     = linkEntity?.id
+      const amountPaise   = paymentEntity?.amount
       const paymentMethod = paymentEntity?.method
 
       if (!bookingId) {
@@ -45,7 +41,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'No booking_id' }, { status: 400 })
       }
 
-      // 3. Update payment record
+      // Update payment record
       const { data: payment } = await adminClient
         .from('payments')
         .update({
@@ -59,7 +55,7 @@ export async function POST(req: NextRequest) {
         .select()
         .single()
 
-      // 4. Update booking status to paid
+      // Update booking status to paid
       const { data: booking } = await adminClient
         .from('bookings')
         .update({ status: 'paid', paid_at: new Date().toISOString() })
@@ -74,7 +70,7 @@ export async function POST(req: NextRequest) {
 
       const studio = (booking as any).studios
 
-      // 5. Create payout record (T+1 business day)
+      // Create payout record (T+1 business day)
       const payoutDate = addDays(new Date(), 1)
       await adminClient.from('payouts').insert({
         booking_id: bookingId,
@@ -85,7 +81,7 @@ export async function POST(req: NextRequest) {
         scheduled_for: payoutDate.toISOString(),
       })
 
-      // 6. Notify customer — booking confirmed
+      // Notify customer
       const bookingDate = format(new Date(booking.booking_date), 'EEE, d MMM yyyy')
       await sendBookingConfirmedCustomer({
         customerPhone: booking.customer_phone,
@@ -99,7 +95,7 @@ export async function POST(req: NextRequest) {
         ownerPhone: studio.owner_phone,
       }).catch(console.error)
 
-      // 7. Notify studio owner — payment received
+      // Notify studio owner
       await sendPaymentReceivedOwner({
         ownerPhone: studio.owner_phone,
         customerName: booking.customer_name,
@@ -111,16 +107,112 @@ export async function POST(req: NextRequest) {
         accountLast4: studio.account_number?.slice(-4),
       }).catch(console.error)
 
-      // 8. Audit log
+      // ── Referral reward logic ──────────────────────────────────────────────
+      try {
+        const { data: booker } = await adminClient
+          .from('users')
+          .select('referred_by')
+          .eq('id', booking.user_id)
+          .single()
+
+        if (booker?.referred_by) {
+          // Count previous paid/completed bookings (excluding this one)
+          const { count: prevBookings } = await adminClient
+            .from('bookings')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', booking.user_id)
+            .in('status', ['paid', 'completed'])
+            .neq('id', bookingId)
+
+          // Only reward on first booking
+          if ((prevBookings ?? 0) === 0) {
+            const { data: referrerCode } = await adminClient
+              .from('referral_codes')
+              .select('user_id')
+              .eq('code', booker.referred_by)
+              .single()
+
+            if (referrerCode) {
+              const referrerId = referrerCode.user_id
+
+              // Credit ₹200 to referred user
+              await adminClient.from('wallet_credits').insert({
+                user_id: booking.user_id,
+                amount: 200,
+                type: 'referral_bonus',
+                description: 'Welcome bonus — first booking via referral',
+              })
+
+              // Credit ₹200 to referrer
+              await adminClient.from('wallet_credits').insert({
+                user_id: referrerId,
+                amount: 200,
+                type: 'referral_reward',
+                description: 'Referral reward — friend completed first booking',
+              })
+
+              // Update referral record
+              await adminClient
+                .from('referrals')
+                .update({ status: 'rewarded', rewarded_at: new Date().toISOString() })
+                .eq('referred_user_id', booking.user_id)
+
+              // Update referral_codes stats
+              const { data: codeStats } = await adminClient
+                .from('referral_codes')
+                .select('total_referrals, total_earned')
+                .eq('user_id', referrerId)
+                .single()
+
+              if (codeStats) {
+                await adminClient
+                  .from('referral_codes')
+                  .update({
+                    total_referrals: (codeStats.total_referrals || 0) + 1,
+                    total_earned: (codeStats.total_earned || 0) + 200,
+                  })
+                  .eq('user_id', referrerId)
+              }
+
+              // Notify referrer via WhatsApp
+              const { data: referrerProfile } = await adminClient
+                .from('users')
+                .select('full_name')
+                .eq('id', referrerId)
+                .single()
+
+              const referredFirstName = booking.customer_name.split(' ')[0]
+              // Get referrer's phone from their bookings (most recent)
+              const { data: referrerBooking } = await adminClient
+                .from('bookings')
+                .select('customer_phone')
+                .eq('user_id', referrerId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single()
+
+              if (referrerBooking?.customer_phone) {
+                const { sendReferralReward } = await import('@/lib/whatsapp')
+                await sendReferralReward({
+                  referrerPhone: referrerBooking.customer_phone,
+                  referredName: referredFirstName,
+                }).catch(console.error)
+              }
+
+              console.log(`[Razorpay] ✅ Referral rewards issued for booking ${booking.booking_ref}`)
+            }
+          }
+        }
+      } catch (refErr) {
+        console.error('[Razorpay] Referral processing error (non-fatal):', refErr)
+      }
+
+      // Audit log
       await adminClient.from('audit_logs').insert({
         action: 'payment_received',
         entity_type: 'booking',
         entity_id: bookingId,
-        new_value: {
-          status: 'paid',
-          razorpay_payment_id: rzpPaymentId,
-          amount: amountPaise,
-        },
+        new_value: { status: 'paid', razorpay_payment_id: rzpPaymentId, amount: amountPaise },
       })
 
       console.log(`[Razorpay] ✅ Payment processed for booking ${booking.booking_ref}`)
@@ -132,7 +224,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Handle payment.failed
   if (payload.event === 'payment.failed') {
     const bookingId = payload.payload?.payment?.entity?.notes?.booking_id
     if (bookingId) {
@@ -142,7 +233,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   }
 
-  // Acknowledge all other events
   return NextResponse.json({ received: true })
 }
 

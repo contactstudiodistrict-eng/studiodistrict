@@ -8,6 +8,7 @@ import { ImageGallery } from '@/components/studio/ImageGallery'
 import { AmenitiesGrid } from '@/components/studio/AmenitiesGrid'
 import { EquipmentList } from '@/components/studio/EquipmentList'
 import { BookingSidebar } from '@/components/booking/BookingSidebar'
+import { FavouriteButton } from '@/components/studio/FavouriteButton'
 import { formatINR } from '@/lib/pricing'
 import type { StudioWithDetails } from '@/types/database.types'
 
@@ -36,24 +37,49 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function StudioProfilePage({ params }: Props) {
   const supabase = createClient()
 
-  const { data: studio, error } = await supabase
-    .from('studios')
-    .select(`
-      *,
-      studio_images(id, url, image_type, is_thumbnail, display_order),
-      studio_amenities(*),
-      studio_equipment(*)
-    `)
-    .eq('id', params.id)
-    .eq('status', 'live')
-    .single()
+  const { data: { user } } = await supabase.auth.getUser()
 
+  const [studioResult, reviewsResult] = await Promise.all([
+    supabase
+      .from('studios')
+      .select(`
+        *,
+        studio_images(id, url, image_type, is_thumbnail, display_order),
+        studio_amenities(*),
+        studio_equipment(*)
+      `)
+      .eq('id', params.id)
+      .eq('status', 'live')
+      .single(),
+    supabase
+      .from('reviews')
+      .select('rating, comment, created_at, users(full_name)')
+      .eq('studio_id', params.id)
+      .not('rating', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(10),
+  ])
+
+  const { data: studio, error } = studioResult
   if (error || !studio) notFound()
+
+  // Check if current user has favourited this studio
+  let isFavourited = false
+  if (user) {
+    const { data: fav } = await supabase
+      .from('studio_favourites')
+      .select('studio_id')
+      .eq('user_id', user.id)
+      .eq('studio_id', params.id)
+      .maybeSingle()
+    isFavourited = !!fav
+  }
 
   const s = studio as StudioWithDetails
   const images = s.studio_images.sort((a, b) => a.display_order - b.display_order)
   const studioImages = images.filter(i => i.image_type === 'studio')
   const allImages = images.map(i => i.url)
+  const reviews = (reviewsResult.data ?? []) as any[]
 
   const CANCELLATION_LABELS: Record<string, string> = {
     free_24h: 'Free cancellation up to 24 hours before',
@@ -77,8 +103,13 @@ export default async function StudioProfilePage({ params }: Props) {
             {/* Title + meta */}
             <div className="mt-6">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">{s.studio_name}</h1>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-3">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">{s.studio_name}</h1>
+                    <div className="mt-1 flex-shrink-0">
+                      <FavouriteButton studioId={s.id} initialFavourited={isFavourited} size={40} />
+                    </div>
+                  </div>
                   <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
                     <span className="inline-flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-green-400" />
@@ -92,7 +123,7 @@ export default async function StudioProfilePage({ params }: Props) {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-sm font-semibold bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full border border-amber-200">
+                <div className="flex-shrink-0 flex items-center gap-1 text-sm font-semibold bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full border border-amber-200">
                   ⭐ {s.rating.toFixed(1)}
                   <span className="font-normal text-amber-600 ml-1">({s.review_count})</span>
                 </div>
@@ -235,6 +266,76 @@ export default async function StudioProfilePage({ params }: Props) {
                   {formatTime(s.opening_time)} – {formatTime(s.closing_time)}
                 </p>
               </div>
+            </section>
+
+            <hr className="my-6 border-gray-100" />
+
+            {/* Reviews */}
+            <section>
+              <h2 className="text-lg font-bold text-ink-900 tracking-tight mb-4">Reviews</h2>
+
+              {reviews.length === 0 ? (
+                <div className="text-center py-10 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="text-3xl mb-2">⭐</div>
+                  <p className="text-sm text-gray-500">No reviews yet. Be the first to book and review this studio.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Rating summary */}
+                  <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-ink-900">{s.rating.toFixed(1)}</div>
+                      <div className="flex gap-0.5 mt-1 justify-center">
+                        {[1,2,3,4,5].map(star => (
+                          <span key={star} style={{ color: star <= Math.round(s.rating) ? '#84cc16' : '#d1d5db', fontSize: '16px' }}>★</span>
+                        ))}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">{s.review_count} reviews</div>
+                    </div>
+                  </div>
+
+                  {/* Individual reviews */}
+                  <div className="space-y-4">
+                    {reviews.map((r: any, i: number) => {
+                      const name: string = r.users?.full_name || 'Guest'
+                      const firstName = name.split(' ')[0]
+                      const lastInitial = name.split(' ')[1]?.[0] || ''
+                      const displayName = lastInitial ? `${firstName} ${lastInitial}.` : firstName
+                      const reviewDate = new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                      return (
+                        <div key={i} className="p-4 bg-white border border-gray-100 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                              style={{ background: 'linear-gradient(135deg,#84cc16,#65a30d)' }}>
+                              {firstName[0]?.toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <span className="font-semibold text-sm text-ink-900">{displayName}</span>
+                                <span className="text-xs text-gray-400">{reviewDate}</span>
+                              </div>
+                              <div className="flex gap-0.5 mt-0.5">
+                                {[1,2,3,4,5].map(star => (
+                                  <span key={star} style={{ color: star <= r.rating ? '#84cc16' : '#d1d5db', fontSize: '13px' }}>★</span>
+                                ))}
+                              </div>
+                              {r.comment && (
+                                <p className="text-sm text-gray-600 mt-2 leading-relaxed">{r.comment}</p>
+                              )}
+                              {r.owner_reply && (
+                                <div className="mt-3 pl-3 border-l-2 border-brand-200">
+                                  <div className="text-xs font-semibold text-brand-700 mb-1">Studio replied:</div>
+                                  <p className="text-xs text-gray-600">{r.owner_reply}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </section>
           </div>
 

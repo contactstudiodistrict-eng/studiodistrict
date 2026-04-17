@@ -10,10 +10,11 @@ export function SiteHeader() {
   const pathname = usePathname()
   const supabase = createClient()
 
-  const [user, setUser]         = useState<User | null>(null)
-  const [profile, setProfile]   = useState<{ full_name: string | null; role: string } | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [loading, setLoading]   = useState(true)
+  const [user, setUser]             = useState<User | null>(null)
+  const [profile, setProfile]       = useState<{ full_name: string | null; role: string } | null>(null)
+  const [walletBalance, setWallet]  = useState(0)
+  const [menuOpen, setMenuOpen]     = useState(false)
+  const [loading, setLoading]       = useState(true)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -31,8 +32,9 @@ export function SiteHeader() {
   }, [])
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase.from('users').select('full_name, role').eq('id', userId).single()
+    const { data } = await supabase.from('users').select('full_name, role, wallet_balance').eq('id', userId).single()
     setProfile(data)
+    if (data?.wallet_balance) setWallet(data.wallet_balance)
     setLoading(false)
   }
 
@@ -107,6 +109,11 @@ export function SiteHeader() {
                     <div className="px-4 py-3 border-b border-slate-100">
                       <div className="font-semibold text-sm text-ink-900">{displayName}</div>
                       <div className="text-xs text-slate-400 truncate mt-0.5">{user.email || user.phone}</div>
+                      {walletBalance > 0 && (
+                        <div className="text-xs font-semibold text-green-700 mt-1">
+                          💰 Wallet: ₹{walletBalance.toLocaleString('en-IN')}
+                        </div>
+                      )}
                       {(isOwner || isAdmin) && (
                         <span className={`inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide
                           ${isAdmin ? 'bg-violet-100 text-violet-700' : 'bg-brand-100 text-brand-700'}`}>
