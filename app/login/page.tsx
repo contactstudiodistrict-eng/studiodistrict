@@ -86,16 +86,18 @@ function LoginForm() {
       })
 
       if (verifyErr) {
-        // verifyOtp can return an error even when the session was created
-        // (auth state change fires before HTTP response resolves).
-        // Check for an active session before showing an error.
+        // verifyOtp can return an error even when the session was already
+        // created (auth state change fires before HTTP response resolves).
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           router.replace(next)
-          return
+          return   // keep loading=true — button stays disabled during navigation
         }
+        // Genuine wrong/expired code — reset so user can retry
         setError('Invalid or expired code. Please try again.')
         setOtp('')
+        setLoading(false)
+        verifyingRef.current = false
         setTimeout(() => otpInputRef.current?.focus(), 50)
         return
       }
@@ -114,9 +116,9 @@ function LoginForm() {
       if (ref) localStorage.setItem('sd_referral_code', ref)
 
       router.replace(next)
+      // Intentionally no setLoading(false) — button stays disabled during navigation
     } catch {
       setError('Could not reach the server. Check your connection and try again.')
-    } finally {
       setLoading(false)
       verifyingRef.current = false
     }
