@@ -215,3 +215,24 @@ export type StudioWithDetails = Studio & {
 export type BookingWithStudio = Booking & {
   studios: Pick<Studio, 'studio_name' | 'address' | 'owner_phone' | 'google_maps_link' | 'thumbnail_url'>
 }
+
+// Banner (homepage announcement / offer / feature cards)
+export interface Banner {
+  id: string
+  type: 'announcement' | 'offer' | 'feature'
+  title: string
+  body: string | null
+  cta_label: string | null
+  cta_url: string | null
+  bg_color: string
+  text_color: string
+  accent_color: string
+  is_active: boolean
+  is_dismissable: boolean
+  show_to: 'all' | 'logged_in' | 'logged_out'
+  starts_at: string | null
+  ends_at: string | null
+  created_by: string | null
+  created_at: string
+  display_order: number
+}

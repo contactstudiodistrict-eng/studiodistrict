@@ -8,7 +8,10 @@ import { HeroBanner } from '@/components/shared/HeroBanner'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { RecentlyBookedCard } from '@/components/booking/RecentlyBookedCard'
 import { StudioCard } from '@/components/studio/StudioCard'
-import type { Studio } from '@/types/database.types'
+import { AnnouncementBanner } from '@/components/banners/AnnouncementBanner'
+import { OfferBanner } from '@/components/banners/OfferBanner'
+import { FeatureCard } from '@/components/banners/FeatureCard'
+import type { Studio, Banner } from '@/types/database.types'
 
 interface SearchParams {
   type?: string
@@ -46,9 +49,21 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   if (searchParams.max_price) query = query.lte('price_per_hour', Number(searchParams.max_price))
   if (searchParams.q)         query = query.or(`studio_name.ilike.%${searchParams.q}%,area.ilike.%${searchParams.q}%`)
 
-  // Fetch studios + (if logged in) favourites + recent bookings in parallel
-  const [studioResult, favouritesResult, recentResult] = await Promise.all([
+  const audience = user ? 'logged_in' : 'logged_out'
+  const now = new Date().toISOString()
+
+  // Fetch studios + banners + (if logged in) favourites + recent bookings in parallel
+  const [studioResult, bannersResult, favouritesResult, recentResult] = await Promise.all([
     query,
+    supabase
+      .from('banners')
+      .select('*')
+      .eq('is_active', true)
+      .or(`show_to.eq.all,show_to.eq.${audience}`)
+      .or(`starts_at.is.null,starts_at.lte.${now}`)
+      .or(`ends_at.is.null,ends_at.gt.${now}`)
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: false }),
     user
       ? supabase
           .from('studio_favourites')
@@ -71,6 +86,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   if (studioResult.error) console.error('Studio fetch error:', studioResult.error)
 
   const studioList = (studioResult.data ?? []) as any[]
+  const allBanners = (bannersResult.data ?? []) as Banner[]
+  const announcementBanner = allBanners.find(b => b.type === 'announcement') ?? null
+  const offerBanner        = allBanners.find(b => b.type === 'offer') ?? null
+  const featureBanner      = allBanners.find(b => b.type === 'feature') ?? null
 
   // Deduplicate recent bookings by studio_id (keep latest per studio, max 3)
   const recentRaw = (recentResult.data ?? []) as any[]
@@ -89,6 +108,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   return (
     <>
       <SiteHeader />
+      {announcementBanner && <AnnouncementBanner banner={announcementBanner} />}
       <main>
         <HeroBanner />
 
@@ -136,6 +156,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             </div>
           )}
 
+          {/* ── Offer banner ── */}
+          {offerBanner && <OfferBanner banner={offerBanner} />}
+
           {/* Search + filters */}
           <Suspense fallback={<div className="h-14 bg-gray-100 rounded-xl animate-pulse mb-8" />}>
             <SearchFilters initialParams={searchParams} />
@@ -164,7 +187,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           {/* Studio grid */}
           <Suspense fallback={<StudioGridSkeleton />}>
             {studioList.length > 0 ? (
-              <StudioGrid studios={studioList} favouriteIds={favouriteIds} />
+              <StudioGrid
+                studios={studioList}
+                favouriteIds={favouriteIds}
+                insertCard={featureBanner ? <FeatureCard banner={featureBanner} /> : undefined}
+                insertAtIndex={2}
+              />
             ) : (
               <EmptyState searchParams={searchParams} />
             )}

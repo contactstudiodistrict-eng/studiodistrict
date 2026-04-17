@@ -125,7 +125,8 @@ ID:     d6568998-2025-4dee-9280-8f347caf7487
 - Referral system: unique codes, WhatsApp share, ₹200 wallet credits on first booking
 - Wallet credit: balance shown in header + dashboard, apply toggle at checkout
 - Reviews: token-based no-login review page (/review/[id]), studio profile ratings section, cron job for WhatsApp review requests
-- vercel.json cron: /api/cron/review-requests runs hourly
+- vercel.json cron: /api/cron/review-requests runs daily at 10 AM
+- Banner/announcement system: AnnouncementBanner (top of page), OfferBanner (between sections), FeatureCard (in studio grid at pos 3); admin management at /admin/banners; localStorage dismiss persistence; audience targeting (all/logged_in/logged_out); scheduling via starts_at/ends_at
 
 ---
 
