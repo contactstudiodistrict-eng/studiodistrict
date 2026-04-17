@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { sendAdminNewStudio } from '@/lib/whatsapp'
+import { sendStudioApprovalEmail } from '@/lib/email'
 
 interface Props { params: { id: string; action: string } }
 
@@ -39,23 +40,38 @@ async function handler(req: NextRequest, params: { id: string; action: string })
     .from('studios')
     .update({ status: newStatus })
     .eq('id', studioId)
-    .select('studio_name, owner_phone, owner_name, area, studio_type')
+    .select('studio_name, owner_id, owner_phone, owner_name, owner_email, area, studio_type')
     .single()
 
   if (error || !studio) return NextResponse.json({ error: 'Studio not found' }, { status: 404 })
 
-  // Notify studio owner via WhatsApp
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!
+
   if (action === 'approve') {
+    // Promote owner role to studio_owner
+    await adminClient.from('users').update({ role: 'studio_owner' }).eq('id', studio.owner_id)
+
+    // Notify via WhatsApp
     const twilio = await import('twilio')
     const client = twilio.default(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!)
     const ownerPhone = studio.owner_phone.replace(/\D/g, '')
     const waPhone = `+${ownerPhone.startsWith('91') ? ownerPhone : '91' + ownerPhone}`
-    await client.messages.create({
+    client.messages.create({
       from: process.env.TWILIO_WHATSAPP_FROM!,
       to: `whatsapp:${waPhone}`,
       body: `🎉 *Your studio is now LIVE on Studio District!*\n\n📸 ${studio.studio_name}\n\nCreators in Chennai can now discover and book your studio.\n\n👉 View your listing: ${appUrl}\n\n— Team Studio District`,
     }).catch(console.error)
+
+    // Send approval email via Resend
+    if (studio.owner_email) {
+      sendStudioApprovalEmail({
+        ownerEmail: studio.owner_email,
+        ownerName: studio.owner_name,
+        studioName: studio.studio_name,
+        dashboardUrl: `${appUrl}/studio/dashboard`,
+        listingUrl: `${appUrl}/studios/${studioId}`,
+      }).catch(err => console.error('Approval email failed:', err))
+    }
   }
 
   // Audit log

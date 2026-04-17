@@ -112,8 +112,7 @@ export default function StudioOnboardPage() {
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Submission failed')
-      toast.success('Studio submitted for review! We\'ll notify you via WhatsApp within 24 hours.')
-      router.push('/studio/dashboard')
+      router.push('/studio/submitted')
     } catch (err: any) {
       toast.error(err.message)
     } finally {

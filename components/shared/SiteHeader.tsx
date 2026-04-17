@@ -15,6 +15,8 @@ export function SiteHeader() {
   const [walletBalance, setWallet]  = useState(0)
   const [menuOpen, setMenuOpen]     = useState(false)
   const [loading, setLoading]       = useState(true)
+  const [studioStatus, setStudioStatus]   = useState<string | null>(null)
+  const [pendingBookings, setPendingBookings] = useState(0)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -35,6 +37,20 @@ export function SiteHeader() {
     const { data } = await supabase.from('users').select('full_name, role, wallet_balance').eq('id', userId).single()
     setProfile(data)
     if (data?.wallet_balance) setWallet(data.wallet_balance)
+
+    if (data?.role === 'studio_owner' || data?.role === 'admin') {
+      // Fetch studio status + pending bookings count in parallel
+      const [studiosRes, bookingsRes] = await Promise.all([
+        supabase.from('studios').select('id, status').eq('owner_id', userId).order('created_at', { ascending: false }).limit(1),
+        supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+          .in('studio_id',
+            (await supabase.from('studios').select('id').eq('owner_id', userId)).data?.map(s => s.id) ?? []
+          ),
+      ])
+      if (studiosRes.data?.[0]) setStudioStatus(studiosRes.data[0].status)
+      if (bookingsRes.count) setPendingBookings(bookingsRes.count)
+    }
+
     setLoading(false)
   }
 
@@ -87,10 +103,15 @@ export function SiteHeader() {
                 onClick={() => setMenuOpen(o => !o)}
                 className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 border border-slate-200 rounded-full bg-white hover:border-slate-300 transition-colors cursor-pointer"
                 style={{ fontFamily: 'inherit' }}>
-                {/* Avatar */}
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg,#84cc16,#65a30d)' }}>
-                  {initial}
+                {/* Avatar with notification dot */}
+                <div className="relative">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#84cc16,#65a30d)' }}>
+                    {initial}
+                  </div>
+                  {pendingBookings > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 border-2 border-white" />
+                  )}
                 </div>
                 {/* Name — hidden on very small screens */}
                 <span className="hidden sm:block text-sm font-medium text-slate-700 max-w-[90px] truncate">
@@ -132,7 +153,24 @@ export function SiteHeader() {
                     {/* Menu items */}
                     <div className="p-1.5">
                       <DropItem href="/dashboard" icon="📅" label="My Bookings" onClick={() => setMenuOpen(false)} active={pathname === '/dashboard'} />
-                      {isOwner && <DropItem href="/studio/dashboard" icon="🏠" label="My Studio" onClick={() => setMenuOpen(false)} active={pathname === '/studio/dashboard'} />}
+                      {isOwner && (
+                        <DropItem
+                          href="/studio/dashboard"
+                          icon="🏠"
+                          label="My Studio"
+                          onClick={() => setMenuOpen(false)}
+                          active={pathname === '/studio/dashboard'}
+                          badge={
+                            pendingBookings > 0
+                              ? { text: `${pendingBookings} pending`, color: 'bg-amber-100 text-amber-700' }
+                              : studioStatus === 'pending'
+                                ? { text: 'under review', color: 'bg-amber-100 text-amber-700' }
+                                : studioStatus === 'live'
+                                  ? { text: 'live', color: 'bg-green-100 text-green-700' }
+                                  : undefined
+                          }
+                        />
+                      )}
                       {!isOwner && <DropItem href="/studio/onboard" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />}
                       {isAdmin && <DropItem href="/admin" icon="⚙️" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
                     </div>
@@ -161,8 +199,9 @@ export function SiteHeader() {
   )
 }
 
-function DropItem({ href, icon, label, onClick, active }: {
+function DropItem({ href, icon, label, onClick, active, badge }: {
   href: string; icon: string; label: string; onClick: () => void; active: boolean
+  badge?: { text: string; color: string }
 }) {
   return (
     <a href={href} onClick={onClick}
@@ -170,7 +209,12 @@ function DropItem({ href, icon, label, onClick, active }: {
         ${active ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
       style={{ textDecoration: 'none' }}>
       <span className="text-base">{icon}</span>
-      {label}
+      <span className="flex-1">{label}</span>
+      {badge && (
+        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${badge.color}`}>
+          {badge.text}
+        </span>
+      )}
     </a>
   )
 }
