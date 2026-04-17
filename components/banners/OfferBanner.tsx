@@ -58,13 +58,7 @@ export function OfferBanner({ banner }: { banner: Banner }) {
         </button>
       )}
 
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '16px',
-        flexWrap: 'wrap',
-      }}>
+      <div className="offer-banner-inner">
         {/* Left: icon + text */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: 1 }}>
           <span style={{ fontSize: '28px', lineHeight: 1, flexShrink: 0, marginTop: '2px' }}>🎁</span>
@@ -90,10 +84,11 @@ export function OfferBanner({ banner }: { banner: Banner }) {
           </div>
         </div>
 
-        {/* Right: CTA */}
+        {/* CTA */}
         {banner.cta_label && banner.cta_url && (
           <a
             href={banner.cta_url}
+            className="offer-banner-cta"
             style={{
               padding: '10px 20px',
               borderRadius: '10px',
@@ -104,12 +99,31 @@ export function OfferBanner({ banner }: { banner: Banner }) {
               textDecoration: 'none',
               whiteSpace: 'nowrap',
               flexShrink: 0,
+              textAlign: 'center',
             }}
           >
             {banner.cta_label}
           </a>
         )}
       </div>
+      <style>{`
+        .offer-banner-inner {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        @media (min-width: 640px) {
+          .offer-banner-inner {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+          }
+          .offer-banner-cta {
+            display: block;
+          }
+        }
+      `}</style>
     </div>
   )
 }
