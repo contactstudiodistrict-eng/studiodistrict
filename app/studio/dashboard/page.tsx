@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { SiteHeader } from '@/components/shared/SiteHeader'
+import { ShareButtons } from '@/components/studio/ShareButtons'
 import { formatINR } from '@/lib/pricing'
 import Link from 'next/link'
 
@@ -34,7 +35,7 @@ export default async function OwnerDashboardPage() {
         <SiteHeader />
         <main className="max-w-2xl mx-auto px-4 py-16 text-center">
           <div className="text-5xl mb-4">🏠</div>
-          <h1 className="text-2xl font-serif text-gray-900 mb-3">No studio listed yet</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">No studio listed yet</h1>
           <p className="text-gray-500 mb-8">List your studio on Studio District and start receiving bookings from Chennai creators.</p>
           <Link href="/studio/onboard"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-colors">
@@ -76,10 +77,28 @@ export default async function OwnerDashboardPage() {
     return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
   }
 
+  const pendingStudios = studios.filter(s => s.status === 'pending')
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://studiodistrict.in'
+
   return (
     <>
       <SiteHeader />
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+
+        {/* Pending approval banner */}
+        {pendingStudios.length > 0 && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-3">
+            <span className="text-xl flex-shrink-0">⏳</span>
+            <div>
+              <div className="font-semibold text-amber-900 text-sm">
+                {pendingStudios.length === 1 ? `${pendingStudios[0].studio_name} is` : 'Your studios are'} under review
+              </div>
+              <div className="text-amber-700 text-sm mt-0.5">
+                Our team will approve your listing within 1–2 business days. You&apos;ll get an email and WhatsApp notification once it&apos;s live.
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
@@ -204,9 +223,17 @@ export default async function OwnerDashboardPage() {
           </div>
 
           {bookings.length === 0 ? (
-            <div className="bg-gray-50 rounded-xl border border-gray-100 py-12 text-center">
+            <div className="bg-gray-50 rounded-xl border border-gray-100 py-12 text-center px-6">
               <div className="text-4xl mb-3">📅</div>
-              <p className="text-gray-500 text-sm">No bookings yet. Once your studio is live, bookings will appear here.</p>
+              {studios.some(s => s.status === 'live') ? (
+                <>
+                  <p className="text-gray-700 font-semibold mb-1">Your studio is live — share it to get bookings!</p>
+                  <p className="text-gray-400 text-sm mb-6">Send your listing link to photographers, filmmakers, and brands.</p>
+                  <ShareButtons studioId={studios.find(s => s.status === 'live')!.id} studioName={studios.find(s => s.status === 'live')!.studio_name} appUrl={appUrl} />
+                </>
+              ) : (
+                <p className="text-gray-500 text-sm">No bookings yet. Once your studio is approved and live, bookings will appear here.</p>
+              )}
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
