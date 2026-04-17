@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 interface ReferralData {
   code: string
+  referral_amount: number
   total_referrals: number
   total_earned: number
   referrals: { status: string; referred_name: string; created_at: string }[]
@@ -31,8 +32,9 @@ export function ReferralCard() {
 
   function shareWhatsApp() {
     if (!data?.code) return
+    const amount = data.referral_amount ?? 200
     const msg = encodeURIComponent(
-      `Book studios in Chennai instantly on Studio District. Use my code ${data.code} for ₹200 off your first booking 🎨\nhttps://studiodistrict.vercel.app/login?ref=${data.code}`
+      `Book studios in Chennai instantly on Studio District. Use my code ${data.code} for ₹${amount} off your first booking 🎨\nhttps://studiodistrict.in/login?ref=${data.code}`
     )
     window.open(`https://wa.me/?text=${msg}`, '_blank')
   }
@@ -55,7 +57,7 @@ export function ReferralCard() {
         <span style={{ fontSize: '24px' }}>🎁</span>
         <div>
           <div style={{ fontWeight: '700', fontSize: '15px', color: '#111827' }}>Refer &amp; Earn</div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>Give a friend ₹200 · Get ₹200 back</div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>Give a friend ₹{data.referral_amount ?? 200} · Get ₹{data.referral_amount ?? 200} back</div>
         </div>
       </div>
 

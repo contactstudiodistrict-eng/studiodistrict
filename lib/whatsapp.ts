@@ -216,16 +216,17 @@ Your feedback helps other creators choose the right studio.
 }
 
 // ── 8. Referral reward → Referrer ─────────────────────────────────────────
-export async function sendReferralReward(params: {
+export async function sendReferralRewardNotification(params: {
   referrerPhone: string
   referredName: string
+  amount: number
 }) {
   const body =
 `🎉 *Your referral paid off!*
 
 ${params.referredName} just completed their first booking on Studio District.
 
-₹200 has been added to your Studio District wallet. Keep referring!
+₹${params.amount} has been added to your Studio District wallet. Keep referring!
 
 — Studio District`
 
