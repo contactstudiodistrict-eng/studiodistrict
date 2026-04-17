@@ -86,7 +86,7 @@ export const studioOnboardSchema = z.object({
   cancellation_policy:  z.enum(['free_24h','free_48h','partial_24h','no_refund']).default('free_24h'),
 
   // Step 8: Availability
-  working_days:  z.array(z.enum(['mon','tue','wed','thu','fri','sat','sun'])),
+  working_days:  z.array(z.enum(['mon','tue','wed','thu','fri','sat','sun'])).min(1, 'Select at least one working day'),
   opening_time:  z.string().default('07:00'),
   closing_time:  z.string().default('21:00'),
 

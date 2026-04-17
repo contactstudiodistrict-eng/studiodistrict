@@ -40,7 +40,7 @@ export default function StudioOnboardPage() {
   const [submitting, setSubmitting] = useState(false)
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
 
-  const { register, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<StudioOnboardData>({
+  const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors } } = useForm<StudioOnboardData>({
     defaultValues: {
       studio_type: 'photography',
       minimum_hours: 2,
@@ -70,6 +70,28 @@ export default function StudioOnboardPage() {
     const current = watchIdealFor
     const updated = current.includes(item) ? current.filter(i => i !== item) : [...current, item]
     setValue('ideal_for', updated)
+  }
+
+  const STEP_FIELDS: Partial<Record<number, (keyof StudioOnboardData)[]>> = {
+    1: ['studio_name', 'studio_type', 'owner_name', 'owner_phone', 'email', 'area', 'address'],
+    2: ['price_per_hour'],
+    8: ['working_days'],
+  }
+
+  async function handleNext() {
+    const fields = STEP_FIELDS[step]
+    if (fields && fields.length > 0) {
+      const valid = await trigger(fields)
+      if (!valid) return
+    }
+    if (step === 3) {
+      const photoCount = uploadedImages.filter(i => i.image_type !== 'video').length
+      if (photoCount > 0 && photoCount < 3) {
+        toast.error('Please upload at least 3 studio photos')
+        return
+      }
+    }
+    setStep(s => s + 1)
   }
 
   function addImages(imgs: UploadedImage[]) {
@@ -407,6 +429,9 @@ export default function StudioOnboardPage() {
                       </button>
                     ))}
                   </div>
+                  {errors.working_days && (
+                    <p className="text-red-500 text-xs mt-1">{errors.working_days.message as string}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -491,7 +516,7 @@ export default function StudioOnboardPage() {
                   ← Back
                 </button>
               )}
-              <button type="button" onClick={() => setStep(s => s + 1)}
+              <button type="button" onClick={handleNext}
                 className={`${step > 1 ? 'flex-[2]' : 'flex-1'} py-3.5 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-colors`}>
                 {step === 9 ? 'Review submission →' : 'Next →'}
               </button>
