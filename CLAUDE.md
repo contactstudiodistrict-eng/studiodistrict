@@ -11,9 +11,10 @@
 A mobile-first studio rental marketplace for Chennai — like Peerspace.com but for
 photo, video, podcast, and music studios. Built by Arjun (IT professional + photographer).
 
-**Live URLs (local dev):**
-- App: http://localhost:3000
-- Admin: http://localhost:3000/admin
+**Live URLs:**
+- Production: https://studiodistrict.in
+- Local dev: http://localhost:3000
+- Admin: http://localhost:3000/admin (prod: https://studiodistrict.in/admin)
 - Owner dashboard: http://localhost:3000/studio/dashboard
 
 ---
@@ -28,7 +29,8 @@ photo, video, podcast, and music studios. Built by Arjun (IT professional + phot
 | Payments | Razorpay (stub — credentials pending) |
 | Images | Cloudinary (not yet configured) |
 | Maps | Google Maps (not yet configured) |
-| Deployment | Vercel (not yet deployed) |
+| Email | Resend (custom SMTP, API key configured) |
+| Deployment | Vercel → studiodistrict.in (live) |
 
 ---
 
@@ -111,7 +113,7 @@ ID:     d6568998-2025-4dee-9280-8f347caf7487
 - Studio replies NO → customer gets decline notification
 - Booking status page with Supabase Realtime (+ 10s polling fallback)
 - Studio contact details hidden until after payment
-- Login: Email magic link (working) + Phone OTP (needs MSG91)
+- Login: Email OTP (6-digit code, no magic link) + Google OAuth
 - Auth-aware header (shows name, role, dropdown)
 - Studio onboarding — 10-step wizard
 - Customer dashboard — booking history
@@ -152,9 +154,12 @@ ID:     d6568998-2025-4dee-9280-8f347caf7487
 - Studio profile shows text address only
 - Keys needed: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-### 5. Vercel deployment
-- Not yet deployed
-- All env vars in .env.local need to go into Vercel project settings
+### 5. Resend email (configured, pending integration)
+- Account created, custom SMTP enabled, API key in hand
+- Supabase Auth → SMTP should point to Resend (smtp.resend.com, port 465)
+- Env var needed: RESEND_API_KEY
+- Use for: GST invoices, booking confirmations, transactional emails
+- Supabase Auth emails (OTP codes) now delivered via Resend SMTP — verify in Supabase Dashboard → Auth → SMTP Settings
 
 ---
 
@@ -259,9 +264,7 @@ studio_payout   = subtotal - platform_fee
 
 1. **Razorpay** — wire real payment link + webhook → booking locks after pay
 2. **Cloudinary** — real image uploads in onboarding form
-3. **MSG91** — phone OTP for Indian customers
+3. **Resend email** — GST invoice + booking confirmation emails (API key ready)
 4. **Google Maps** — geocoding in onboarding, map embed on profile
-5. **Vercel deploy** — production URL
-6. **Reviews system** — post-booking review from customer
-7. **Email notifications** — GST invoice via Resend.com
-8. **Tamil language** — i18n with react-i18next
+5. **Phone OTP login** — needs MSG91 or real Twilio number
+6. **Tamil language** — i18n with react-i18next
