@@ -7,26 +7,29 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import type { Banner } from '@/types/database.types'
 
-const TYPE_ICON: Record<string, string> = { announcement: '📢', offer: '🎁', feature: '✨' }
+const TYPE_ICON: Record<string, string> = { announcement: '📢', offer: '🎁', feature: '✨', referral: '🎁' }
 const TYPE_COLOR: Record<string, string> = {
   announcement: '#dbeafe',
   offer: '#dcfce7',
   feature: '#f3e8ff',
+  referral: '#fef9c3',
 }
 const TYPE_TEXT: Record<string, string> = {
   announcement: '#1d4ed8',
   offer: '#15803d',
   feature: '#7e22ce',
+  referral: '#92400e',
 }
 
 const DEFAULT_COLORS: Record<string, { bg: string; text: string; accent: string }> = {
   announcement: { bg: '#111827', text: '#ffffff', accent: '#84cc16' },
   offer:        { bg: '#0f2a0f', text: '#ffffff', accent: '#84cc16' },
   feature:      { bg: '#0f172a', text: '#ffffff', accent: '#84cc16' },
+  referral:     { bg: '#f0fdf4', text: '#111827', accent: '#84cc16' },
 }
 
 type FormState = {
-  type: 'announcement' | 'offer' | 'feature'
+  type: 'announcement' | 'offer' | 'feature' | 'referral'
   title: string
   body: string
   cta_label: string
@@ -40,6 +43,7 @@ type FormState = {
   text_color: string
   accent_color: string
   display_order: number
+  referral_amount: number
 }
 
 const emptyForm = (): FormState => ({
@@ -57,6 +61,7 @@ const emptyForm = (): FormState => ({
   text_color: '#ffffff',
   accent_color: '#84cc16',
   display_order: 0,
+  referral_amount: 200,
 })
 
 function statusInfo(banner: Banner): { label: string; color: string; textColor: string } {
@@ -120,6 +125,7 @@ export default function AdminBannersPage() {
       text_color: banner.text_color,
       accent_color: banner.accent_color,
       display_order: banner.display_order,
+      referral_amount: banner.referral_amount ?? 200,
     })
     setModalOpen(true)
   }
@@ -135,6 +141,7 @@ export default function AdminBannersPage() {
         cta_url: form.cta_url || null,
         starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
         ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+        referral_amount: form.type === 'referral' ? (form.referral_amount || 200) : null,
       }
       const url = editingId ? `/api/admin/banners/${editingId}` : '/api/admin/banners'
       const method = editingId ? 'PATCH' : 'POST'
@@ -266,7 +273,10 @@ export default function AdminBannersPage() {
                       </td>
                       <td style={{ padding: '14px 16px' }}>
                         <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>{banner.title}</div>
-                        {banner.body && <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{banner.body}</div>}
+                        {banner.type === 'referral' && banner.referral_amount
+                          ? <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>₹{banner.referral_amount} reward per referral</div>
+                          : banner.body && <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{banner.body}</div>
+                        }
                       </td>
                       <td style={{ padding: '14px 16px', fontSize: '13px', color: '#374151' }}>{banner.show_to}</td>
                       <td style={{ padding: '14px 16px' }}>
@@ -362,12 +372,36 @@ export default function AdminBannersPage() {
               {/* Type */}
               <div>
                 <label style={labelStyle}>Type</label>
-                <select value={form.type} onChange={e => setFormField('type', e.target.value as any)} style={inputStyle}>
+                <select value={form.type} onChange={e => {
+                  const t = e.target.value as FormState['type']
+                  setFormField('type', t)
+                  const c = DEFAULT_COLORS[t]
+                  if (c) { setFormField('bg_color', c.bg); setFormField('text_color', c.text); setFormField('accent_color', c.accent) }
+                }} style={inputStyle}>
                   <option value="announcement">📢 Announcement</option>
                   <option value="offer">🎁 Offer</option>
                   <option value="feature">✨ Feature</option>
+                  <option value="referral">🎁 Referral</option>
                 </select>
               </div>
+
+              {/* Referral amount — only for referral type */}
+              {form.type === 'referral' && (
+                <div>
+                  <label style={labelStyle}>Referral reward amount (₹)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.referral_amount}
+                    onChange={e => setFormField('referral_amount', Number(e.target.value))}
+                    placeholder="200"
+                    style={inputStyle}
+                  />
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+                    Both the referrer and the new user get this amount credited to their wallet.
+                  </div>
+                </div>
+              )}
 
               {/* Title */}
               <div>
@@ -376,10 +410,12 @@ export default function AdminBannersPage() {
               </div>
 
               {/* Body */}
-              <div>
-                <label style={labelStyle}>Body text</label>
-                <textarea value={form.body} onChange={e => setFormField('body', e.target.value)} rows={3} placeholder="Optional supporting text…" style={{ ...inputStyle, resize: 'vertical' }} />
-              </div>
+              {form.type !== 'referral' && (
+                <div>
+                  <label style={labelStyle}>Body text</label>
+                  <textarea value={form.body} onChange={e => setFormField('body', e.target.value)} rows={3} placeholder="Optional supporting text…" style={{ ...inputStyle, resize: 'vertical' }} />
+                </div>
+              )}
 
               {/* CTA */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>

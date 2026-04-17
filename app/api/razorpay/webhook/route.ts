@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { verifyRazorpayWebhook } from '@/lib/razorpay'
-import { sendBookingConfirmedCustomer, sendPaymentReceivedOwner } from '@/lib/whatsapp'
+import { sendBookingConfirmedCustomer, sendPaymentReceivedOwner, sendReferralRewardNotification } from '@/lib/whatsapp'
+import { getReferralAmount } from '@/lib/referral-config'
 import { format, addDays } from 'date-fns'
 
 export async function POST(req: NextRequest) {
@@ -134,19 +135,20 @@ export async function POST(req: NextRequest) {
 
             if (referrerCode) {
               const referrerId = referrerCode.user_id
+              const rewardAmount = await getReferralAmount()
 
-              // Credit ₹200 to referred user
+              // Credit to referred user
               await adminClient.from('wallet_credits').insert({
                 user_id: booking.user_id,
-                amount: 200,
+                amount: rewardAmount,
                 type: 'referral_bonus',
                 description: 'Welcome bonus — first booking via referral',
               })
 
-              // Credit ₹200 to referrer
+              // Credit to referrer
               await adminClient.from('wallet_credits').insert({
                 user_id: referrerId,
-                amount: 200,
+                amount: rewardAmount,
                 type: 'referral_reward',
                 description: 'Referral reward — friend completed first booking',
               })
@@ -169,7 +171,7 @@ export async function POST(req: NextRequest) {
                   .from('referral_codes')
                   .update({
                     total_referrals: (codeStats.total_referrals || 0) + 1,
-                    total_earned: (codeStats.total_earned || 0) + 200,
+                    total_earned: (codeStats.total_earned || 0) + rewardAmount,
                   })
                   .eq('user_id', referrerId)
               }
@@ -192,10 +194,10 @@ export async function POST(req: NextRequest) {
                 .single()
 
               if (referrerBooking?.customer_phone) {
-                const { sendReferralReward } = await import('@/lib/whatsapp')
-                await sendReferralReward({
+                await sendReferralRewardNotification({
                   referrerPhone: referrerBooking.customer_phone,
                   referredName: referredFirstName,
+                  amount: rewardAmount,
                 }).catch(console.error)
               }
 

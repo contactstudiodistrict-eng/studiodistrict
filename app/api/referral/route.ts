@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getOrCreateReferralCode } from '@/lib/referral'
+import { getReferralAmount } from '@/lib/referral-config'
 
 export async function GET() {
   const supabase = createClient()
@@ -17,7 +18,10 @@ export async function GET() {
     .eq('id', user.id)
     .single()
 
-  const code = await getOrCreateReferralCode(user.id, profile?.full_name || '')
+  const [code, referralAmount] = await Promise.all([
+    getOrCreateReferralCode(user.id, profile?.full_name || ''),
+    getReferralAmount(),
+  ])
 
   // Get referral stats
   const { data: codeRow } = await admin
@@ -43,6 +47,7 @@ export async function GET() {
 
   return NextResponse.json({
     code,
+    referral_amount: referralAmount,
     total_referrals: codeRow?.total_referrals ?? 0,
     total_earned: codeRow?.total_earned ?? 0,
     referrals,

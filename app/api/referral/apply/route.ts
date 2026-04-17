@@ -1,6 +1,7 @@
 // app/api/referral/apply/route.ts — POST apply a referral code
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { getReferralAmount } from '@/lib/referral-config'
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -60,8 +61,9 @@ export async function POST(req: NextRequest) {
     status: 'pending',
   })
 
+  const amount = await getReferralAmount()
   return NextResponse.json({
     success: true,
-    message: "Code applied! You'll get ₹200 credit after your first booking.",
+    message: `Code applied! You'll get ₹${amount} credit after your first booking.`,
   })
 }

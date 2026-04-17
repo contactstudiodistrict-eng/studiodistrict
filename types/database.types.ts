@@ -216,10 +216,10 @@ export type BookingWithStudio = Booking & {
   studios: Pick<Studio, 'studio_name' | 'address' | 'owner_phone' | 'google_maps_link' | 'thumbnail_url'>
 }
 
-// Banner (homepage announcement / offer / feature cards)
+// Banner (homepage announcement / offer / feature cards / referral)
 export interface Banner {
   id: string
-  type: 'announcement' | 'offer' | 'feature'
+  type: 'announcement' | 'offer' | 'feature' | 'referral'
   title: string
   body: string | null
   cta_label: string | null
@@ -235,4 +235,5 @@ export interface Banner {
   created_by: string | null
   created_at: string
   display_order: number
+  referral_amount: number | null
 }
