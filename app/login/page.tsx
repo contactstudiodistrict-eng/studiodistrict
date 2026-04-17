@@ -11,7 +11,8 @@ function LoginForm() {
   const ref  = searchParams.get('ref')  || ''
 
   const supabase = createClient()
-  const otpInputRef = useRef<HTMLInputElement>(null)
+  const otpInputRef  = useRef<HTMLInputElement>(null)
+  const verifyingRef = useRef(false)
 
   const [step,           setStep]           = useState<'email' | 'otp'>('email')
   const [email,          setEmail]          = useState('')
@@ -37,9 +38,10 @@ function LoginForm() {
     return () => clearTimeout(t)
   }, [resendCooldown])
 
-  // Auto-submit when 6 digits entered
+  // Auto-submit when 6 digits entered (ref guard prevents StrictMode double-fire)
   useEffect(() => {
-    if (otp.length === 6 && !loading) {
+    if (otp.length === 6 && !verifyingRef.current) {
+      verifyingRef.current = true
       handleVerifyOtp({ preventDefault: () => {} } as React.FormEvent)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,6 +111,7 @@ function LoginForm() {
       setError('Could not reach the server. Check your connection and try again.')
     } finally {
       setLoading(false)
+      verifyingRef.current = false
     }
   }
 
