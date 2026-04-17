@@ -51,20 +51,23 @@ function LoginForm() {
     setLoading(true)
     setError('')
 
-    const { error: otpErr } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: undefined,
-      },
-    })
-
-    setLoading(false)
-    if (otpErr) { setError(otpErr.message); return }
-
-    setStep('otp')
-    setResendCooldown(30)
-    setTimeout(() => otpInputRef.current?.focus(), 100)
+    try {
+      const { error: otpErr } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: undefined,
+        },
+      })
+      if (otpErr) { setError(otpErr.message); return }
+      setStep('otp')
+      setResendCooldown(30)
+      setTimeout(() => otpInputRef.current?.focus(), 100)
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleVerifyOtp(e: React.FormEvent) {
@@ -73,35 +76,40 @@ function LoginForm() {
     setLoading(true)
     setError('')
 
-    const { data, error: verifyErr } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'email',
-    })
-
-    if (verifyErr) {
-      setError('Invalid or expired code. Please try again.')
-      setOtp('')
-      setLoading(false)
-      setTimeout(() => otpInputRef.current?.focus(), 50)
-      return
-    }
-
-    // Apply referral code
-    const pendingRef = ref || localStorage.getItem('sd_referral_code') || ''
-    if (pendingRef && data.user) {
-      fetch('/api/referral/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: pendingRef }),
+    try {
+      const { data, error: verifyErr } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'email',
       })
-        .then(() => localStorage.removeItem('sd_referral_code'))
-        .catch(() => {})
-    }
-    if (ref) localStorage.setItem('sd_referral_code', ref)
 
-    router.replace(next)
-    router.refresh()
+      if (verifyErr) {
+        setError('Invalid or expired code. Please try again.')
+        setOtp('')
+        setTimeout(() => otpInputRef.current?.focus(), 50)
+        return
+      }
+
+      // Apply referral code
+      const pendingRef = ref || localStorage.getItem('sd_referral_code') || ''
+      if (pendingRef && data.user) {
+        fetch('/api/referral/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: pendingRef }),
+        })
+          .then(() => localStorage.removeItem('sd_referral_code'))
+          .catch(() => {})
+      }
+      if (ref) localStorage.setItem('sd_referral_code', ref)
+
+      router.replace(next)
+      router.refresh()
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleResend() {
