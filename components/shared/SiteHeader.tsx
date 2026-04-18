@@ -13,7 +13,8 @@ export function SiteHeader() {
   const [user, setUser]             = useState<User | null>(null)
   const [profile, setProfile]       = useState<{ full_name: string | null; role: string } | null>(null)
   const [walletBalance, setWallet]  = useState(0)
-  const [menuOpen, setMenuOpen]     = useState(false)
+  const [menuOpen, setMenuOpen]       = useState(false)
+  const [mobileNavOpen, setMobileNav] = useState(false)
   const [loading, setLoading]       = useState(true)
   const [studioStatus, setStudioStatus]   = useState<string | null>(null)
   const [pendingBookings, setPendingBookings] = useState(0)
@@ -192,11 +193,39 @@ export function SiteHeader() {
               )}
             </div>
           ) : (
-            <a href={`/login?next=${encodeURIComponent(pathname)}`}
-              className="px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-bold hover:bg-brand-600 transition-colors whitespace-nowrap"
-              style={{ textDecoration: 'none' }}>
-              Sign in
-            </a>
+            <>
+              {/* Hamburger — mobile only, logged-out */}
+              <div className="md:hidden relative">
+                <button
+                  onClick={() => setMobileNav(o => !o)}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors cursor-pointer"
+                  style={{ fontFamily: 'inherit' }}
+                  aria-label="Menu"
+                >
+                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                    <path d="M0 1h16M0 6h16M0 11h16" stroke="#475569" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </button>
+
+                {mobileNavOpen && (
+                  <>
+                    <div onClick={() => setMobileNav(false)} className="fixed inset-0 z-40" />
+                    <div className="absolute right-0 top-[calc(100%+8px)] w-52 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden p-1.5">
+                      <DropItem href="/" icon="🔍" label="Discover" onClick={() => setMobileNav(false)} active={pathname === '/'} />
+                      <DropItem href="/how-it-works" icon="💡" label="How it works" onClick={() => setMobileNav(false)} active={pathname === '/how-it-works'} />
+                      <DropItem href="/studio/list" icon="➕" label="List a Studio" onClick={() => setMobileNav(false)} active={pathname === '/studio/list'} />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <a href={`/login?next=${encodeURIComponent(pathname)}`}
+                className="px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-bold hover:bg-brand-600 transition-colors whitespace-nowrap"
+                style={{ textDecoration: 'none' }}>
+                Sign in
+              </a>
+            </>
+
           )}
         </div>
       </div>
