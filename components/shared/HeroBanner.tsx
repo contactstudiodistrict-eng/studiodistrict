@@ -8,6 +8,7 @@ export function HeroBanner() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
+    if (!query.trim()) return
     router.push(`/?q=${encodeURIComponent(query.trim())}`)
   }
 
