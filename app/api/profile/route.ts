@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest) {
   const adminClient = createAdminClient()
   const { data, error } = await adminClient
     .from('users')
-    .update({ first_name: first, last_name: last, updated_at: new Date().toISOString() } as never)
+    .update({ first_name: first, last_name: last } as never)
     .eq('id', user.id)
     .select('first_name, last_name')
     .single()
