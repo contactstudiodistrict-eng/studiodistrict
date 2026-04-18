@@ -12,6 +12,8 @@ import { AnnouncementBanner } from '@/components/banners/AnnouncementBanner'
 import { OfferBanner } from '@/components/banners/OfferBanner'
 import type { Studio, Banner } from '@/types/database.types'
 
+const DAY_MAP = ['sun','mon','tue','wed','thu','fri','sat']
+
 interface SearchParams {
   type?: string
   area?: string
@@ -19,6 +21,7 @@ interface SearchParams {
   max_price?: string
   amenities?: string
   q?: string
+  date?: string
 }
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
@@ -48,11 +51,18 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   if (searchParams.max_price) query = query.lte('price_per_hour', Number(searchParams.max_price))
   if (searchParams.q)         query = query.or(`studio_name.ilike.%${searchParams.q}%,area.ilike.%${searchParams.q}%`)
 
+  // Filter by working day when a date is selected
+  if (searchParams.date) {
+    const [y, m, d] = searchParams.date.split('-').map(Number)
+    const dayAbbr = DAY_MAP[new Date(y, m - 1, d).getDay()]
+    query = (query as any).contains('working_days', [dayAbbr])
+  }
+
   const audience = user ? 'logged_in' : 'logged_out'
   const now = new Date().toISOString()
 
-  // Fetch studios + banners + (if logged in) favourites + recent bookings in parallel
-  const [studioResult, bannersResult, favouritesResult, recentResult] = await Promise.all([
+  // Fetch studios + banners + hero thumbnails + (if logged in) favourites + recent bookings
+  const [studioResult, bannersResult, thumbnailsResult, favouritesResult, recentResult] = await Promise.all([
     query,
     supabase
       .from('banners')
@@ -63,6 +73,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       .or(`ends_at.is.null,ends_at.gt.${now}`)
       .order('display_order', { ascending: true })
       .order('created_at', { ascending: false }),
+    supabase
+      .from('studios')
+      .select('thumbnail_url')
+      .eq('status', 'live')
+      .not('thumbnail_url', 'is', null)
+      .limit(4),
     user
       ? supabase
           .from('studio_favourites')
@@ -84,11 +100,13 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   if (studioResult.error) console.error('Studio fetch error:', studioResult.error)
 
-  const studioList = (studioResult.data ?? []) as any[]
-  const allBanners = (bannersResult.data ?? []) as Banner[]
+  const studioList      = (studioResult.data    ?? []) as any[]
+  const allBanners      = (bannersResult.data    ?? []) as Banner[]
+  const heroThumbnails  = (thumbnailsResult.data ?? []).map((s: any) => s.thumbnail_url as string)
+
   const announcementBanner = allBanners.find(b => b.type === 'announcement') ?? null
-  const offerBanner        = allBanners.find(b => b.type === 'offer') ?? null
-  const featureBanner      = allBanners.find(b => b.type === 'feature') ?? null
+  const offerBanner        = allBanners.find(b => b.type === 'offer')        ?? null
+  const featureBanner      = allBanners.find(b => b.type === 'feature')      ?? null
 
   // Deduplicate recent bookings by studio_id (keep latest per studio, max 3)
   const recentRaw = (recentResult.data ?? []) as any[]
@@ -100,20 +118,26 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   }).slice(0, 3)
 
   // Favourited studios
-  const favRows = (favouritesResult.data ?? []) as any[]
-  const favouriteIds = favRows.map(r => r.studio_id)
+  const favRows        = (favouritesResult.data ?? []) as any[]
+  const favouriteIds   = favRows.map(r => r.studio_id)
   const favouriteStudios = favRows.map(r => r.studios).filter(Boolean)
+
+  // Results heading
+  const selectedDate = searchParams.date
+    ? new Date(...(searchParams.date.split('-').map(Number) as [number,number,number]))
+        .toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })
+    : null
 
   return (
     <>
       <SiteHeader />
       {announcementBanner && <AnnouncementBanner banner={announcementBanner} />}
       <main>
-        <HeroBanner />
+        <HeroBanner thumbnails={heroThumbnails} />
 
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-24 sm:pb-10">
 
-          {/* ── Saved studios section (logged-in users with favourites) ── */}
+          {/* ── Saved studios section ── */}
           {user && favouriteStudios.length > 0 && (
             <div className="mb-10">
               <div className="flex items-center justify-between mb-4">
@@ -167,20 +191,15 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-ink-900">
-                {searchParams.type
-                  ? `${searchParams.type} Studios`
-                  : 'Studios in Chennai'}
+                {searchParams.type ? `${searchParams.type} Studios` : 'Studios in Chennai'}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 {studioList.length} {studioList.length === 1 ? 'studio' : 'studios'} available
+                {selectedDate && <span className="ml-1">open on {selectedDate}</span>}
               </p>
             </div>
-            <a
-              href="/studio/list"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-brand-500 text-brand-600 text-sm font-medium hover:bg-brand-50 transition-colors"
-            >
+            <a href="/studio/list" target="_blank" rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-brand-500 text-brand-600 text-sm font-medium hover:bg-brand-50 transition-colors">
               + List Your Studio
             </a>
           </div>
@@ -206,13 +225,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       {/* Mobile: List your studio CTA */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 px-4 pt-3"
         style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-        <a
-          href="/studio/list"
-          target="_blank"
-          rel="noopener noreferrer"
+        <a href="/studio/list" target="_blank" rel="noopener noreferrer"
           className="block w-full py-3.5 text-center rounded-xl bg-brand-500 text-white font-bold text-sm active:bg-brand-700 transition-colors"
-          style={{ textDecoration: 'none' }}
-        >
+          style={{ textDecoration: 'none' }}>
           Own a Studio? List it Free →
         </a>
       </div>
@@ -243,14 +258,12 @@ function EmptyState({ searchParams }: { searchParams: SearchParams }) {
       <div className="text-5xl mb-4">🔍</div>
       <h3 className="text-xl font-semibold text-gray-800 mb-2">No studios found</h3>
       <p className="text-gray-500 mb-6">
-        {searchParams.q || searchParams.type || searchParams.area
+        {searchParams.q || searchParams.type || searchParams.area || searchParams.date
           ? 'Try adjusting your filters or search term'
           : 'No studios are live yet. Be the first to list!'}
       </p>
-      <a
-        href="/"
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-600 transition-colors"
-      >
+      <a href="/"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-600 transition-colors">
         Browse Studios
       </a>
     </div>
