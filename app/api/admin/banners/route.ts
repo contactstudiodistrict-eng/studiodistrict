@@ -30,12 +30,12 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
   const body = await req.json()
+  const { referral_amount, ...rest } = body
+  const payload: Record<string, unknown> = { ...rest, created_by: user.id }
+  if (rest.type === 'referral' && referral_amount != null) payload.referral_amount = referral_amount
+
   const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('banners')
-    .insert({ ...body, created_by: user.id })
-    .select()
-    .single()
+  const { data, error } = await admin.from('banners').insert(payload).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ banner: data })
