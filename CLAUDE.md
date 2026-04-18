@@ -129,6 +129,8 @@ ID:     d6568998-2025-4dee-9280-8f347caf7487
 - Reviews: token-based no-login review page (/review/[id]), studio profile ratings section, cron job for WhatsApp review requests
 - vercel.json cron: /api/cron/review-requests runs daily at 10 AM
 - Banner/announcement system: AnnouncementBanner (top of page), OfferBanner (between sections), FeatureCard (in studio grid at pos 3); admin management at /admin/banners; localStorage dismiss persistence; audience targeting (all/logged_in/logged_out); scheduling via starts_at/ends_at
+- Profile completion modal: ClientLayout wrapper checks first_name/last_name on every session; shows modal if either is missing; PATCH /api/profile saves via adminClient; skip allowed (reappears until filled)
+- How It Works page: /how-it-works with tabbed Creator/Owner paths, numbered step cards, FAQ accordion, dual CTA; "How it works" nav link added to SiteHeader (desktop + mobile)
 
 ---
 
