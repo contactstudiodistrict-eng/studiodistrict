@@ -81,6 +81,10 @@ export function SiteHeader() {
             style={{ textDecoration: 'none' }}>
             Discover
           </a>
+          <a href="/how-it-works" className={`no-underline font-medium transition-colors hover:text-brand-600 ${pathname === '/how-it-works' ? 'text-brand-600' : 'text-slate-500'}`}
+            style={{ textDecoration: 'none' }}>
+            How it works
+          </a>
           <a href="/studio/list" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-brand-600 transition-colors"
             style={{ textDecoration: 'none' }}>
             List your studio
@@ -146,6 +150,7 @@ export function SiteHeader() {
                     {/* Nav links on mobile — shown here */}
                     <div className="md:hidden border-b border-slate-100">
                       <DropItem href="/" icon="🔍" label="Discover" onClick={() => setMenuOpen(false)} active={pathname === '/'} />
+                      <DropItem href="/how-it-works" icon="💡" label="How it works" onClick={() => setMenuOpen(false)} active={pathname === '/how-it-works'} />
                       <DropItem href="/studio/list" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />
                       {isAdmin && <DropItem href="/admin" icon="⚡" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
                     </div>
