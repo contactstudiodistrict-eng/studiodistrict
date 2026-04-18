@@ -16,56 +16,104 @@ export function HeroBanner() {
   return (
     <div className="relative overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
 
-      {/* ── Studio-themed decorative layer ───────────────────────────────── */}
-      <div aria-hidden className="absolute inset-0 pointer-events-none select-none">
-        {/* Lens / aperture ring — top right */}
-        <svg className="absolute -top-10 -right-10 opacity-[0.07]" width="360" height="360" viewBox="0 0 360 360" fill="none">
-          <circle cx="180" cy="180" r="170" stroke="#84cc16" strokeWidth="2"/>
-          <circle cx="180" cy="180" r="130" stroke="#84cc16" strokeWidth="1.5"/>
-          <circle cx="180" cy="180" r="90"  stroke="#84cc16" strokeWidth="1"/>
-          <circle cx="180" cy="180" r="50"  stroke="#84cc16" strokeWidth="1"/>
-          {/* aperture blades */}
-          {[0,30,60,90,120,150].map(a => (
+      {/* ── Decorative layer ─────────────────────────────────────────────── */}
+      <div aria-hidden className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+
+        {/* Large aperture ring — top right, partially cropped */}
+        <svg className="absolute -top-16 -right-16" width="480" height="480" viewBox="0 0 480 480" fill="none">
+          {/* Outer glow ring */}
+          <circle cx="240" cy="240" r="228" stroke="#84cc16" strokeWidth="1" strokeOpacity="0.18"/>
+          {/* Main rings */}
+          <circle cx="240" cy="240" r="210" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.28"/>
+          <circle cx="240" cy="240" r="160" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.22"/>
+          <circle cx="240" cy="240" r="108" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.20"/>
+          <circle cx="240" cy="240" r="60"  stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.30"/>
+          {/* Centre dot */}
+          <circle cx="240" cy="240" r="6"   fill="#84cc16"   fillOpacity="0.25"/>
+          {/* Aperture blades — 12 */}
+          {[0,30,60,90,120,150,180,210,240,270,300,330].map(a => (
             <line key={a}
-              x1={180 + 50 * Math.cos(a * Math.PI / 180)}
-              y1={180 + 50 * Math.sin(a * Math.PI / 180)}
-              x2={180 + 170 * Math.cos(a * Math.PI / 180)}
-              y2={180 + 170 * Math.sin(a * Math.PI / 180)}
-              stroke="#84cc16" strokeWidth="1" strokeOpacity="0.6"
+              x1={240 + 60  * Math.cos(a * Math.PI / 180)}
+              y1={240 + 60  * Math.sin(a * Math.PI / 180)}
+              x2={240 + 210 * Math.cos(a * Math.PI / 180)}
+              y2={240 + 210 * Math.sin(a * Math.PI / 180)}
+              stroke="#84cc16" strokeWidth="1" strokeOpacity="0.15"
+            />
+          ))}
+          {/* Cross-hairs */}
+          <line x1="240" y1="20"  x2="240" y2="460" stroke="#84cc16" strokeWidth="0.75" strokeOpacity="0.10"/>
+          <line x1="20"  y1="240" x2="460" y2="240" stroke="#84cc16" strokeWidth="0.75" strokeOpacity="0.10"/>
+        </svg>
+
+        {/* Second smaller aperture — bottom left */}
+        <svg className="absolute -bottom-12 -left-12" width="280" height="280" viewBox="0 0 280 280" fill="none">
+          <circle cx="140" cy="140" r="128" stroke="#84cc16" strokeWidth="2" strokeOpacity="0.20"/>
+          <circle cx="140" cy="140" r="90"  stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.18"/>
+          <circle cx="140" cy="140" r="52"  stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.22"/>
+          <circle cx="140" cy="140" r="20"  stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.28"/>
+          {[0,45,90,135,180,225,270,315].map(a => (
+            <line key={a}
+              x1={140 + 20  * Math.cos(a * Math.PI / 180)}
+              y1={140 + 20  * Math.sin(a * Math.PI / 180)}
+              x2={140 + 128 * Math.cos(a * Math.PI / 180)}
+              y2={140 + 128 * Math.sin(a * Math.PI / 180)}
+              stroke="#84cc16" strokeWidth="1" strokeOpacity="0.12"
             />
           ))}
         </svg>
 
-        {/* Grid dots — left side */}
-        <svg className="absolute top-0 left-0 opacity-[0.06]" width="220" height="220" viewBox="0 0 220 220">
-          {Array.from({ length: 7 }).map((_, row) =>
-            Array.from({ length: 7 }).map((_, col) => (
-              <circle key={`${row}-${col}`} cx={col * 32 + 16} cy={row * 32 + 16} r="1.5" fill="#84cc16" />
+        {/* Grid dots — top left */}
+        <svg className="absolute top-0 left-4 sm:left-10" width="200" height="180" viewBox="0 0 200 180">
+          {Array.from({ length: 6 }).map((_, row) =>
+            Array.from({ length: 6 }).map((_, col) => (
+              <circle
+                key={`${row}-${col}`}
+                cx={col * 34 + 10} cy={row * 30 + 10}
+                r={row === 0 || col === 0 ? 2 : 1.5}
+                fill="#84cc16"
+                fillOpacity={row === 0 && col === 0 ? 0.55 : 0.22}
+              />
             ))
           )}
         </svg>
 
-        {/* Film-strip strip — bottom left */}
-        <svg className="absolute bottom-0 left-0 opacity-[0.05]" width="180" height="60" viewBox="0 0 180 60">
-          <rect x="0" y="0" width="180" height="60" fill="#84cc16"/>
-          {[0,1,2,3,4,5,6,7,8].map(i => (
-            <rect key={i} x={i * 20 + 4} y="4" width="12" height="10" rx="2" fill="#0f172a"/>
+        {/* Film strip — full-width bottom, tall enough to see */}
+        <svg className="absolute bottom-0 left-0 w-full" height="52" preserveAspectRatio="none" viewBox="0 0 1200 52" fill="none">
+          <rect x="0" y="0" width="1200" height="52" fill="#84cc16" fillOpacity="0.12"/>
+          <rect x="0" y="0" width="1200" height="1"  fill="#84cc16" fillOpacity="0.35"/>
+          <rect x="0" y="51" width="1200" height="1" fill="#84cc16" fillOpacity="0.35"/>
+          {Array.from({ length: 55 }).map((_, i) => (
+            <rect key={`t${i}`} x={i * 22 + 2} y="4"  width="14" height="10" rx="2" fill="#84cc16" fillOpacity="0.28"/>
           ))}
-          {[0,1,2,3,4,5,6,7,8].map(i => (
-            <rect key={i} x={i * 20 + 4} y="46" width="12" height="10" rx="2" fill="#0f172a"/>
+          {Array.from({ length: 55 }).map((_, i) => (
+            <rect key={`b${i}`} x={i * 22 + 2} y="38" width="14" height="10" rx="2" fill="#84cc16" fillOpacity="0.28"/>
+          ))}
+          {/* Frame dividers */}
+          {Array.from({ length: 30 }).map((_, i) => (
+            <rect key={`f${i}`} x={i * 40 + 20} y="16" width="1" height="20" fill="#84cc16" fillOpacity="0.18"/>
           ))}
         </svg>
 
-        {/* Small accent circle — bottom right */}
-        <div className="absolute bottom-8 right-16 w-32 h-32 rounded-full opacity-[0.06]"
-          style={{ background: 'radial-gradient(circle, #84cc16 0%, transparent 70%)' }} />
+        {/* Corner bracket — top left */}
+        <svg className="absolute top-5 left-5" width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <path d="M2 22 L2 2 L22 2"  stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.45" strokeLinecap="round"/>
+        </svg>
+
+        {/* Corner bracket — top right */}
+        <svg className="absolute top-5 right-5" width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <path d="M46 22 L46 2 L26 2" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.45" strokeLinecap="round"/>
+        </svg>
+
+        {/* Subtle radial glow centre */}
+        <div className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 40%, rgba(132,204,22,0.06) 0%, transparent 70%)' }} />
       </div>
 
       {/* ── Content ──────────────────────────────────────────────────────── */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 text-center">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 text-center" style={{ paddingBottom: '4rem' }}>
 
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5 border"
-          style={{ backgroundColor: 'rgba(132,204,22,0.12)', color: '#a3e635', borderColor: 'rgba(132,204,22,0.25)' }}>
+          style={{ backgroundColor: 'rgba(132,204,22,0.12)', color: '#a3e635', borderColor: 'rgba(132,204,22,0.30)' }}>
           🎬 Chennai&apos;s Studio Booking Platform
         </div>
 
