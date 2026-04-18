@@ -168,7 +168,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             <div>
               <h2 className="text-2xl font-bold text-ink-900">
                 {searchParams.type
-                  ? `${capitalize(searchParams.type)} Studios`
+                  ? `${searchParams.type} Studios`
                   : 'Studios in Chennai'}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -218,10 +218,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       </div>
     </>
   )
-}
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 function StudioGridSkeleton() {

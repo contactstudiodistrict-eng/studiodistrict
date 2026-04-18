@@ -8,7 +8,6 @@ export function HeroBanner() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    if (!query.trim()) return
     router.push(`/?q=${encodeURIComponent(query.trim())}`)
   }
 
@@ -270,23 +269,6 @@ export function HeroBanner() {
             Search
           </button>
         </form>
-
-        {/* Quick-type tags */}
-        <div className="flex flex-wrap justify-center gap-2 mt-4">
-          {['Photography', 'Videography', 'Podcast', 'Music', 'Velachery', 'OMR', 'Anna Nagar'].map(tag => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => router.push(`/?q=${encodeURIComponent(tag)}`)}
-              className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
-              style={{ backgroundColor: '#1e293b', color: '#94a3b8', border: '1px solid #334155' }}
-              onMouseOver={e => { (e.currentTarget as HTMLElement).style.borderColor = '#84cc16'; (e.currentTarget as HTMLElement).style.color = '#a3e635' }}
-              onMouseOut={e => { (e.currentTarget as HTMLElement).style.borderColor = '#334155'; (e.currentTarget as HTMLElement).style.color = '#94a3b8' }}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
 
         {/* Stats */}
         <div className="flex items-center justify-center flex-wrap gap-4 sm:gap-8 mt-8 text-sm" style={{ color: '#64748b' }}>
