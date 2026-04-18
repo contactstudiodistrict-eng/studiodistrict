@@ -1,5 +1,4 @@
 'use client'
-// components/shared/HeroBanner.tsx
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -16,8 +15,89 @@ export function HeroBanner() {
   return (
     <div className="relative overflow-hidden" style={{ backgroundColor: '#0f172a' }}>
 
-      {/* ── Decorative layer ─────────────────────────────────────────────── */}
-      <div aria-hidden className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+      {/* ── Mobile decorative layer ───────────────────────────────────────── */}
+      <div aria-hidden className="sm:hidden absolute inset-0 pointer-events-none select-none overflow-hidden">
+
+        {/* Centered aperture ring behind content */}
+        <svg className="absolute" style={{ top: '-40px', left: '50%', transform: 'translateX(-50%)' }}
+          width="300" height="300" viewBox="0 0 300 300" fill="none">
+          <circle cx="150" cy="150" r="140" stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.14"/>
+          <circle cx="150" cy="150" r="122" stroke="#84cc16" strokeWidth="2"   strokeOpacity="0.22"/>
+          <circle cx="150" cy="150" r="92"  stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.17"/>
+          <circle cx="150" cy="150" r="60"  stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.15"/>
+          <circle cx="150" cy="150" r="5"   fill="#84cc16"   fillOpacity="0.20"/>
+          {[0,45,90,135,180,225,270,315].map(a => (
+            <line key={a}
+              x1={150 + 60  * Math.cos(a * Math.PI / 180)}
+              y1={150 + 60  * Math.sin(a * Math.PI / 180)}
+              x2={150 + 122 * Math.cos(a * Math.PI / 180)}
+              y2={150 + 122 * Math.sin(a * Math.PI / 180)}
+              stroke="#84cc16" strokeWidth="0.75" strokeOpacity="0.13"
+            />
+          ))}
+          <line x1="150" y1="28"  x2="150" y2="272" stroke="#84cc16" strokeWidth="0.5" strokeOpacity="0.08"/>
+          <line x1="28"  y1="150" x2="272" y2="150" stroke="#84cc16" strokeWidth="0.5" strokeOpacity="0.08"/>
+        </svg>
+
+        {/* Grid dots — top left */}
+        <svg className="absolute top-0 left-3" width="108" height="88" viewBox="0 0 108 88">
+          {Array.from({ length: 4 }).map((_, row) =>
+            Array.from({ length: 4 }).map((_, col) => (
+              <circle key={`${row}-${col}`}
+                cx={col * 30 + 8} cy={row * 26 + 8}
+                r={row === 0 || col === 0 ? 1.8 : 1.2}
+                fill="#84cc16"
+                fillOpacity={row === 0 && col === 0 ? 0.50 : 0.18}
+              />
+            ))
+          )}
+        </svg>
+
+        {/* Camera viewfinder brackets */}
+        <svg className="absolute top-4 left-4" width="38" height="38" viewBox="0 0 48 48" fill="none">
+          <path d="M2 22 L2 2 L22 2" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.42" strokeLinecap="round"/>
+        </svg>
+        <svg className="absolute top-4 right-4" width="38" height="38" viewBox="0 0 48 48" fill="none">
+          <path d="M46 22 L46 2 L26 2" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.42" strokeLinecap="round"/>
+        </svg>
+
+        {/* Film strip — bottom left, narrow */}
+        <svg className="absolute bottom-4 left-4" width="156" height="40" viewBox="0 0 156 40" fill="none">
+          <rect x="0" y="0" width="156" height="40" rx="4" fill="#84cc16" fillOpacity="0.10"/>
+          <rect x="0" y="0" width="156" height="1"  fill="#84cc16" fillOpacity="0.38"/>
+          <rect x="0" y="39" width="156" height="1" fill="#84cc16" fillOpacity="0.38"/>
+          {[0,1,2,3,4,5].map(i => (
+            <rect key={`t${i}`} x={i * 24 + 4} y="3" width="12" height="7" rx="1.5" fill="#84cc16" fillOpacity="0.28"/>
+          ))}
+          {[0,1,2,3,4,5].map(i => (
+            <rect key={`b${i}`} x={i * 24 + 4} y="30" width="12" height="7" rx="1.5" fill="#84cc16" fillOpacity="0.28"/>
+          ))}
+          {[1,2].map(i => (
+            <rect key={`d${i}`} x={i * 52 + 4} y="12" width="1" height="16" fill="#84cc16" fillOpacity="0.20"/>
+          ))}
+        </svg>
+
+        {/* Equalizer bars — bottom right */}
+        <svg className="absolute bottom-3 right-4" width="52" height="44" viewBox="0 0 52 44" fill="none">
+          {[
+            { x: 0,  h: 18, o: 0.32 },
+            { x: 8,  h: 30, o: 0.42 },
+            { x: 16, h: 24, o: 0.36 },
+            { x: 24, h: 40, o: 0.52 },
+            { x: 32, h: 32, o: 0.45 },
+            { x: 40, h: 20, o: 0.35 },
+          ].map(({ x, h, o }) => (
+            <rect key={x} x={x} y={44 - h} width="5" height={h} rx="2.5" fill="#84cc16" fillOpacity={o}/>
+          ))}
+        </svg>
+
+        {/* Radial glow */}
+        <div className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse 100% 70% at 50% 28%, rgba(132,204,22,0.08) 0%, transparent 68%)' }} />
+      </div>
+
+      {/* ── Desktop decorative layer ──────────────────────────────────────── */}
+      <div aria-hidden className="hidden sm:block absolute inset-0 pointer-events-none select-none overflow-hidden">
 
         {/* Large aperture ring — top right */}
         <svg className="absolute -top-16 -right-16" width="480" height="480" viewBox="0 0 480 480" fill="none">
@@ -58,7 +138,7 @@ export function HeroBanner() {
         </svg>
 
         {/* Grid dots — top left */}
-        <svg className="absolute top-0 left-4 sm:left-10" width="200" height="180" viewBox="0 0 200 180">
+        <svg className="absolute top-0 left-10" width="200" height="180" viewBox="0 0 200 180">
           {Array.from({ length: 6 }).map((_, row) =>
             Array.from({ length: 6 }).map((_, col) => (
               <circle
@@ -80,28 +160,24 @@ export function HeroBanner() {
           <path d="M46 22 L46 2 L26 2" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.45" strokeLinecap="round"/>
         </svg>
 
-        {/* Film strip — bottom left, fixed width, not full bleed */}
+        {/* Film strip — bottom left, fixed width */}
         <svg className="absolute bottom-6 left-6" width="260" height="48" viewBox="0 0 260 48" fill="none">
           <rect x="0" y="0" width="260" height="48" rx="4" fill="#84cc16" fillOpacity="0.10"/>
           <rect x="0" y="0" width="260" height="1"  fill="#84cc16" fillOpacity="0.40"/>
           <rect x="0" y="47" width="260" height="1" fill="#84cc16" fillOpacity="0.40"/>
-          {/* Sprocket holes top */}
           {[0,1,2,3,4,5,6,7,8,9,10].map(i => (
             <rect key={`t${i}`} x={i * 24 + 4} y="4" width="14" height="9" rx="2" fill="#84cc16" fillOpacity="0.30"/>
           ))}
-          {/* Sprocket holes bottom */}
           {[0,1,2,3,4,5,6,7,8,9,10].map(i => (
             <rect key={`b${i}`} x={i * 24 + 4} y="35" width="14" height="9" rx="2" fill="#84cc16" fillOpacity="0.30"/>
           ))}
-          {/* Frame dividers */}
           {[1,2,3,4,5].map(i => (
             <rect key={`d${i}`} x={i * 44 + 4} y="15" width="1" height="18" fill="#84cc16" fillOpacity="0.25"/>
           ))}
         </svg>
 
-        {/* Audio equaliser bars — bottom right (music / podcast) */}
-        <svg className="absolute bottom-4 right-8 sm:right-16" width="72" height="64" viewBox="0 0 72 64" fill="none">
-          {/* 9 bars of varying heights */}
+        {/* Audio equaliser bars — bottom right */}
+        <svg className="absolute bottom-4 right-16" width="72" height="64" viewBox="0 0 72 64" fill="none">
           {[
             { x: 0,  h: 28, o: 0.35 },
             { x: 8,  h: 44, o: 0.45 },
@@ -118,23 +194,18 @@ export function HeroBanner() {
         </svg>
 
         {/* Podcast microphone — left side, mid-height */}
-        <svg className="absolute left-6 sm:left-12" style={{ top: '38%' }} width="44" height="64" viewBox="0 0 44 64" fill="none">
-          {/* Mic body */}
+        <svg className="absolute left-12" style={{ top: '38%' }} width="44" height="64" viewBox="0 0 44 64" fill="none">
           <rect x="13" y="2" width="18" height="28" rx="9" stroke="#84cc16" strokeWidth="1.8" strokeOpacity="0.40"/>
-          {/* Mic grille lines */}
           {[10, 16, 22].map(y => (
             <line key={y} x1="14" y1={y} x2="30" y2={y} stroke="#84cc16" strokeWidth="1" strokeOpacity="0.25"/>
           ))}
-          {/* Stand arc */}
           <path d="M6 30 Q6 48 22 48 Q38 48 38 30" stroke="#84cc16" strokeWidth="1.8" strokeOpacity="0.38" fill="none"/>
-          {/* Stand pole */}
           <line x1="22" y1="48" x2="22" y2="60" stroke="#84cc16" strokeWidth="1.8" strokeOpacity="0.38"/>
-          {/* Base */}
           <line x1="12" y1="60" x2="32" y2="60" stroke="#84cc16" strokeWidth="2" strokeOpacity="0.38" strokeLinecap="round"/>
         </svg>
 
         {/* Sound waveform — right side, mid-height */}
-        <svg className="absolute right-6 sm:right-14" style={{ top: '42%' }} width="80" height="40" viewBox="0 0 80 40" fill="none">
+        <svg className="absolute right-14" style={{ top: '42%' }} width="80" height="40" viewBox="0 0 80 40" fill="none">
           {[
             { x: 0,  h: 6  },
             { x: 8,  h: 14 },
@@ -151,7 +222,7 @@ export function HeroBanner() {
           ))}
         </svg>
 
-        {/* Musical note — top area, between aperture and left */}
+        {/* Musical note — top area */}
         <svg className="absolute" style={{ top: '12%', left: '28%' }} width="28" height="36" viewBox="0 0 28 36" fill="none">
           <path d="M10 28 L10 8 L26 4 L26 14 L10 18" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.30" fill="none" strokeLinejoin="round"/>
           <circle cx="7"  cy="29" r="5" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.30"/>
