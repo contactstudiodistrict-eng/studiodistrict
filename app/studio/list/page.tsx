@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { SiteHeader } from '@/components/shared/SiteHeader'
 import { SiteFooter } from '@/components/shared/SiteFooter'
+import { EarningsCalculator } from '@/components/studio/EarningsCalculator'
 
 const BENEFITS = [
   {
@@ -41,12 +42,6 @@ const STEPS = [
   { step: '03', title: 'Go live & earn', body: 'Your studio appears in search results. Bookings start coming in directly to your WhatsApp.' },
 ]
 
-const STATS = [
-  { value: '40+', label: 'Studios listed' },
-  { value: '500+', label: 'Bookings facilitated' },
-  { value: '₹0', label: 'Cost to list' },
-  { value: '24h', label: 'Avg. review time' },
-]
 
 export default function StudioListPage() {
   return (
@@ -248,7 +243,8 @@ export default function StudioListPage() {
               <span style={{ color: '#a3e635' }}>into steady income</span>
             </h1>
             <p className="text-lg max-w-xl mx-auto mb-10" style={{ color: '#94a3b8' }}>
-              Join Chennai&apos;s fastest-growing Studio Booking marketplace. List for free — pay only when you earn.
+              Chennai&apos;s growing studio booking marketplace.
+              List for free — pay only when you earn.
             </p>
             <Link href="/studio/onboard"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-base transition-colors"
@@ -256,18 +252,8 @@ export default function StudioListPage() {
               Start Listing Your Studio →
             </Link>
             <p className="mt-4 text-xs" style={{ color: '#475569' }}>Free to list · No credit card required · Live in 24h</p>
-          </div>
-        </section>
 
-        {/* ── Stats bar ────────────────────────────────────────────────── */}
-        <section style={{ backgroundColor: '#111827', borderBottom: '1px solid #1e293b' }}>
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-            {STATS.map(s => (
-              <div key={s.label}>
-                <div className="text-2xl sm:text-3xl font-bold" style={{ color: '#84cc16' }}>{s.value}</div>
-                <div className="text-xs mt-1" style={{ color: '#64748b' }}>{s.label}</div>
-              </div>
-            ))}
+            <EarningsCalculator />
           </div>
         </section>
 
