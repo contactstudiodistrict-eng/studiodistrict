@@ -19,18 +19,14 @@ export function HeroBanner() {
       {/* ── Decorative layer ─────────────────────────────────────────────── */}
       <div aria-hidden className="absolute inset-0 pointer-events-none select-none overflow-hidden">
 
-        {/* Large aperture ring — top right, partially cropped */}
+        {/* Large aperture ring — top right */}
         <svg className="absolute -top-16 -right-16" width="480" height="480" viewBox="0 0 480 480" fill="none">
-          {/* Outer glow ring */}
-          <circle cx="240" cy="240" r="228" stroke="#84cc16" strokeWidth="1" strokeOpacity="0.18"/>
-          {/* Main rings */}
+          <circle cx="240" cy="240" r="228" stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.18"/>
           <circle cx="240" cy="240" r="210" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.28"/>
           <circle cx="240" cy="240" r="160" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.22"/>
           <circle cx="240" cy="240" r="108" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.20"/>
           <circle cx="240" cy="240" r="60"  stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.30"/>
-          {/* Centre dot */}
           <circle cx="240" cy="240" r="6"   fill="#84cc16"   fillOpacity="0.25"/>
-          {/* Aperture blades — 12 */}
           {[0,30,60,90,120,150,180,210,240,270,300,330].map(a => (
             <line key={a}
               x1={240 + 60  * Math.cos(a * Math.PI / 180)}
@@ -40,14 +36,13 @@ export function HeroBanner() {
               stroke="#84cc16" strokeWidth="1" strokeOpacity="0.15"
             />
           ))}
-          {/* Cross-hairs */}
           <line x1="240" y1="20"  x2="240" y2="460" stroke="#84cc16" strokeWidth="0.75" strokeOpacity="0.10"/>
           <line x1="20"  y1="240" x2="460" y2="240" stroke="#84cc16" strokeWidth="0.75" strokeOpacity="0.10"/>
         </svg>
 
         {/* Second smaller aperture — bottom left */}
         <svg className="absolute -bottom-12 -left-12" width="280" height="280" viewBox="0 0 280 280" fill="none">
-          <circle cx="140" cy="140" r="128" stroke="#84cc16" strokeWidth="2" strokeOpacity="0.20"/>
+          <circle cx="140" cy="140" r="128" stroke="#84cc16" strokeWidth="2"   strokeOpacity="0.20"/>
           <circle cx="140" cy="140" r="90"  stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.18"/>
           <circle cx="140" cy="140" r="52"  stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.22"/>
           <circle cx="140" cy="140" r="20"  stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.28"/>
@@ -77,40 +72,99 @@ export function HeroBanner() {
           )}
         </svg>
 
-        {/* Film strip — full-width bottom, tall enough to see */}
-        <svg className="absolute bottom-0 left-0 w-full" height="52" preserveAspectRatio="none" viewBox="0 0 1200 52" fill="none">
-          <rect x="0" y="0" width="1200" height="52" fill="#84cc16" fillOpacity="0.12"/>
-          <rect x="0" y="0" width="1200" height="1"  fill="#84cc16" fillOpacity="0.35"/>
-          <rect x="0" y="51" width="1200" height="1" fill="#84cc16" fillOpacity="0.35"/>
-          {Array.from({ length: 55 }).map((_, i) => (
-            <rect key={`t${i}`} x={i * 22 + 2} y="4"  width="14" height="10" rx="2" fill="#84cc16" fillOpacity="0.28"/>
-          ))}
-          {Array.from({ length: 55 }).map((_, i) => (
-            <rect key={`b${i}`} x={i * 22 + 2} y="38" width="14" height="10" rx="2" fill="#84cc16" fillOpacity="0.28"/>
-          ))}
-          {/* Frame dividers */}
-          {Array.from({ length: 30 }).map((_, i) => (
-            <rect key={`f${i}`} x={i * 40 + 20} y="16" width="1" height="20" fill="#84cc16" fillOpacity="0.18"/>
-          ))}
-        </svg>
-
-        {/* Corner bracket — top left */}
+        {/* Camera viewfinder brackets */}
         <svg className="absolute top-5 left-5" width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <path d="M2 22 L2 2 L22 2"  stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.45" strokeLinecap="round"/>
+          <path d="M2 22 L2 2 L22 2" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.45" strokeLinecap="round"/>
         </svg>
-
-        {/* Corner bracket — top right */}
         <svg className="absolute top-5 right-5" width="48" height="48" viewBox="0 0 48 48" fill="none">
           <path d="M46 22 L46 2 L26 2" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.45" strokeLinecap="round"/>
         </svg>
 
-        {/* Subtle radial glow centre */}
+        {/* Film strip — bottom left, fixed width, not full bleed */}
+        <svg className="absolute bottom-6 left-6" width="260" height="48" viewBox="0 0 260 48" fill="none">
+          <rect x="0" y="0" width="260" height="48" rx="4" fill="#84cc16" fillOpacity="0.10"/>
+          <rect x="0" y="0" width="260" height="1"  fill="#84cc16" fillOpacity="0.40"/>
+          <rect x="0" y="47" width="260" height="1" fill="#84cc16" fillOpacity="0.40"/>
+          {/* Sprocket holes top */}
+          {[0,1,2,3,4,5,6,7,8,9,10].map(i => (
+            <rect key={`t${i}`} x={i * 24 + 4} y="4" width="14" height="9" rx="2" fill="#84cc16" fillOpacity="0.30"/>
+          ))}
+          {/* Sprocket holes bottom */}
+          {[0,1,2,3,4,5,6,7,8,9,10].map(i => (
+            <rect key={`b${i}`} x={i * 24 + 4} y="35" width="14" height="9" rx="2" fill="#84cc16" fillOpacity="0.30"/>
+          ))}
+          {/* Frame dividers */}
+          {[1,2,3,4,5].map(i => (
+            <rect key={`d${i}`} x={i * 44 + 4} y="15" width="1" height="18" fill="#84cc16" fillOpacity="0.25"/>
+          ))}
+        </svg>
+
+        {/* Audio equaliser bars — bottom right (music / podcast) */}
+        <svg className="absolute bottom-4 right-8 sm:right-16" width="72" height="64" viewBox="0 0 72 64" fill="none">
+          {/* 9 bars of varying heights */}
+          {[
+            { x: 0,  h: 28, o: 0.35 },
+            { x: 8,  h: 44, o: 0.45 },
+            { x: 16, h: 36, o: 0.38 },
+            { x: 24, h: 56, o: 0.55 },
+            { x: 32, h: 48, o: 0.50 },
+            { x: 40, h: 36, o: 0.40 },
+            { x: 48, h: 52, o: 0.48 },
+            { x: 56, h: 32, o: 0.35 },
+            { x: 64, h: 20, o: 0.28 },
+          ].map(({ x, h, o }) => (
+            <rect key={x} x={x} y={64 - h} width="5" height={h} rx="2.5" fill="#84cc16" fillOpacity={o}/>
+          ))}
+        </svg>
+
+        {/* Podcast microphone — left side, mid-height */}
+        <svg className="absolute left-6 sm:left-12" style={{ top: '38%' }} width="44" height="64" viewBox="0 0 44 64" fill="none">
+          {/* Mic body */}
+          <rect x="13" y="2" width="18" height="28" rx="9" stroke="#84cc16" strokeWidth="1.8" strokeOpacity="0.40"/>
+          {/* Mic grille lines */}
+          {[10, 16, 22].map(y => (
+            <line key={y} x1="14" y1={y} x2="30" y2={y} stroke="#84cc16" strokeWidth="1" strokeOpacity="0.25"/>
+          ))}
+          {/* Stand arc */}
+          <path d="M6 30 Q6 48 22 48 Q38 48 38 30" stroke="#84cc16" strokeWidth="1.8" strokeOpacity="0.38" fill="none"/>
+          {/* Stand pole */}
+          <line x1="22" y1="48" x2="22" y2="60" stroke="#84cc16" strokeWidth="1.8" strokeOpacity="0.38"/>
+          {/* Base */}
+          <line x1="12" y1="60" x2="32" y2="60" stroke="#84cc16" strokeWidth="2" strokeOpacity="0.38" strokeLinecap="round"/>
+        </svg>
+
+        {/* Sound waveform — right side, mid-height */}
+        <svg className="absolute right-6 sm:right-14" style={{ top: '42%' }} width="80" height="40" viewBox="0 0 80 40" fill="none">
+          {[
+            { x: 0,  h: 6  },
+            { x: 8,  h: 14 },
+            { x: 16, h: 22 },
+            { x: 24, h: 32 },
+            { x: 32, h: 38 },
+            { x: 40, h: 30 },
+            { x: 48, h: 20 },
+            { x: 56, h: 12 },
+            { x: 64, h: 18 },
+            { x: 72, h: 8  },
+          ].map(({ x, h }) => (
+            <rect key={x} x={x} y={(40 - h) / 2} width="5" height={h} rx="2.5" fill="#84cc16" fillOpacity="0.32"/>
+          ))}
+        </svg>
+
+        {/* Musical note — top area, between aperture and left */}
+        <svg className="absolute" style={{ top: '12%', left: '28%' }} width="28" height="36" viewBox="0 0 28 36" fill="none">
+          <path d="M10 28 L10 8 L26 4 L26 14 L10 18" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.30" fill="none" strokeLinejoin="round"/>
+          <circle cx="7"  cy="29" r="5" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.30"/>
+          <circle cx="23" cy="16" r="5" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.30"/>
+        </svg>
+
+        {/* Radial centre glow */}
         <div className="absolute inset-0"
           style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 40%, rgba(132,204,22,0.06) 0%, transparent 70%)' }} />
       </div>
 
       {/* ── Content ──────────────────────────────────────────────────────── */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 text-center" style={{ paddingBottom: '4rem' }}>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 text-center" style={{ paddingBottom: '5rem' }}>
 
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5 border"
           style={{ backgroundColor: 'rgba(132,204,22,0.12)', color: '#a3e635', borderColor: 'rgba(132,204,22,0.30)' }}>
