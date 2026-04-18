@@ -156,11 +156,21 @@ function LoginForm() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex',
-      flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '16px', fontFamily: 'system-ui, sans-serif',
-    }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, sans-serif' }}>
+
+      {/* Top nav */}
+      <header style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <a href="/" style={{ textDecoration: 'none', fontWeight: '700', fontSize: '20px', letterSpacing: '-0.03em' }}>
+          <span style={{ color: '#111827' }}>Studio</span><span style={{ color: '#84cc16' }}>District</span>
+        </a>
+        <nav style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
+          <a href="/" style={{ color: '#6b7280', textDecoration: 'none' }}>Discover</a>
+          <a href="/studio/list" target="_blank" rel="noopener noreferrer" style={{ color: '#6b7280', textDecoration: 'none' }}>List your studio</a>
+        </nav>
+      </header>
+
+      {/* Content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 16px' }}>
       <div style={{ width: '100%', maxWidth: '380px' }}>
 
         {/* Logo */}
@@ -172,7 +182,7 @@ function LoginForm() {
             </span>
           </a>
           <p style={{ color: '#9ca3af', fontSize: '12px', margin: '5px 0 0' }}>
-            Chennai&apos;s studio booking platform
+            Chennai&apos;s Studio Booking Platform
           </p>
         </div>
 
@@ -358,7 +368,7 @@ function LoginForm() {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Legal */}
         <p style={{ textAlign: 'center', fontSize: '11px', color: '#9ca3af', marginTop: '16px' }}>
           By signing in, you agree to our{' '}
           <a href="/terms" style={{ color: '#65a30d', textDecoration: 'none' }}>Terms of Service</a>
@@ -366,6 +376,22 @@ function LoginForm() {
           <a href="/privacy" style={{ color: '#65a30d', textDecoration: 'none' }}>Privacy Policy</a>
         </p>
       </div>
+      </div>
+
+      {/* Site footer */}
+      <footer style={{ backgroundColor: '#0f172a', borderTop: '1px solid #1e293b', padding: '20px 24px', flexShrink: 0 }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <a href="/" style={{ textDecoration: 'none', fontWeight: '700', fontSize: '16px', letterSpacing: '-0.03em' }}>
+            <span style={{ color: '#f8fafc' }}>Studio</span><span style={{ color: '#84cc16' }}>District</span>
+          </a>
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            {[['About', '/about'], ['Privacy', '/privacy'], ['Terms', '/terms'], ['Refund Policy', '/refund-policy']].map(([label, href]) => (
+              <a key={href} href={href} style={{ fontSize: '12px', color: '#94a3b8', textDecoration: 'none' }}>{label}</a>
+            ))}
+          </div>
+          <p style={{ fontSize: '12px', color: '#475569', margin: 0 }}>© 2025 Studio District · Chennai</p>
+        </div>
+      </footer>
     </div>
   )
 }

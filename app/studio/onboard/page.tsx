@@ -41,6 +41,7 @@ export default function StudioOnboardPage() {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
 
   const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors } } = useForm<StudioOnboardData>({
+    mode: 'onChange',
     defaultValues: {
       studio_type: 'photography',
       minimum_hours: 2,
@@ -59,6 +60,17 @@ export default function StudioOnboardPage() {
 
   const watchWorkingDays = watch('working_days') || []
   const watchIdealFor = watch('ideal_for') || []
+
+  // Watch required fields per step to drive Next button disabled state
+  const watchStep1 = watch(['studio_name', 'studio_type', 'owner_name', 'owner_phone', 'email', 'area', 'address'])
+  const watchStep2 = watch(['price_per_hour'])
+
+  function isNextDisabled(): boolean {
+    if (step === 1) return watchStep1.some(v => !v || String(v).trim() === '')
+    if (step === 2) return !watchStep2[0] || Number(watchStep2[0]) <= 0
+    if (step === 8) return watchWorkingDays.length === 0
+    return false
+  }
 
   function toggleDay(day: string) {
     const current = watchWorkingDays
@@ -154,10 +166,10 @@ export default function StudioOnboardPage() {
           {step === 1 && (
             <StepCard title="Basic Information" icon="🏠" subtitle="Tell us about your studio and how to reach you">
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Studio name" span={2} error={errors.studio_name?.message}>
+                <Field label="Studio name" span={2} required error={errors.studio_name?.message}>
                   <input {...register('studio_name')} placeholder="e.g. Lumière Studio Co." className={inputCls} />
                 </Field>
-                <Field label="Studio type" error={errors.studio_type?.message}>
+                <Field label="Studio type" required error={errors.studio_type?.message}>
                   <select {...register('studio_type')} className={selectCls}>
                     <option value="photography">📸 Photography</option>
                     <option value="videography">🎬 Videography</option>
@@ -166,28 +178,28 @@ export default function StudioOnboardPage() {
                     <option value="mixed">🎭 Multi-use</option>
                   </select>
                 </Field>
-                <Field label="Area / Locality" error={errors.area?.message}>
+                <Field label="Area / Locality" required error={errors.area?.message}>
                   <input {...register('area')} placeholder="e.g. Velachery" className={inputCls} />
                 </Field>
-                <Field label="Owner name" error={errors.owner_name?.message}>
+                <Field label="Owner name" required error={errors.owner_name?.message}>
                   <input {...register('owner_name')} placeholder="Your full name" className={inputCls} />
                 </Field>
-                <Field label="WhatsApp number" error={errors.owner_phone?.message}>
+                <Field label="WhatsApp number" required error={errors.owner_phone?.message}>
                   <div className="flex">
                     <span className={prefixCls}>+91</span>
-                    <input {...register('owner_phone')} type="tel" placeholder="9876543210" className={`${inputCls} rounded-l-none border-l-0`} />
+                    <input {...register('owner_phone')} type="tel" inputMode="numeric" placeholder="9876543210" maxLength={10} className={`${inputCls} rounded-l-none border-l-0`} />
                   </div>
                 </Field>
                 <Field label="Alternate phone">
                   <div className="flex">
                     <span className={prefixCls}>+91</span>
-                    <input {...register('owner_alt_phone')} type="tel" className={`${inputCls} rounded-l-none border-l-0`} />
+                    <input {...register('owner_alt_phone')} type="tel" inputMode="numeric" maxLength={10} className={`${inputCls} rounded-l-none border-l-0`} />
                   </div>
                 </Field>
-                <Field label="Email" error={errors.email?.message}>
+                <Field label="Email" required error={errors.email?.message}>
                   <input {...register('email')} type="email" placeholder="studio@email.com" className={inputCls} />
                 </Field>
-                <Field label="Full address" span={2} error={errors.address?.message}>
+                <Field label="Full address" span={2} required error={errors.address?.message}>
                   <input {...register('address')} placeholder="Street, area, Chennai, PIN" className={inputCls} />
                 </Field>
                 <Field label="Google Maps link" span={2}>
@@ -201,7 +213,7 @@ export default function StudioOnboardPage() {
           {step === 2 && (
             <StepCard title="Pricing" icon="💰" subtitle="Set your hourly rates and any extra charges">
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Price per hour (₹)" error={errors.price_per_hour?.message}>
+                <Field label="Price per hour (₹)" required error={errors.price_per_hour?.message}>
                   <input {...register('price_per_hour', { valueAsNumber: true })} type="number" placeholder="1200" className={inputCls} />
                 </Field>
                 <Field label="Minimum hours">
@@ -418,7 +430,7 @@ export default function StudioOnboardPage() {
             <StepCard title="Availability" icon="📅" subtitle="When is your studio open for bookings?">
               <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Working days</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Working days<span className="text-red-500 ml-0.5">*</span></label>
                   <div className="flex gap-2">
                     {DAYS.map(day => (
                       <button key={day} type="button" onClick={() => toggleDay(day)}
@@ -515,8 +527,9 @@ export default function StudioOnboardPage() {
                   ← Back
                 </button>
               )}
-              <button type="button" onClick={handleNext}
-                className={`${step > 1 ? 'flex-[2]' : 'flex-1'} py-3.5 rounded-xl bg-brand-500 text-white font-semibold hover:bg-brand-600 transition-colors`}>
+              <button type="button" onClick={handleNext} disabled={isNextDisabled()}
+                className={`${step > 1 ? 'flex-[2]' : 'flex-1'} py-3.5 rounded-xl font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed`}
+                style={{ backgroundColor: isNextDisabled() ? '#d9f99d' : '#84cc16', color: '#111827' }}>
                 {step === 9 ? 'Review submission →' : 'Next →'}
               </button>
             </div>
@@ -543,10 +556,12 @@ function StepCard({ title, icon, subtitle, children }: { title: string; icon: st
   )
 }
 
-function Field({ label, error, children, span, className }: { label: string; error?: string; children: React.ReactNode; span?: number; className?: string }) {
+function Field({ label, error, children, span, className, required }: { label: string; error?: string; children: React.ReactNode; span?: number; className?: string; required?: boolean }) {
   return (
     <div className={`${span === 2 ? 'col-span-2' : ''} ${className || ''}`}>
-      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
       {children}
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>

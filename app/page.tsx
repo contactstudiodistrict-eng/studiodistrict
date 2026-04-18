@@ -176,7 +176,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
               </p>
             </div>
             <a
-              href="/studio/onboard"
+              href="/studio/list"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-brand-500 text-brand-600 text-sm font-medium hover:bg-brand-50 transition-colors"
             >
               + List Your Studio
@@ -205,7 +207,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 px-4 pt-3"
         style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
         <a
-          href="/studio/onboard"
+          href="/studio/list"
+          target="_blank"
+          rel="noopener noreferrer"
           className="block w-full py-3.5 text-center rounded-xl bg-brand-500 text-white font-bold text-sm active:bg-brand-700 transition-colors"
           style={{ textDecoration: 'none' }}
         >
@@ -251,7 +255,7 @@ function EmptyState({ searchParams }: { searchParams: SearchParams }) {
         href="/"
         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-600 transition-colors"
       >
-        Clear filters
+        Browse Studios
       </a>
     </div>
   )

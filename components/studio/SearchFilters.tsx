@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react'
 
 const AREAS = ['Velachery', 'OMR', 'Anna Nagar', 'T.Nagar', 'Adyar', 'Sholinganallur', 'Porur', 'Vadapalani', 'Mylapore', 'Tambaram']
 const TYPES = [
-  { value: '', label: 'All Types' },
+  { value: '', label: 'All Service Types' },
   { value: 'photography', label: '📸 Photography' },
   { value: 'videography', label: '🎬 Videography' },
   { value: 'audio', label: '🎙 Podcast/Audio' },

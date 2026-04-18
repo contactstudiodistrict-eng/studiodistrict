@@ -81,7 +81,7 @@ export function SiteHeader() {
             style={{ textDecoration: 'none' }}>
             Discover
           </a>
-          <a href="/studio/onboard" className="text-slate-500 hover:text-brand-600 transition-colors"
+          <a href="/studio/list" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-brand-600 transition-colors"
             style={{ textDecoration: 'none' }}>
             List your studio
           </a>
@@ -146,7 +146,7 @@ export function SiteHeader() {
                     {/* Nav links on mobile — shown here */}
                     <div className="md:hidden border-b border-slate-100">
                       <DropItem href="/" icon="🔍" label="Discover" onClick={() => setMenuOpen(false)} active={pathname === '/'} />
-                      <DropItem href="/studio/onboard" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />
+                      <DropItem href="/studio/list" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />
                       {isAdmin && <DropItem href="/admin" icon="⚡" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
                     </div>
 
@@ -171,7 +171,7 @@ export function SiteHeader() {
                           }
                         />
                       )}
-                      {!isOwner && <DropItem href="/studio/onboard" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />}
+                      {!isOwner && <DropItem href="/studio/list" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />}
                       {isAdmin && <DropItem href="/admin" icon="⚙️" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
                     </div>
 
