@@ -31,14 +31,14 @@ export function EarningsCalculator() {
   }
 
   return (
-    <div className="mt-10 max-w-md mx-auto rounded-2xl p-6 sm:p-7"
+    <div className="mt-6 max-w-md mx-auto rounded-2xl p-4 sm:p-5"
       style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }}>
 
-      <p className="text-sm font-semibold mb-5" style={{ color: '#a3e635' }}>
+      <p className="text-sm font-semibold mb-4" style={{ color: '#a3e635' }}>
         💰 How much could you earn?
       </p>
 
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <div>
           <label className="block text-xs mb-1.5" style={{ color: '#64748b' }}>My studio rate</label>
           <select value={rate} onChange={e => setRate(Number(e.target.value))}

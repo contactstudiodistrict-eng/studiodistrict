@@ -233,7 +233,7 @@ export default function StudioListPage() {
               style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 38%, rgba(132,204,22,0.06) 0%, transparent 70%)' }} />
           </div>
 
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 text-center">
+          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 border"
               style={{ backgroundColor: 'rgba(132,204,22,0.12)', color: '#a3e635', borderColor: 'rgba(132,204,22,0.25)' }}>
               🏠 For Studio Owners
@@ -242,7 +242,7 @@ export default function StudioListPage() {
               Turn your Studio space<br />
               <span style={{ color: '#a3e635' }}>into steady income</span>
             </h1>
-            <p className="text-lg max-w-xl mx-auto mb-10" style={{ color: '#94a3b8' }}>
+            <p className="text-lg max-w-xl mx-auto mb-7" style={{ color: '#94a3b8' }}>
               Chennai&apos;s growing studio booking marketplace.
               List for free — pay only when you earn.
             </p>
@@ -254,6 +254,14 @@ export default function StudioListPage() {
             <p className="mt-4 text-xs" style={{ color: '#475569' }}>Free to list · No credit card required · Live in 24h</p>
 
             <EarningsCalculator />
+
+            {/* Scroll hint */}
+            <div className="mt-6 flex flex-col items-center gap-1 animate-bounce" style={{ color: '#334155' }}>
+              <span className="text-xs">Scroll to learn more</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3v10M3 9l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
         </section>
 
