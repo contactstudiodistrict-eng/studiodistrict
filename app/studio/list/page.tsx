@@ -97,17 +97,19 @@ export default function StudioListPage() {
             <svg className="absolute top-4 right-4" width="36" height="36" viewBox="0 0 48 48" fill="none">
               <path d="M46 22 L46 2 L26 2" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.42" strokeLinecap="round"/>
             </svg>
-            {/* Film strip bottom */}
-            <svg className="absolute bottom-6 left-4" width="156" height="38" viewBox="0 0 156 38" fill="none">
-              <rect x="0" y="0" width="156" height="38" rx="4" fill="#84cc16" fillOpacity="0.10"/>
-              <rect x="0" y="0" width="156" height="1"  fill="#84cc16" fillOpacity="0.36"/>
-              <rect x="0" y="37" width="156" height="1" fill="#84cc16" fillOpacity="0.36"/>
-              {[0,1,2,3,4,5].map((i: number) => (
-                <rect key={`t${i}`} x={i * 24 + 4} y="3" width="12" height="7" rx="1.5" fill="#84cc16" fillOpacity="0.26"/>
-              ))}
-              {[0,1,2,3,4,5].map((i: number) => (
-                <rect key={`b${i}`} x={i * 24 + 4} y="28" width="12" height="7" rx="1.5" fill="#84cc16" fillOpacity="0.26"/>
-              ))}
+            {/* Bokeh circles — bottom left */}
+            <svg className="absolute bottom-5 left-3" width="160" height="70" viewBox="0 0 160 70" fill="none">
+              <circle cx="18"  cy="42" r="16" stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.17"/>
+              <circle cx="58"  cy="30" r="20" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.14"/>
+              <circle cx="104" cy="26" r="14" stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.17"/>
+              <circle cx="146" cy="34" r="17" stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.13"/>
+              <circle cx="38"  cy="56" r="7"  fill="#84cc16"   fillOpacity="0.24"/>
+              <circle cx="78"  cy="52" r="9"  fill="#84cc16"   fillOpacity="0.19"/>
+              <circle cx="122" cy="54" r="6"  fill="#84cc16"   fillOpacity="0.26"/>
+              <circle cx="10"  cy="62" r="3"  fill="#84cc16"   fillOpacity="0.38"/>
+              <circle cx="55"  cy="64" r="2"  fill="#84cc16"   fillOpacity="0.42"/>
+              <circle cx="95"  cy="63" r="2.5" fill="#84cc16"  fillOpacity="0.34"/>
+              <circle cx="148" cy="61" r="2"  fill="#84cc16"   fillOpacity="0.36"/>
             </svg>
             {/* Equalizer bars */}
             <svg className="absolute bottom-5 right-4" width="50" height="42" viewBox="0 0 50 42" fill="none">
@@ -178,20 +180,22 @@ export default function StudioListPage() {
             <svg className="absolute top-5 right-5" width="48" height="48" viewBox="0 0 48 48" fill="none">
               <path d="M46 22 L46 2 L26 2" stroke="#84cc16" strokeWidth="2.5" strokeOpacity="0.44" strokeLinecap="round"/>
             </svg>
-            {/* Film strip — bottom left */}
-            <svg className="absolute bottom-8 left-8" width="260" height="48" viewBox="0 0 260 48" fill="none">
-              <rect x="0" y="0" width="260" height="48" rx="4" fill="#84cc16" fillOpacity="0.10"/>
-              <rect x="0" y="0" width="260" height="1"  fill="#84cc16" fillOpacity="0.38"/>
-              <rect x="0" y="47" width="260" height="1" fill="#84cc16" fillOpacity="0.38"/>
-              {[0,1,2,3,4,5,6,7,8,9,10].map((i: number) => (
-                <rect key={`t${i}`} x={i * 24 + 4} y="4" width="14" height="9" rx="2" fill="#84cc16" fillOpacity="0.28"/>
-              ))}
-              {[0,1,2,3,4,5,6,7,8,9,10].map((i: number) => (
-                <rect key={`b${i}`} x={i * 24 + 4} y="35" width="14" height="9" rx="2" fill="#84cc16" fillOpacity="0.28"/>
-              ))}
-              {[1,2,3,4,5].map((i: number) => (
-                <rect key={`d${i}`} x={i * 44 + 4} y="15" width="1" height="18" fill="#84cc16" fillOpacity="0.22"/>
-              ))}
+            {/* Bokeh circles — bottom left */}
+            <svg className="absolute bottom-6 left-8" width="260" height="88" viewBox="0 0 260 88" fill="none">
+              <circle cx="22"  cy="54" r="20" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.17"/>
+              <circle cx="70"  cy="38" r="26" stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.13"/>
+              <circle cx="128" cy="34" r="18" stroke="#84cc16" strokeWidth="1.5" strokeOpacity="0.16"/>
+              <circle cx="186" cy="42" r="22" stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.13"/>
+              <circle cx="240" cy="30" r="16" stroke="#84cc16" strokeWidth="1"   strokeOpacity="0.15"/>
+              <circle cx="46"  cy="70" r="8"  fill="#84cc16"   fillOpacity="0.24"/>
+              <circle cx="96"  cy="66" r="11" fill="#84cc16"   fillOpacity="0.18"/>
+              <circle cx="156" cy="68" r="7"  fill="#84cc16"   fillOpacity="0.26"/>
+              <circle cx="212" cy="64" r="9"  fill="#84cc16"   fillOpacity="0.20"/>
+              <circle cx="10"  cy="78" r="3.5" fill="#84cc16"  fillOpacity="0.38"/>
+              <circle cx="68"  cy="80" r="2.5" fill="#84cc16"  fillOpacity="0.42"/>
+              <circle cx="120" cy="79" r="3"   fill="#84cc16"  fillOpacity="0.34"/>
+              <circle cx="176" cy="80" r="2"   fill="#84cc16"  fillOpacity="0.38"/>
+              <circle cx="248" cy="76" r="2.5" fill="#84cc16"  fillOpacity="0.32"/>
             </svg>
             {/* Equalizer bars — bottom right */}
             <svg className="absolute bottom-6 right-16" width="72" height="60" viewBox="0 0 72 60" fill="none">
