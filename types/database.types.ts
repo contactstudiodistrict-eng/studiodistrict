@@ -11,10 +11,13 @@ export type Database = {
         Row: {
           id: string
           full_name: string | null
+          first_name: string | null
+          last_name: string | null
           phone: string | null
           email: string | null
           avatar_url: string | null
           role: 'customer' | 'studio_owner' | 'admin'
+          wallet_balance: number
           is_verified: boolean
           created_at: string
           updated_at: string

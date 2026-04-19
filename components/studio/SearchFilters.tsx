@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react'
 
 const AREAS = ['Velachery', 'OMR', 'Anna Nagar', 'T.Nagar', 'Adyar', 'Sholinganallur', 'Porur', 'Vadapalani', 'Mylapore', 'Tambaram']
 const TYPES = [
-  { value: '', label: 'All Types' },
+  { value: '', label: 'All Service Types' },
   { value: 'photography', label: '📸 Photography' },
   { value: 'videography', label: '🎬 Videography' },
   { value: 'audio', label: '🎙 Podcast/Audio' },
@@ -26,7 +26,8 @@ export function SearchFilters({ initialParams }: { initialParams: Record<string,
     const params = new URLSearchParams()
     if (newType) params.set('type', newType)
     if (newArea) params.set('area', newArea)
-    if (initialParams.q) params.set('q', initialParams.q)
+    if (initialParams.q)    params.set('q',    initialParams.q)
+    if (initialParams.date) params.set('date', initialParams.date)
     startTransition(() => router.push(`${pathname}?${params.toString()}`))
   }
 
@@ -60,12 +61,33 @@ export function SearchFilters({ initialParams }: { initialParams: Record<string,
           {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
 
+        {initialParams.date && (
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm"
+            style={{ backgroundColor: 'rgba(132,204,22,0.10)', color: '#65a30d', border: '1px solid rgba(132,204,22,0.30)' }}>
+            <span>📅</span>
+            <span>{new Date(...(initialParams.date.split('-').map(Number) as [number,number,number]))
+              .toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+            <button
+              onClick={() => {
+                const params = new URLSearchParams()
+                if (type) params.set('type', type)
+                if (area) params.set('area', area)
+                if (initialParams.q) params.set('q', initialParams.q)
+                startTransition(() => router.push(`${pathname}?${params.toString()}`))
+              }}
+              className="ml-1 hover:text-red-500 transition-colors cursor-pointer"
+              style={{ background: 'none', border: 'none', fontFamily: 'inherit', padding: 0 }}
+            >✕</button>
+          </div>
+        )}
+
         {initialParams.q && (
           <button
             onClick={() => {
               const params = new URLSearchParams()
               if (type) params.set('type', type)
               if (area) params.set('area', area)
+              if (initialParams.date) params.set('date', initialParams.date)
               startTransition(() => router.push(`${pathname}?${params.toString()}`))
             }}
             className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"

@@ -2,6 +2,7 @@
 import type { Metadata } from 'next'
 import { Space_Grotesk, DM_Serif_Display, Space_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
+import { ClientLayout } from '@/components/shared/ClientLayout'
 import './globals.css'
 
 const spaceGrotesk = Space_Grotesk({
@@ -42,7 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmSerif.variable} ${spaceMono.variable}`}>
       <body className="font-sans bg-white text-ink-900 antialiased">
-        {children}
+        <ClientLayout>
+          {children}
+        </ClientLayout>
         <Toaster position="top-center" richColors />
       </body>
     </html>

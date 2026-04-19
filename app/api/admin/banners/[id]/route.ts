@@ -15,13 +15,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
   const body = await req.json()
+  const { referral_amount, ...rest } = body
+  const payload: Record<string, unknown> = { ...rest }
+  if (rest.type === 'referral' && referral_amount != null) payload.referral_amount = referral_amount
+
   const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('banners')
-    .update(body)
-    .eq('id', params.id)
-    .select()
-    .single()
+  const { data, error } = await admin.from('banners').update(payload).eq('id', params.id).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ banner: data })

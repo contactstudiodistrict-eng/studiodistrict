@@ -1,44 +1,144 @@
-// components/shared/HeroBanner.tsx
-export function HeroBanner() {
-  return (
-    <div className="bg-ink-900 border-b border-ink-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16 text-center">
+'use client'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/20 text-brand-400 text-xs font-semibold mb-4 sm:mb-5 border border-brand-500/30">
-          🎬 Chennai&apos;s studio booking platform
+const TYPES = [
+  { value: 'photography', label: 'Photography' },
+  { value: 'videography', label: 'Videography' },
+  { value: 'audio',       label: 'Podcast / Audio' },
+  { value: 'music',       label: 'Music' },
+  { value: 'mixed',       label: 'Multi-use' },
+]
+const AREAS = ['Velachery','OMR','Anna Nagar','T.Nagar','Adyar','Sholinganallur','Porur','Vadapalani','Mylapore','Tambaram']
+
+const chevron = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239ca3af'/%3E%3C/svg%3E")`
+
+interface Props {
+  thumbnails?: string[]
+  onSearch?: (type: string, area: string) => void
+}
+
+export function HeroBanner({ thumbnails = [], onSearch }: Props) {
+  const router = useRouter()
+  const [type, setType] = useState('')
+  const [area, setArea] = useState('')
+
+  // Fill to exactly 4 photos, cycling if fewer
+  const photos: string[] = thumbnails.length > 0
+    ? Array.from({ length: 4 }, (_, i) => thumbnails[i % thumbnails.length])
+    : []
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault()
+    if (onSearch) {
+      onSearch(type, area)
+    } else {
+      const params = new URLSearchParams()
+      if (type) params.set('type', type)
+      if (area) params.set('area', area.toLowerCase())
+      router.push(`/?${params.toString()}`)
+    }
+  }
+
+  const selectStyle = {
+    border: '1px solid #f1f5f9',
+    borderRadius: 12,
+    color: '#111827',
+    background: '#fff',
+    backgroundImage: chevron,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 12px center',
+    paddingRight: 32,
+    appearance: 'none' as const,
+  }
+
+  return (
+    <div className="relative overflow-hidden" style={{ minHeight: 400, backgroundColor: '#0f172a' }}>
+
+      {/* ── Photo grid background ─────────────────────────────────── */}
+      {photos.length === 4 && (
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
+          {photos.map((src, i) => (
+            <div key={i} className="overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt="" className="w-full h-full object-cover"
+                style={{ filter: 'brightness(0.55) saturate(0.8)' }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Overlay ──────────────────────────────────────────────── */}
+      <div className="absolute inset-0"
+        style={{ background: 'linear-gradient(to bottom, rgba(10,15,28,0.60) 0%, rgba(10,15,28,0.72) 55%, rgba(10,15,28,0.85) 100%)' }} />
+
+      {/* ── Content ──────────────────────────────────────────────── */}
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-18 text-center">
+
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5 border"
+          style={{ backgroundColor: 'rgba(132,204,22,0.15)', color: '#a3e635', borderColor: 'rgba(132,204,22,0.35)' }}>
+          🎬 Chennai&apos;s Studio Marketplace
         </div>
 
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-sans font-bold text-white mb-3 sm:mb-4 leading-tight tracking-tight">
-          Book the perfect studio<br />
-          <span className="text-brand-400">for your next shoot</span>
+        {/* Headline */}
+        <h1 className="text-3xl sm:text-5xl font-bold text-white mb-4 leading-tight tracking-tight">
+          Book the perfect Studio<br />
+          <span style={{ color: '#a3e635' }}>for your next Shoot</span>
         </h1>
 
-        <p className="text-ink-400 text-base sm:text-lg max-w-lg mx-auto mb-6 sm:mb-8 px-2">
-          Photography, podcast, video, and music studios across Chennai.
-          <span className="hidden sm:inline"> Instant availability. No middlemen.</span>
+        {/* Subtext */}
+        <p className="text-sm sm:text-base max-w-xl mx-auto mb-8" style={{ color: '#cbd5e1' }}>
+          Photography, Podcast, Video, and Music studios across Chennai —
+          verified, bookable instantly.
         </p>
 
-        {/* Quick search */}
-        <form action="/" method="GET" className="flex gap-2 max-w-lg mx-auto px-1 sm:px-0">
-          <input
-            name="q"
-            type="search"
-            placeholder="Search studios or areas…"
-            className="flex-1 min-w-0 border border-ink-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-ink-800 text-white placeholder:text-ink-500"
-          />
-          <button
-            type="submit"
-            className="flex-shrink-0 px-5 py-3 rounded-xl bg-brand-500 text-white text-sm font-bold hover:bg-brand-600 transition-colors shadow-sm"
-          >
-            Search
-          </button>
+        {/* ── Structured search bar ─────────────────────────────── */}
+        <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl p-1.5 shadow-2xl flex flex-col sm:flex-row gap-1.5">
+
+            {/* Studio type */}
+            <select
+              value={type}
+              onChange={e => setType(e.target.value)}
+              className="flex-1 min-w-0 px-4 py-3 text-sm focus:outline-none cursor-pointer"
+              style={{ ...selectStyle, color: type ? '#111827' : '#9ca3af' }}
+            >
+              <option value="">Any studio type</option>
+              {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+
+            <div className="hidden sm:block w-px self-stretch my-1" style={{ backgroundColor: '#f1f5f9' }} />
+
+            {/* Area */}
+            <select
+              value={area}
+              onChange={e => setArea(e.target.value)}
+              className="flex-1 min-w-0 px-4 py-3 text-sm focus:outline-none cursor-pointer"
+              style={{ ...selectStyle, color: area ? '#111827' : '#9ca3af' }}
+            >
+              <option value="">Any area</option>
+              {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+
+            {/* Search button */}
+            <button
+              type="submit"
+              className="flex-shrink-0 px-7 py-3 rounded-xl text-sm font-bold transition-colors"
+              style={{ backgroundColor: '#84cc16', color: '#111827' }}
+            >
+              Search →
+            </button>
+          </div>
         </form>
 
-        {/* Stats */}
-        <div className="flex items-center justify-center flex-wrap gap-4 sm:gap-8 mt-8 text-sm text-ink-400">
-          <div className="flex items-center gap-1.5"><span>🏠</span> 40+ studios</div>
-          <div className="flex items-center gap-1.5"><span>📍</span> Pan-Chennai</div>
-          <div className="flex items-center gap-1.5"><span>⚡</span> Instant booking</div>
+        {/* ── Trust strip ──────────────────────────────────────── */}
+        <div className="flex items-center justify-center flex-wrap gap-3 sm:gap-7 mt-6 text-xs" style={{ color: '#94a3b8' }}>
+          {['Verified studios', 'Instant confirmation', 'Pay after booking'].map(t => (
+            <span key={t} className="flex items-center gap-1.5">
+              <span style={{ color: '#84cc16' }}>✓</span> {t}
+            </span>
+          ))}
         </div>
       </div>
     </div>
