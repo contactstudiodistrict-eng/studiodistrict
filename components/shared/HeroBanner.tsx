@@ -15,15 +15,13 @@ const chevron = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 
 interface Props {
   thumbnails?: string[]
+  onSearch?: (type: string, area: string) => void
 }
 
-export function HeroBanner({ thumbnails = [] }: Props) {
+export function HeroBanner({ thumbnails = [], onSearch }: Props) {
   const router = useRouter()
   const [type, setType] = useState('')
   const [area, setArea] = useState('')
-  const [date, setDate] = useState('')
-
-  const today = new Date().toISOString().split('T')[0]
 
   // Fill to exactly 4 photos, cycling if fewer
   const photos: string[] = thumbnails.length > 0
@@ -32,11 +30,14 @@ export function HeroBanner({ thumbnails = [] }: Props) {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    const params = new URLSearchParams()
-    if (type) params.set('type', type)
-    if (area) params.set('area', area)
-    if (date) params.set('date', date)
-    router.push(`/?${params.toString()}`)
+    if (onSearch) {
+      onSearch(type, area)
+    } else {
+      const params = new URLSearchParams()
+      if (type) params.set('type', type)
+      if (area) params.set('area', area.toLowerCase())
+      router.push(`/?${params.toString()}`)
+    }
   }
 
   const selectStyle = {
@@ -52,7 +53,7 @@ export function HeroBanner({ thumbnails = [] }: Props) {
   }
 
   return (
-    <div className="relative overflow-hidden" style={{ minHeight: 420, backgroundColor: '#0f172a' }}>
+    <div className="relative overflow-hidden" style={{ minHeight: 400, backgroundColor: '#0f172a' }}>
 
       {/* ── Photo grid background ─────────────────────────────────── */}
       {photos.length === 4 && (
@@ -72,7 +73,7 @@ export function HeroBanner({ thumbnails = [] }: Props) {
         style={{ background: 'linear-gradient(to bottom, rgba(10,15,28,0.60) 0%, rgba(10,15,28,0.72) 55%, rgba(10,15,28,0.85) 100%)' }} />
 
       {/* ── Content ──────────────────────────────────────────────── */}
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-18 text-center">
 
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5 border"
@@ -93,7 +94,7 @@ export function HeroBanner({ thumbnails = [] }: Props) {
         </p>
 
         {/* ── Structured search bar ─────────────────────────────── */}
-        <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
+        <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
           <div className="bg-white rounded-2xl p-1.5 shadow-2xl flex flex-col sm:flex-row gap-1.5">
 
             {/* Studio type */}
@@ -119,31 +120,6 @@ export function HeroBanner({ thumbnails = [] }: Props) {
               <option value="">Any area</option>
               {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
-
-            <div className="hidden sm:block w-px self-stretch my-1" style={{ backgroundColor: '#f1f5f9' }} />
-
-            {/* Date — "When?" */}
-            <div className="flex-1 min-w-0 relative">
-              {!date && (
-                <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
-                  <span className="text-sm" style={{ color: '#9ca3af' }}>📅 When?</span>
-                </div>
-              )}
-              <input
-                type="date"
-                value={date}
-                min={today}
-                onChange={e => setDate(e.target.value)}
-                className="w-full px-4 py-3 text-sm focus:outline-none rounded-xl"
-                style={{
-                  color: date ? '#111827' : 'transparent',
-                  border: '1px solid #f1f5f9',
-                  background: 'white',
-                }}
-                onFocus={e => { e.currentTarget.style.color = '#111827' }}
-                onBlur={e  => { if (!e.currentTarget.value) e.currentTarget.style.color = 'transparent' }}
-              />
-            </div>
 
             {/* Search button */}
             <button

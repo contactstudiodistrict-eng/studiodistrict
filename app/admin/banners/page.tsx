@@ -81,6 +81,8 @@ export default function AdminBannersPage() {
   const [form, setForm] = useState<FormState>(emptyForm())
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [referralAmount, setReferralAmount] = useState(200)
+  const [referralSaving, setReferralSaving] = useState(false)
 
   // Auth guard
   useEffect(() => {
@@ -96,7 +98,10 @@ export default function AdminBannersPage() {
     setLoading(true)
     const res = await fetch('/api/admin/banners')
     const data = await res.json()
-    setBanners(data.banners ?? [])
+    const all: Banner[] = data.banners ?? []
+    setBanners(all)
+    const rb = all.find(b => b.type === 'referral')
+    if (rb?.referral_amount) setReferralAmount(rb.referral_amount)
     setLoading(false)
   }, [])
 
@@ -183,6 +188,21 @@ export default function AdminBannersPage() {
     }
   }
 
+  async function saveReferralAmount() {
+    const rb = banners.find(b => b.type === 'referral')
+    if (!rb) { toast.error('No referral banner found'); return }
+    setReferralSaving(true)
+    const res = await fetch(`/api/admin/banners/${rb.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'referral', referral_amount: referralAmount }),
+    })
+    setReferralSaving(false)
+    if (res.ok) toast.success('Referral reward updated')
+    else toast.error('Failed to update')
+    fetchBanners()
+  }
+
   function setFormField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm(f => {
       const next = { ...f, [key]: value }
@@ -240,6 +260,33 @@ export default function AdminBannersPage() {
           >
             + New Banner
           </button>
+        </div>
+
+        {/* Referral reward quick-set */}
+        <div style={{ backgroundColor: '#f0fdf4', borderRadius: '14px', border: '1px solid #bbf7d0', padding: '20px 24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: '#166534' }}>🎁 Referral reward amount</div>
+            <div style={{ fontSize: '12px', color: '#4ade80', marginTop: '2px' }}>Both referrer and new user earn this on first booking</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#fff', borderRadius: '10px', border: '1px solid #bbf7d0', padding: '8px 12px' }}>
+              <span style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280' }}>₹</span>
+              <input
+                type="number"
+                min={1}
+                value={referralAmount}
+                onChange={e => setReferralAmount(Number(e.target.value))}
+                style={{ width: '80px', border: 'none', outline: 'none', fontSize: '18px', fontWeight: '700', color: '#111827', background: 'transparent' }}
+              />
+            </div>
+            <button
+              onClick={saveReferralAmount}
+              disabled={referralSaving}
+              style={{ padding: '10px 18px', borderRadius: '10px', backgroundColor: '#16a34a', color: '#fff', fontWeight: '700', fontSize: '14px', border: 'none', cursor: 'pointer', opacity: referralSaving ? 0.6 : 1 }}
+            >
+              {referralSaving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
         </div>
 
         {/* Banner table */}
