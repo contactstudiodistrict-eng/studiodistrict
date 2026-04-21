@@ -48,7 +48,7 @@ export async function createRazorpayPaymentLink(params: {
       contact: `+91${params.customerPhone}`,
       email: params.customerEmail || '',
     },
-    notify: { sms: true, email: !!params.customerEmail, whatsapp: false },
+    notify: { sms: false, email: !!params.customerEmail, whatsapp: true },
     reminder_enable: true,
     notes: {
       booking_id: params.bookingId,
