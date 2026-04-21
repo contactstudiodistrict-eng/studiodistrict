@@ -26,12 +26,17 @@ export async function POST(req: NextRequest) {
 
   const adminClient = createAdminClient()
 
-  if (payload.event === 'payment_link.paid') {
-    try {
-      const linkEntity    = payload.payload?.payment_link?.entity
-      const paymentEntity = payload.payload?.payment?.entity
+  // Handle both order-based (payment.captured) and legacy link-based (payment_link.paid)
+  const isOrderPayment = payload.event === 'payment.captured'
+  const isLinkPayment  = payload.event === 'payment_link.paid'
 
-      const bookingId     = linkEntity?.notes?.booking_id
+  if (isOrderPayment || isLinkPayment) {
+    try {
+      const paymentEntity = payload.payload?.payment?.entity
+      const linkEntity    = payload.payload?.payment_link?.entity
+
+      // For orders, booking_id is in payment notes; for links, it's in link notes
+      const bookingId     = paymentEntity?.notes?.booking_id ?? linkEntity?.notes?.booking_id
       const rzpPaymentId  = paymentEntity?.id
       const rzpLinkId     = linkEntity?.id
       const amountPaise   = paymentEntity?.amount
@@ -55,6 +60,14 @@ export async function POST(req: NextRequest) {
         .eq('booking_id', bookingId)
         .select()
         .single()
+
+      // Idempotency: if verify route already marked paid, skip re-processing
+      const { data: existingBooking } = await adminClient
+        .from('bookings').select('status').eq('id', bookingId).single()
+      if ((existingBooking as any)?.status === 'paid') {
+        console.log(`[Razorpay] Webhook: booking ${bookingId} already paid, skipping`)
+        return NextResponse.json({ received: true })
+      }
 
       // Update booking status to paid
       const { data: booking } = await adminClient
