@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatINR } from '@/lib/pricing'
+import { PayoutsTable } from './PayoutsTable'
 
 export default async function AdminPaymentsPage() {
   const supabase = createClient()
@@ -13,7 +14,7 @@ export default async function AdminPaymentsPage() {
 
   const [{ data: rawPayments }, { data: rawPayouts }] = await Promise.all([
     supabase.from('payments').select('*, bookings(booking_ref, customer_name, studios(studio_name))').order('created_at', { ascending: false }).limit(50),
-    supabase.from('payouts').select('*, studios(studio_name, owner_name)').order('created_at', { ascending: false }).limit(50),
+    supabase.from('payouts').select('*, studios(studio_name, owner_name, account_number, ifsc, upi_id, bank_account_name), bookings(booking_ref)').order('created_at', { ascending: false }).limit(50),
   ])
   const payments = rawPayments as any[] | null
   const payouts = rawPayouts as any[] | null
@@ -23,7 +24,6 @@ export default async function AdminPaymentsPage() {
   const pendingPayouts = (payouts || []).filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0)
 
   const STATUS_PAY: Record<string, string> = { paid: 'bg-green-100 text-green-700', pending: 'bg-amber-100 text-amber-700', failed: 'bg-red-100 text-red-600', refunded: 'bg-gray-100 text-gray-500' }
-  const STATUS_POUT: Record<string, string> = { paid: 'bg-green-100 text-green-700', pending: 'bg-amber-100 text-amber-700', processing: 'bg-blue-100 text-blue-700', failed: 'bg-red-100 text-red-600' }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -90,43 +90,7 @@ export default async function AdminPaymentsPage() {
         {/* Payouts table */}
         <div>
           <h2 className="text-base font-semibold text-gray-700 mb-3">Studio Payouts</h2>
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50">
-                <tr>
-                  {['Studio', 'Owner', 'Amount', 'Scheduled', 'Method', 'Status', 'Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {(!payouts || payouts.length === 0) ? (
-                  <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">No payouts yet</td></tr>
-                ) : payouts.map(p => {
-                  const s = (p as any).studios
-                  return (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-700">{s?.studio_name || '—'}</td>
-                      <td className="px-4 py-3 text-gray-500">{s?.owner_name || '—'}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">{formatINR(p.amount)}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">
-                        {p.scheduled_for ? new Date(p.scheduled_for).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 capitalize">{p.payout_method}</td>
-                      <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_POUT[p.status] || 'bg-gray-100 text-gray-500'}`}>{p.status}</span></td>
-                      <td className="px-4 py-3">
-                        {p.status === 'pending' && (
-                          <button className="px-2 py-1 rounded text-xs bg-green-50 text-green-700 border border-green-200 hover:bg-green-100">
-                            Process
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          <PayoutsTable initialPayouts={(payouts || []) as any} />
         </div>
       </main>
     </div>
