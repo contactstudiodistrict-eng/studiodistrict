@@ -272,7 +272,7 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
                   <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '1px',
                     color: done ? '#15803d' : active ? '#65a30d' : '#9ca3af' }}>
                     {s.label}
-                    {active && <span style={{ marginLeft: '6px', fontSize: '10px', animation: 'blink 1s infinite' }}>⏳</span>}
+                    {active && i < LIFECYCLE.length - 1 && <span style={{ marginLeft: '6px', fontSize: '10px', animation: 'blink 1s infinite' }}>⏳</span>}
                   </div>
                   {dateVal && (
                     <div style={{ fontSize: '11px', color: '#94a3b8' }}>
