@@ -9,57 +9,30 @@ export interface RazorpayPaymentLink {
   status: string
 }
 
-// ── Create Payment Link ───────────────────────────────────────────────────
-export async function createRazorpayPaymentLink(params: {
+// ── Create Order (used with Checkout.js — in-app payment, no Razorpay notifications) ──
+export async function createRazorpayOrder(params: {
   bookingId: string
   bookingRef: string
-  customerName: string
-  customerPhone: string
-  customerEmail?: string
-  totalAmountRupees: number  // in ₹ (not paise)
-  description: string
-}): Promise<RazorpayPaymentLink> {
-
+  totalAmountRupees: number
+}): Promise<{ id: string; amount: number; currency: string }> {
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-    // Return a stub payment URL pointing to our own payment page
-    console.log('[Razorpay] Credentials not set — using stub payment link')
-    return {
-      id: `stub_${Date.now()}`,
-      short_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings/${params.bookingId}/pay`,
-      amount: params.totalAmountRupees * 100,
-      status: 'created',
-    }
+    throw new Error('Razorpay credentials not configured')
   }
 
-  // ── Real Razorpay implementation ─────────────────────────────────────
   const { default: Razorpay } = await import('razorpay')
-  const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID!,
+  const rzp = new Razorpay({
+    key_id:    process.env.RAZORPAY_KEY_ID!,
     key_secret: process.env.RAZORPAY_KEY_SECRET!,
   })
 
-  const link = await (razorpay as any).paymentLink.create({
-    amount: params.totalAmountRupees * 100,  // convert to paise
+  const order = await rzp.orders.create({
+    amount:   params.totalAmountRupees * 100, // paise
     currency: 'INR',
-    accept_partial: false,
-    description: params.description,
-    customer: {
-      name: params.customerName,
-      contact: `+91${params.customerPhone}`,
-      email: params.customerEmail || '',
-    },
-    notify: { sms: false, email: !!params.customerEmail, whatsapp: true },
-    reminder_enable: true,
-    notes: {
-      booking_id: params.bookingId,
-      booking_ref: params.bookingRef,
-    },
-    callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings/${params.bookingId}/success`,
-    callback_method: 'get',
-    expire_by: Math.floor(Date.now() / 1000) + 30 * 60, // 30 min
+    receipt:  params.bookingRef,
+    notes:    { booking_id: params.bookingId, booking_ref: params.bookingRef },
   })
 
-  return link
+  return order as { id: string; amount: number; currency: string }
 }
 
 // ── Verify Webhook Signature ──────────────────────────────────────────────
