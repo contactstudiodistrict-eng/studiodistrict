@@ -69,6 +69,7 @@ export default async function PaymentPage({ params }: { params: { id: string } }
         amount:               b.total_amount,
         platform_commission:  b.platform_fee,
         gst_on_commission:    b.gst_amount,
+        studio_payout_amount: b.studio_payout_amount,
         status:               'pending',
       }, { onConflict: 'booking_id' })
 
