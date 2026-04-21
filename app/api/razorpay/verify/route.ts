@@ -56,15 +56,28 @@ export async function POST(req: NextRequest) {
     })
     .eq('booking_id', booking_id)
 
-  // Mark booking paid
-  const { data: booking } = await (admin as any)
+  // Mark booking paid (plain update — no join in update response)
+  const { error: updateError } = await (admin as any)
     .from('bookings')
     .update({ status: 'paid', paid_at: new Date().toISOString() })
     .eq('id', booking_id)
+
+  if (updateError) {
+    console.error('[Verify] Booking update error:', updateError)
+    return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 })
+  }
+
+  // Fetch full booking + studio separately
+  const { data: booking, error: fetchError } = await (admin as any)
+    .from('bookings')
     .select('*, studios(*)')
+    .eq('id', booking_id)
     .single()
 
-  if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+  if (!booking || fetchError) {
+    console.error('[Verify] Booking fetch error:', fetchError)
+    return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+  }
 
   const studio = booking.studios
 
