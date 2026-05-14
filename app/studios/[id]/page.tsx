@@ -9,8 +9,10 @@ import { AmenitiesGrid } from '@/components/studio/AmenitiesGrid'
 import { EquipmentList } from '@/components/studio/EquipmentList'
 import { BookingSidebar } from '@/components/booking/BookingSidebar'
 import { FavouriteButton } from '@/components/studio/FavouriteButton'
+import { PackageList } from '@/components/studio/PackageList'
 import { formatINR } from '@/lib/pricing'
 import type { StudioWithDetails } from '@/types/database.types'
+import type { StudioPackage } from '@/components/studio/PackageCard'
 
 interface Props { params: { id: string } }
 
@@ -39,7 +41,7 @@ export default async function StudioProfilePage({ params }: Props) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [studioResult, reviewsResult] = await Promise.all([
+  const [studioResult, reviewsResult, packagesResult] = await Promise.all([
     supabase
       .from('studios')
       .select(`
@@ -58,10 +60,18 @@ export default async function StudioProfilePage({ params }: Props) {
       .not('rating', 'is', null)
       .order('created_at', { ascending: false })
       .limit(10),
+    supabase
+      .from('studio_packages')
+      .select('*')
+      .eq('studio_id', params.id)
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
   ])
 
   const { data: studio, error } = studioResult
   if (error || !studio) notFound()
+
+  const packages = (packagesResult.data ?? []) as StudioPackage[]
 
   // Check if current user has favourited this studio
   let isFavourited = false
@@ -174,6 +184,14 @@ export default async function StudioProfilePage({ params }: Props) {
             </section>
 
             <hr className="my-6 border-gray-100" />
+
+            {/* Packages */}
+            {packages.length > 0 && (
+              <>
+                <PackageList packages={packages} studioId={s.id} pricePerHour={s.price_per_hour} />
+                <hr className="my-6 border-gray-100" />
+              </>
+            )}
 
             {/* Amenities */}
             {s.studio_amenities && (

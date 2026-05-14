@@ -1,7 +1,7 @@
 // app/api/bookings/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { calculatePricing } from '@/lib/pricing'
+import { calculatePricing, calculatePackagePricing } from '@/lib/pricing'
 import { sendBookingRequest } from '@/lib/whatsapp'
 import { format } from 'date-fns'
 
@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     const {
       studio_id, customer_name, customer_phone, customer_email,
       booking_date, start_time, end_time, duration_hours, shoot_type, notes,
+      package_id, package_name, package_price,
     } = body
 
     // 3. Validate required fields
@@ -65,8 +66,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This slot is already taken. Please pick a different time.' }, { status: 409 })
     }
 
-    // 6. Calculate pricing server-side
-    const pricing = calculatePricing(studio.price_per_hour, Number(duration_hours))
+    // 6. If package booking: verify package and use package pricing
+    type BasePricing = { subtotal: number; platformFee: number; gstAmount: number; securityDeposit: number; totalAmount: number; studioPayout: number }
+    let pricing: BasePricing = calculatePricing(studio.price_per_hour, Number(duration_hours))
+    let verifiedPackageName: string | null = null
+    let verifiedPackageId: string | null = null
+
+    if (package_id) {
+      const { data: pkg } = await adminClient
+        .from('studio_packages')
+        .select('id, package_name, price, duration_hours, is_active')
+        .eq('id', package_id)
+        .eq('studio_id', studio_id)
+        .eq('is_active', true)
+        .single()
+
+      if (!pkg) {
+        return NextResponse.json({ error: 'Package not found or no longer available' }, { status: 400 })
+      }
+      if (Number(package_price) !== (pkg as any).price) {
+        return NextResponse.json({ error: 'Package price mismatch — please refresh and try again' }, { status: 400 })
+      }
+      pricing = calculatePackagePricing((pkg as any).price)
+      verifiedPackageName = (pkg as any).package_name
+      verifiedPackageId   = (pkg as any).id
+    }
 
     // 7. Insert booking
     const { data: booking, error: insertErr } = await adminClient
@@ -90,6 +114,9 @@ export async function POST(req: NextRequest) {
         total_amount:         pricing.totalAmount,
         security_deposit:     pricing.securityDeposit,
         studio_payout_amount: pricing.studioPayout,
+        package_id:           verifiedPackageId,
+        package_name:         verifiedPackageName,
+        package_price:        verifiedPackageId ? pricing.subtotal : null,
         status:               'pending',
       })
       .select('id, booking_ref')
@@ -118,6 +145,8 @@ export async function POST(req: NextRequest) {
       payoutAmount:  pricing.studioPayout,
       bookingRef:    booking.booking_ref,
       bookingId:     booking.id,
+      packageName:   verifiedPackageName ?? undefined,
+      packagePrice:  verifiedPackageId ? pricing.subtotal : undefined,
     }).then(async (msg) => {
       console.log('[bookings] WhatsApp sent, SID:', msg.sid)
       // Store SID — use await with error handling, not .catch()

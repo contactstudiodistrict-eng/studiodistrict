@@ -39,9 +39,13 @@ export async function sendBookingRequest(params: {
   payoutAmount:  number
   bookingRef:    string
   bookingId:     string
+  packageName?:  string
+  packagePrice?: number
 }) {
-  // Short 8-char code — easy to type in WhatsApp reply
   const code = params.bookingId.slice(-8)
+  const packageLine = params.packageName
+    ? `📦 Package: ${params.packageName} (₹${params.packagePrice?.toLocaleString('en-IN')} / ${params.durationHours} hrs)\n`
+    : ''
 
   const body =
 `🎯 *New Booking — Studio District*
@@ -50,7 +54,7 @@ export async function sendBookingRequest(params: {
 👤 ${params.customerName}
 📅 ${params.bookingDate}
 🕐 ${params.timeRange} · ${params.durationHours} hrs
-🎬 ${params.shootType}
+${packageLine}🎬 ${params.shootType}
 📝 ${params.notes}
 💰 Your payout: *₹${params.payoutAmount.toLocaleString('en-IN')}*
 
