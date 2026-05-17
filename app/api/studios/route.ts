@@ -73,7 +73,14 @@ export async function POST(req: NextRequest) {
 
     // Extract amenity + equipment fields separately
     const amenityFields = ['ac','parking','makeup_room','changing_room','restroom','wifi','power_backup','natural_light','elevator','props','waiting_area','pantry']
-    const equipmentFields = ['softboxes','led_panels','ring_lights','tripods','light_stands','backdrop_white','backdrop_black','backdrop_colors','green_matte','audio_gear','soundproofing','camera_rental','camera_details']
+    const equipmentFields = [
+      'softboxes','led_panels','ring_lights','tripods','light_stands',
+      'backdrop_white','backdrop_black','backdrop_colors','green_matte',
+      'audio_gear','soundproofing','camera_rental','camera_details',
+      'teleprompter','video_monitor',
+      'condenser_mic','dynamic_mic','broadcast_mic','pop_filter','podcast_mixer','headphone_amp','acoustic_treatment',
+      'studio_monitors','mixing_console','daw_computer','isolation_booth','di_box','instrument_amps',
+    ]
 
     const studioData: Record<string, any> = {}
     const amenityData: Record<string, any> = {}
