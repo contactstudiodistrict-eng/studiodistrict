@@ -19,7 +19,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const audience = user ? 'logged_in' : 'logged_out'
   const now = new Date().toISOString()
 
-  const [studioResult, bannersResult, thumbnailsResult, favouritesResult, recentResult] = await Promise.all([
+  const [studioResult, bannersResult, thumbnailsResult, favouritesResult, recentResult, packagesResult] = await Promise.all([
     // Fetch ALL live studios — client handles filtering
     supabase
       .from('studios')
@@ -69,11 +69,32 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           .order('created_at', { ascending: false })
           .limit(10)
       : Promise.resolve({ data: null }),
+
+    // Package counts + min prices for studio cards
+    supabase
+      .from('studio_packages')
+      .select('studio_id, price')
+      .eq('is_active', true),
   ])
 
   if (studioResult.error) console.error('Studio fetch error:', studioResult.error)
 
-  const allStudios    = (studioResult.data    ?? []) as any[]
+  const allStudios    = (studioResult.data ?? []) as any[]
+
+  // Build per-studio package stats
+  const pkgRows = (packagesResult.data ?? []) as { studio_id: string; price: number }[]
+  const packageStatsByStudio: Record<string, { count: number; minPrice: number }> = {}
+  for (const row of pkgRows) {
+    const s = packageStatsByStudio[row.studio_id]
+    if (!s) packageStatsByStudio[row.studio_id] = { count: 1, minPrice: row.price }
+    else { s.count++; if (row.price < s.minPrice) s.minPrice = row.price }
+  }
+  // Attach stats to studios for client use
+  for (const studio of allStudios) {
+    const stats = packageStatsByStudio[studio.id]
+    studio._packageCount    = stats?.count    ?? 0
+    studio._minPackagePrice = stats?.minPrice ?? undefined
+  }
   const allBanners    = (bannersResult.data   ?? []) as Banner[]
   const heroThumbnails = (thumbnailsResult.data ?? []).map((s: any) => s.thumbnail_url as string)
 

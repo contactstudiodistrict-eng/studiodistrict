@@ -19,6 +19,7 @@ export default async function BookingStatusPage({ params }: Props) {
       booking_date, start_time, end_time, duration_hours,
       shoot_type, notes, total_amount, platform_fee, gst_amount,
       security_deposit, studio_payout_amount, subtotal,
+      package_id, package_name, package_price,
       confirmed_at, paid_at, wa_payment_sent_at, created_at,
       studios(studio_name, area, address, owner_phone, google_maps_link, thumbnail_url)
     `)

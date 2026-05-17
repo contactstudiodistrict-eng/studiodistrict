@@ -16,9 +16,13 @@ interface Props {
   studio: any
   isFavourited?: boolean
   bookedCount?: number
+  packageCount?: number
+  minPackagePrice?: number
 }
 
-export function StudioCard({ studio, isFavourited = false, bookedCount = 0 }: Props) {
+export function StudioCard({ studio, isFavourited = false, bookedCount = 0, packageCount, minPackagePrice }: Props) {
+  const pkgCount    = packageCount    ?? studio._packageCount    ?? 0
+  const pkgMinPrice = minPackagePrice ?? studio._minPackagePrice ?? undefined
   const thumbnail = studio.thumbnail_url
     || studio.studio_images?.find((i: any) => i.is_thumbnail)?.url
     || studio.studio_images?.[0]?.url
@@ -109,6 +113,15 @@ export function StudioCard({ studio, isFavourited = false, bookedCount = 0 }: Pr
                   +{amenityBadges.length - 3}
                 </span>
               )}
+            </div>
+          )}
+
+          {/* Package pill */}
+          {pkgCount > 0 && pkgMinPrice !== undefined && (
+            <div className="mb-2">
+              <span style={{ display: 'inline-block', background: '#f0fdf4', color: '#166534', border: '1px solid #dcfce7', borderRadius: '20px', fontSize: '11px', fontWeight: '600', padding: '2px 10px' }}>
+                📦 {pkgCount} {pkgCount === 1 ? 'package' : 'packages'} from ₹{pkgMinPrice.toLocaleString('en-IN')}
+              </span>
             </div>
           )}
 

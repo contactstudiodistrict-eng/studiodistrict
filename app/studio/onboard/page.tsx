@@ -72,7 +72,7 @@ export default function StudioOnboardPage() {
     return false
   }
 
-  function toggleDay(day: string) {
+  function toggleDay(day: typeof DAYS[number]) {
     const current = watchWorkingDays
     const updated = current.includes(day) ? current.filter(d => d !== day) : [...current, day]
     setValue('working_days', updated as any)
@@ -234,12 +234,33 @@ export default function StudioOnboardPage() {
               <div className="mt-4">
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Extra charges (optional)</div>
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { key: 'lighting_tech', label: 'Lighting tech (₹/hr)' },
-                    { key: 'camera_rental', label: 'Camera rental (₹/hr)' },
-                    { key: 'backdrop_set', label: 'Backdrop change (₹/each)' },
-                    { key: 'overtime', label: 'Overtime rate (₹/hr)' },
-                  ].map(({ key, label }) => (
+                  {((): { key: string; label: string }[] => {
+                    const type = watch('studio_type')
+                    if (type === 'audio') return [
+                      { key: 'engineer_fee',  label: 'Sound engineer (₹/hr)' },
+                      { key: 'editing_fee',   label: 'Editing session (₹/hr)' },
+                      { key: 'overtime',      label: 'Overtime rate (₹/hr)' },
+                    ]
+                    if (type === 'music') return [
+                      { key: 'engineer_fee',    label: 'Studio engineer (₹/hr)' },
+                      { key: 'instrument_hire', label: 'Instrument hire (₹/session)' },
+                      { key: 'mix_master',      label: 'Mix & master (₹/track)' },
+                      { key: 'overtime',        label: 'Overtime rate (₹/hr)' },
+                    ]
+                    if (type === 'mixed') return [
+                      { key: 'lighting_tech',   label: 'Lighting tech (₹/hr)' },
+                      { key: 'camera_rental',   label: 'Camera rental (₹/hr)' },
+                      { key: 'engineer_fee',    label: 'Sound engineer (₹/hr)' },
+                      { key: 'overtime',        label: 'Overtime rate (₹/hr)' },
+                    ]
+                    // photography / videography (default)
+                    return [
+                      { key: 'lighting_tech', label: 'Lighting tech (₹/hr)' },
+                      { key: 'camera_rental', label: 'Camera rental (₹/hr)' },
+                      { key: 'backdrop_set',  label: 'Backdrop change (₹/each)' },
+                      { key: 'overtime',      label: 'Overtime rate (₹/hr)' },
+                    ]
+                  })().map(({ key, label }) => (
                     <div key={key}>
                       <label className="block text-xs text-gray-500 mb-1">{label}</label>
                       <input
@@ -352,8 +373,10 @@ export default function StudioOnboardPage() {
           {/* ── Step 6: Equipment ─────────────────────────────── */}
           {step === 6 && (
             <StepCard title="Equipment" icon="🔧" subtitle="What equipment is available for renters?">
-              <div className="grid grid-cols-2 gap-3">
-                {[
+              {(() => {
+                const type = watch('studio_type')
+
+                const PHOTO_EQUIP = [
                   { name: 'softboxes',       label: 'Softboxes' },
                   { name: 'led_panels',      label: 'LED panels' },
                   { name: 'ring_lights',     label: 'Ring lights' },
@@ -363,22 +386,120 @@ export default function StudioOnboardPage() {
                   { name: 'backdrop_black',  label: 'Black backdrop' },
                   { name: 'backdrop_colors', label: 'Coloured backdrops' },
                   { name: 'green_matte',     label: 'Green matte' },
+                  { name: 'audio_gear',      label: 'Audio gear (basic)' },
+                  { name: 'camera_rental',   label: 'Camera rental' },
+                ]
+
+                const VIDEO_EQUIP = [
+                  { name: 'softboxes',       label: 'Softboxes' },
+                  { name: 'led_panels',      label: 'LED panels' },
+                  { name: 'tripods',         label: 'Tripods' },
+                  { name: 'light_stands',    label: 'Light stands' },
+                  { name: 'backdrop_white',  label: 'White backdrop' },
+                  { name: 'backdrop_black',  label: 'Black backdrop' },
+                  { name: 'backdrop_colors', label: 'Coloured backdrops' },
+                  { name: 'green_matte',     label: 'Green screen / matte' },
+                  { name: 'teleprompter',    label: 'Teleprompter' },
+                  { name: 'video_monitor',   label: "Director's monitor" },
                   { name: 'audio_gear',      label: 'Audio gear' },
                   { name: 'soundproofing',   label: 'Soundproofing' },
                   { name: 'camera_rental',   label: 'Camera rental' },
-                ].map(({ name, label }) => (
-                  <label key={name} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
-                    ${watch(name as any) ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                    <input type="checkbox" {...register(name as any)} className="w-4 h-4 accent-brand-500" />
-                    <span className={`text-sm font-medium ${watch(name as any) ? 'text-brand-700' : 'text-gray-600'}`}>{label}</span>
-                  </label>
-                ))}
-              </div>
-              {watch('camera_rental') && (
-                <Field label="Camera details (model + lens)" className="mt-4">
-                  <input {...register('camera_details')} placeholder="e.g. Sony A7IV + 24-70mm G-Master" className={inputCls} />
-                </Field>
-              )}
+                ]
+
+                const PODCAST_EQUIP = [
+                  { name: 'condenser_mic',   label: 'Condenser mic' },
+                  { name: 'dynamic_mic',     label: 'Dynamic mic' },
+                  { name: 'broadcast_mic',   label: 'Broadcast mic (SM7B / RE20)' },
+                  { name: 'pop_filter',      label: 'Pop filter' },
+                  { name: 'podcast_mixer',   label: 'Podcast mixer / interface' },
+                  { name: 'headphone_amp',   label: 'Headphone amp' },
+                  { name: 'audio_gear',      label: 'General audio gear' },
+                  { name: 'soundproofing',   label: 'Soundproofing' },
+                  { name: 'acoustic_treatment', label: 'Acoustic panels' },
+                ]
+
+                const MUSIC_EQUIP = [
+                  { name: 'condenser_mic',    label: 'Condenser mic' },
+                  { name: 'dynamic_mic',      label: 'Dynamic mic' },
+                  { name: 'studio_monitors',  label: 'Studio monitors' },
+                  { name: 'mixing_console',   label: 'Mixing console' },
+                  { name: 'daw_computer',     label: 'DAW workstation (Logic / Pro Tools)' },
+                  { name: 'isolation_booth',  label: 'Vocal / isolation booth' },
+                  { name: 'headphone_amp',    label: 'Headphone amp' },
+                  { name: 'acoustic_treatment', label: 'Acoustic treatment' },
+                  { name: 'di_box',           label: 'DI box' },
+                  { name: 'instrument_amps',  label: 'Guitar / bass amps' },
+                  { name: 'soundproofing',    label: 'Soundproofing' },
+                ]
+
+                type EquipGroup = { heading: string; items: { name: string; label: string }[] }
+                const MIXED_GROUPS: EquipGroup[] = [
+                  { heading: '📸 Photo / Video', items: [
+                    { name: 'softboxes', label: 'Softboxes' }, { name: 'led_panels', label: 'LED panels' },
+                    { name: 'tripods', label: 'Tripods' }, { name: 'backdrop_white', label: 'White backdrop' },
+                    { name: 'backdrop_black', label: 'Black backdrop' }, { name: 'backdrop_colors', label: 'Coloured backdrops' },
+                    { name: 'green_matte', label: 'Green screen / matte' }, { name: 'teleprompter', label: 'Teleprompter' },
+                    { name: 'camera_rental', label: 'Camera rental' },
+                  ]},
+                  { heading: '🎙 Podcast / Audio', items: [
+                    { name: 'condenser_mic', label: 'Condenser mic' }, { name: 'dynamic_mic', label: 'Dynamic mic' },
+                    { name: 'broadcast_mic', label: 'Broadcast mic' }, { name: 'pop_filter', label: 'Pop filter' },
+                    { name: 'podcast_mixer', label: 'Podcast mixer' }, { name: 'headphone_amp', label: 'Headphone amp' },
+                    { name: 'acoustic_treatment', label: 'Acoustic panels' }, { name: 'soundproofing', label: 'Soundproofing' },
+                  ]},
+                  { heading: '🎵 Music Recording', items: [
+                    { name: 'studio_monitors', label: 'Studio monitors' }, { name: 'mixing_console', label: 'Mixing console' },
+                    { name: 'daw_computer', label: 'DAW workstation' }, { name: 'isolation_booth', label: 'Isolation booth' },
+                    { name: 'di_box', label: 'DI box' }, { name: 'instrument_amps', label: 'Guitar / bass amps' },
+                  ]},
+                ]
+
+                const EquipList = ({ items }: { items: { name: string; label: string }[] }) => (
+                  <div className="grid grid-cols-2 gap-3">
+                    {items.map(({ name, label }) => (
+                      <label key={name} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
+                        ${watch(name as any) ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        <input type="checkbox" {...register(name as any)} className="w-4 h-4 accent-brand-500" />
+                        <span className={`text-sm font-medium ${watch(name as any) ? 'text-brand-700' : 'text-gray-600'}`}>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )
+
+                if (type === 'videography') return (
+                  <>
+                    <EquipList items={VIDEO_EQUIP} />
+                    {watch('camera_rental' as any) && (
+                      <Field label="Camera details (model + lens)" className="mt-4">
+                        <input {...register('camera_details')} placeholder="e.g. Sony FX3 + Sigma 24-70mm" className={inputCls} />
+                      </Field>
+                    )}
+                  </>
+                )
+                if (type === 'audio') return <EquipList items={PODCAST_EQUIP} />
+                if (type === 'music') return <EquipList items={MUSIC_EQUIP} />
+                if (type === 'mixed') return (
+                  <div className="space-y-6">
+                    {MIXED_GROUPS.map(group => (
+                      <div key={group.heading}>
+                        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{group.heading}</div>
+                        <EquipList items={group.items} />
+                      </div>
+                    ))}
+                  </div>
+                )
+                // photography (default)
+                return (
+                  <>
+                    <EquipList items={PHOTO_EQUIP} />
+                    {watch('camera_rental' as any) && (
+                      <Field label="Camera details (model + lens)" className="mt-4">
+                        <input {...register('camera_details')} placeholder="e.g. Sony A7IV + 24-70mm G-Master" className={inputCls} />
+                      </Field>
+                    )}
+                  </>
+                )
+              })()}
             </StepCard>
           )}
 

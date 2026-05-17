@@ -1,8 +1,7 @@
 'use client'
-// BookingForm.tsx — simple controlled state, no react-hook-form, no silent failures
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { calculatePricing, formatINR } from '@/lib/pricing'
+import { calculatePricing, calculatePackagePricing, formatINR } from '@/lib/pricing'
 
 const SHOOT_TYPES = [
   'Model Portfolio', 'Product Creative', 'Social Media / Reels',
@@ -21,48 +20,81 @@ type Studio = {
   working_days: string[]
 }
 
+type Package = {
+  id: string
+  package_name: string
+  description: string | null
+  duration_hours: number
+  price: number
+  original_price: number | null
+  included_equipment: string[] | null
+  included_amenities: string[] | null
+  included_extras: string[] | null
+  max_people: number | null
+  rules: string | null
+  badge_text: string | null
+}
+
 export function BookingForm({ studio, userId }: { studio: Studio; userId: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const rebookId = searchParams.get('rebook')
+  const rebookId  = searchParams.get('rebook')
+  const packageId = searchParams.get('package')
 
-  const [step, setStep]             = useState(1)
-  const [submitting, setSubmitting]  = useState(false)
-  const [error, setError]           = useState('')
+  const [step, setStep]           = useState(1)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError]         = useState('')
   const [rebookBanner, setRebookBanner] = useState(false)
 
+  // Package state
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null)
+  const [packageLoading, setPackageLoading]   = useState(false)
+
   // Wallet
-  const [walletBalance, setWalletBalance]     = useState(0)
-  const [applyWallet, setApplyWallet]         = useState(false)
-  const [walletLoading, setWalletLoading]     = useState(false)
+  const [walletBalance, setWalletBalance] = useState(0)
+  const [applyWallet, setApplyWallet]     = useState(false)
+  const [walletLoading, setWalletLoading] = useState(false)
 
-  // Form fields — plain controlled state
-  const [date,       setDate]       = useState('')
-  const [startTime,  setStartTime]  = useState('')
-  const [duration,   setDuration]   = useState(studio.minimum_hours)
-  const [name,       setName]       = useState('')
-  const [phone,      setPhone]      = useState('')
-  const [email,      setEmail]      = useState('')
-  const [shootType,  setShootType]  = useState('')
-  const [notes,      setNotes]      = useState('')
+  // Form fields
+  const [date,      setDate]      = useState('')
+  const [startTime, setStartTime] = useState('')
+  const [duration,  setDuration]  = useState(studio.minimum_hours)
+  const [name,      setName]      = useState('')
+  const [phone,     setPhone]     = useState('')
+  const [email,     setEmail]     = useState('')
+  const [shootType, setShootType] = useState('')
+  const [notes,     setNotes]     = useState('')
 
-  // On mount: fetch wallet balance + pre-fill from rebook if present
+  // On mount
   useEffect(() => {
-    // Fetch wallet balance
     setWalletLoading(true)
     fetch('/api/wallet')
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.balance) setWalletBalance(d.balance) })
       .finally(() => setWalletLoading(false))
 
-    // Rebook pre-fill
+    if (packageId) {
+      setPackageLoading(true)
+      fetch(`/api/studios/${studio.id}/packages`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (!d?.packages) return
+          const pkg = d.packages.find((p: Package) => p.id === packageId)
+          if (pkg) {
+            setSelectedPackage(pkg)
+            setDuration(pkg.duration_hours)
+          }
+        })
+        .finally(() => setPackageLoading(false))
+    }
+
     if (rebookId) {
       fetch(`/api/bookings/${rebookId}`)
         .then(r => r.ok ? r.json() : null)
         .then(d => {
           if (!d?.booking) return
           const b = d.booking
-          if (b.duration_hours) setDuration(b.duration_hours)
+          if (b.duration_hours && !packageId) setDuration(b.duration_hours)
           if (b.shoot_type)     setShootType(b.shoot_type)
           if (b.customer_name)  setName(b.customer_name)
           if (b.customer_phone) setPhone(b.customer_phone)
@@ -70,9 +102,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           setRebookBanner(true)
         })
     }
-  }, [rebookId])
+  }, [rebookId, packageId, studio.id])
 
-  // Auto-calculate end time
   function calcEndTime(start: string, hrs: number): string {
     if (!start) return ''
     const [h, m] = start.split(':').map(Number)
@@ -82,59 +113,60 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   }
 
   const endTime = calcEndTime(startTime, duration)
-  const pricing = calculatePricing(studio.price_per_hour, duration)
-  const walletDiscount = applyWallet ? Math.min(walletBalance, pricing.totalAmount) : 0
-  const finalTotal = pricing.totalAmount - walletDiscount
 
-  // ── Step 1 validation ────────────────────────────────────────────────────
+  // Pricing — package mode uses flat price
+  const pricing = selectedPackage
+    ? calculatePackagePricing(selectedPackage.price)
+    : calculatePricing(studio.price_per_hour, duration)
+
+  const walletDiscount = applyWallet ? Math.min(walletBalance, pricing.totalAmount) : 0
+  const finalTotal     = pricing.totalAmount - walletDiscount
+
+  const packageItems = selectedPackage ? [
+    ...(selectedPackage.included_equipment ?? []),
+    ...(selectedPackage.included_amenities ?? []),
+    ...(selectedPackage.included_extras ?? []),
+  ] : []
+
   function validateStep1(): string {
     if (!date)      return 'Please select a date'
     if (!startTime) return 'Please select a start time'
-    const today = new Date().toISOString().split('T')[0]
-    if (date < today) return 'Please select a future date'
+    if (date < new Date().toISOString().split('T')[0]) return 'Please select a future date'
     return ''
   }
-
-  // ── Step 2 validation ────────────────────────────────────────────────────
   function validateStep2(): string {
-    if (!name.trim())              return 'Please enter your full name'
+    if (!name.trim())                 return 'Please enter your full name'
     if (!/^[6-9]\d{9}$/.test(phone)) return 'Enter a valid 10-digit Indian mobile number'
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email address'
-    if (!shootType)                return 'Please select a shoot type'
+    if (!shootType)                   return 'Please select a shoot type'
     return ''
   }
 
-  function goToStep2() {
-    const err = validateStep1()
-    if (err) { setError(err); return }
-    setError('')
-    setStep(2)
-  }
+  function goToStep2() { const e = validateStep1(); if (e) { setError(e); return }; setError(''); setStep(2) }
+  function goToStep3() { const e = validateStep2(); if (e) { setError(e); return }; setError(''); setStep(3) }
 
-  function goToStep3() {
-    const err = validateStep2()
-    if (err) { setError(err); return }
-    setError('')
-    setStep(3)
-  }
-
-  // ── Submit ───────────────────────────────────────────────────────────────
   async function handleSubmit() {
     setSubmitting(true)
     setError('')
 
-    const payload = {
-      studio_id:      studio.id,
-      customer_name:  name.trim(),
-      customer_phone: phone.trim(),
-      customer_email: email.trim() || null,
-      booking_date:   date,
-      start_time:     startTime,
-      end_time:       endTime,
-      duration_hours: duration,
-      shoot_type:     shootType,
-      notes:          notes.trim() || null,
+    const payload: Record<string, any> = {
+      studio_id:           studio.id,
+      customer_name:       name.trim(),
+      customer_phone:      phone.trim(),
+      customer_email:      email.trim() || null,
+      booking_date:        date,
+      start_time:          startTime,
+      end_time:            endTime,
+      duration_hours:      duration,
+      shoot_type:          shootType,
+      notes:               notes.trim() || null,
       apply_wallet_credit: applyWallet && walletBalance > 0,
+    }
+
+    if (selectedPackage) {
+      payload.package_id    = selectedPackage.id
+      payload.package_name  = selectedPackage.package_name
+      payload.package_price = selectedPackage.price
     }
 
     try {
@@ -143,36 +175,28 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(payload),
       })
-
       const result = await res.json()
-
-      if (!res.ok) {
-        throw new Error(result.error || `Server error (${res.status})`)
-      }
-
+      if (!res.ok) throw new Error(result.error || `Server error (${res.status})`)
       router.push(`/bookings/${result.booking_id}`)
-
     } catch (err: any) {
-      console.error('Booking submit error:', err)
       setError(err.message || 'Something went wrong. Please try again.')
       setSubmitting(false)
     }
   }
 
-  // ── Shared styles ────────────────────────────────────────────────────────
   const s = {
-    wrap:    { fontFamily: 'system-ui,sans-serif', maxWidth: '560px', margin: '0 auto', paddingBottom: '80px' } as React.CSSProperties,
-    card:    { background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '20px', marginBottom: '14px' } as React.CSSProperties,
-    label:   { display: 'block', fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: '6px' },
-    input:   { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color .15s' },
-    select:  { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, background: '#fff', appearance: 'none' as const },
-    btn:     { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#84cc16', color: '#111827', transition: 'background .15s' } as React.CSSProperties,
-    btnGhost:{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #e5e7eb', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit', background: '#fff', color: '#374151' } as React.CSSProperties,
-    btnOff:  { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#d9f99d', color: '#fff', cursor: 'not-allowed' } as React.CSSProperties,
-    row2:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } as React.CSSProperties,
-    field:   { marginBottom: '14px' } as React.CSSProperties,
-    errBox:  { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 14px', color: '#dc2626', fontSize: '14px', marginBottom: '14px', display: 'flex', gap: '8px', alignItems: 'flex-start' } as React.CSSProperties,
-    priceRow:{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#64748b', padding: '5px 0' } as React.CSSProperties,
+    wrap:     { fontFamily: 'system-ui,sans-serif', maxWidth: '560px', margin: '0 auto', paddingBottom: '80px' } as React.CSSProperties,
+    card:     { background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '20px', marginBottom: '14px' } as React.CSSProperties,
+    label:    { display: 'block', fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '.06em', marginBottom: '6px' },
+    input:    { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color .15s' },
+    select:   { width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', fontSize: '16px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const, background: '#fff', appearance: 'none' as const },
+    btn:      { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#84cc16', color: '#111827', transition: 'background .15s' } as React.CSSProperties,
+    btnGhost: { flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #e5e7eb', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit', background: '#fff', color: '#374151' } as React.CSSProperties,
+    btnOff:   { width: '100%', padding: '15px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: '700', fontFamily: 'inherit', background: '#d9f99d', color: '#fff', cursor: 'not-allowed' } as React.CSSProperties,
+    row2:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } as React.CSSProperties,
+    field:    { marginBottom: '14px' } as React.CSSProperties,
+    errBox:   { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 14px', color: '#dc2626', fontSize: '14px', marginBottom: '14px', display: 'flex', gap: '8px', alignItems: 'flex-start' } as React.CSSProperties,
+    priceRow: { display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#64748b', padding: '5px 0' } as React.CSSProperties,
   }
 
   function fDate(d: string) {
@@ -185,7 +209,6 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
     return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
   }
 
-  // ── Step Indicator ───────────────────────────────────────────────────────
   const steps = ['Date & Time', 'Your Details', 'Review & Send']
 
   return (
@@ -194,9 +217,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
       {/* Step indicator */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
         {steps.map((label, i) => {
-          const n = i + 1
-          const done   = n < step
-          const active = n === step
+          const n = i + 1; const done = n < step; const active = n === step
           return (
             <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
@@ -217,6 +238,24 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
         })}
       </div>
 
+      {/* Package banner */}
+      {selectedPackage && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #84cc16', borderRadius: '12px', padding: '12px 16px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '4px' }}>
+            <div style={{ fontWeight: '700', fontSize: '14px', color: '#111827' }}>📦 {selectedPackage.package_name}</div>
+            <div style={{ fontWeight: '700', fontSize: '14px', color: '#166534', flexShrink: 0 }}>{formatINR(selectedPackage.price)}</div>
+          </div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+            {selectedPackage.duration_hours} hours{selectedPackage.max_people ? ` · Up to ${selectedPackage.max_people} people` : ''}
+          </div>
+          <div style={{ display: 'flex', gap: '10px', fontSize: '12px' }}>
+            <a href={`/studios/${studio.id}`} style={{ color: '#166534', fontWeight: '600', textDecoration: 'none' }}>Change package</a>
+            <span style={{ color: '#d1d5db' }}>·</span>
+            <a href={`/studios/${studio.id}/book`} style={{ color: '#6b7280', textDecoration: 'none' }}>Switch to hourly</a>
+          </div>
+        </div>
+      )}
+
       {/* Rebook banner */}
       {rebookBanner && (
         <div style={{ background: '#f0fdf4', border: '1px solid #84cc16', borderRadius: '10px', padding: '12px 14px', marginBottom: '14px', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '13px', color: '#166534' }}>
@@ -225,7 +264,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
         </div>
       )}
 
-      {/* Error banner */}
+      {/* Error */}
       {error && (
         <div style={s.errBox}>
           <span style={{ fontSize: '16px', flexShrink: 0 }}>⚠️</span>
@@ -238,13 +277,13 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
         <span style={{ fontSize: '24px' }}>📸</span>
         <div>
           <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>{studio.studio_name}</div>
-          <div style={{ fontSize: '12px', color: '#9ca3af' }}>{studio.area} · ₹{studio.price_per_hour.toLocaleString('en-IN')}/hr</div>
+          <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+            {studio.area} · {selectedPackage ? `📦 ${selectedPackage.package_name}` : `₹${studio.price_per_hour.toLocaleString('en-IN')}/hr`}
+          </div>
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════
-          STEP 1 — Date & Time
-      ══════════════════════════════════════════ */}
+      {/* ── STEP 1: Date & Time ── */}
       {step === 1 && (
         <div style={s.card}>
           <h2 style={{ fontSize: '17px', fontWeight: '600', color: '#111827', margin: '0 0 18px' }}>Pick date & time</h2>
@@ -252,8 +291,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           <div style={s.field}>
             <label style={s.label}>Booking date</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              style={s.input}
+              min={new Date().toISOString().split('T')[0]} style={s.input}
               onFocus={e => e.target.style.borderColor = '#84cc16'}
               onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
           </div>
@@ -262,8 +300,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <div>
               <label style={s.label}>Start time</label>
               <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-                min={studio.opening_time} max={studio.closing_time}
-                style={s.input}
+                min={studio.opening_time} max={studio.closing_time} style={s.input}
                 onFocus={e => e.target.style.borderColor = '#84cc16'}
                 onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
             </div>
@@ -274,19 +311,29 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             </div>
           </div>
 
-          <div style={s.field}>
-            <label style={s.label}>Duration</label>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
-              <button type="button" onClick={() => setDuration(d => Math.max(studio.minimum_hours, d - 1))}
-                style={{ padding: '11px 18px', background: '#f9fafb', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#374151', fontWeight: '300' }}>−</button>
-              <div style={{ flex: 1, textAlign: 'center', fontWeight: '600', fontSize: '15px', color: '#111827' }}>
-                {duration} {duration === 1 ? 'hour' : 'hours'}
+          {/* Duration — locked in package mode */}
+          {!selectedPackage ? (
+            <div style={s.field}>
+              <label style={s.label}>Duration</label>
+              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
+                <button type="button" onClick={() => setDuration(d => Math.max(studio.minimum_hours, d - 1))}
+                  style={{ padding: '11px 18px', background: '#f9fafb', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#374151', fontWeight: '300' }}>−</button>
+                <div style={{ flex: 1, textAlign: 'center', fontWeight: '600', fontSize: '15px', color: '#111827' }}>
+                  {duration} {duration === 1 ? 'hour' : 'hours'}
+                </div>
+                <button type="button" onClick={() => setDuration(d => Math.min(12, d + 1))}
+                  style={{ padding: '11px 18px', background: '#f9fafb', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#374151', fontWeight: '300' }}>+</button>
               </div>
-              <button type="button" onClick={() => setDuration(d => Math.min(12, d + 1))}
-                style={{ padding: '11px 18px', background: '#f9fafb', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#374151', fontWeight: '300' }}>+</button>
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>Minimum {studio.minimum_hours} hours · Opens {studio.opening_time} – Closes {studio.closing_time}</div>
             </div>
-            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>Minimum {studio.minimum_hours} hours · Opens {studio.opening_time} – Closes {studio.closing_time}</div>
-          </div>
+          ) : (
+            <div style={{ ...s.field, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px' }}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '4px' }}>Duration (fixed by package)</div>
+              <div style={{ fontWeight: '600', fontSize: '15px', color: '#111827' }}>
+                {selectedPackage.duration_hours} {selectedPackage.duration_hours === 1 ? 'hour' : 'hours'}
+              </div>
+            </div>
+          )}
 
           {startTime && date && (
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', color: '#15803d', marginBottom: '14px' }}>
@@ -294,8 +341,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             </div>
           )}
 
-          <button type="button" onClick={goToStep2}
-            style={s.btn}
+          <button type="button" onClick={goToStep2} style={s.btn}
             onMouseOver={e => (e.currentTarget.style.background = '#65a30d')}
             onMouseOut={e => (e.currentTarget.style.background = '#84cc16')}>
             Continue → Your Details
@@ -303,9 +349,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          STEP 2 — Customer Details
-      ══════════════════════════════════════════ */}
+      {/* ── STEP 2: Details ── */}
       {step === 2 && (
         <div style={s.card}>
           <h2 style={{ fontSize: '17px', fontWeight: '600', color: '#111827', margin: '0 0 18px' }}>Your details</h2>
@@ -331,7 +375,6 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
                 onFocus={e => e.target.style.borderColor = '#84cc16'}
                 onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
             </div>
-            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>Payment link &amp; updates will be sent to this WhatsApp number</div>
           </div>
 
           <div style={s.field}>
@@ -353,16 +396,13 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           <div style={s.field}>
             <label style={s.label}>Notes for studio owner</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-              placeholder="e.g. Team of 4, need 3 backdrop changes, bringing own camera…"
+              placeholder="e.g. Team of 4, need 3 backdrop changes…"
               style={{ ...s.input, resize: 'none', lineHeight: '1.5' }} />
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="button" onClick={() => { setStep(1); setError('') }} style={s.btnGhost}>
-              ← Back
-            </button>
-            <button type="button" onClick={goToStep3}
-              style={{ ...s.btn, flex: 2 }}
+            <button type="button" onClick={() => { setStep(1); setError('') }} style={s.btnGhost}>← Back</button>
+            <button type="button" onClick={goToStep3} style={{ ...s.btn, flex: 2 }}
               onMouseOver={e => (e.currentTarget.style.background = '#65a30d')}
               onMouseOut={e => (e.currentTarget.style.background = '#84cc16')}>
               Review Booking →
@@ -371,9 +411,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          STEP 3 — Review & Submit
-      ══════════════════════════════════════════ */}
+      {/* ── STEP 3: Review ── */}
       {step === 3 && (
         <div>
           {/* Booking summary */}
@@ -383,6 +421,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
               { label: 'Date',       value: fDate(date) },
               { label: 'Time',       value: `${fTime(startTime)} – ${fTime(endTime)}` },
               { label: 'Duration',   value: `${duration} hours` },
+              ...(selectedPackage ? [{ label: 'Package', value: `📦 ${selectedPackage.package_name}` }] : []),
               { label: 'Shoot type', value: shootType },
               { label: 'Name',       value: name },
               { label: 'WhatsApp',   value: `+91 ${phone}` },
@@ -397,8 +436,16 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
 
           {/* Price breakdown */}
           <div style={s.card}>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px' }}>Price Breakdown</div>
-            <div style={s.priceRow}><span>Studio ({duration} hrs × ₹{studio.price_per_hour.toLocaleString('en-IN')})</span><span>{formatINR(pricing.subtotal)}</span></div>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px' }}>
+              {selectedPackage ? `📦 Package: ${selectedPackage.package_name}` : 'Price Breakdown'}
+            </div>
+            {selectedPackage ? (
+              <>
+                <div style={s.priceRow}><span>Package price ({selectedPackage.duration_hours} hrs)</span><span>{formatINR(pricing.subtotal)}</span></div>
+              </>
+            ) : (
+              <div style={s.priceRow}><span>Studio ({duration} hrs × ₹{studio.price_per_hour.toLocaleString('en-IN')})</span><span>{formatINR(pricing.subtotal)}</span></div>
+            )}
             <div style={s.priceRow}><span>Platform fee (10%)</span><span>{formatINR(pricing.platformFee)}</span></div>
             <div style={s.priceRow}><span>GST (18% on fee)</span><span>{formatINR(pricing.gstAmount)}</span></div>
             {pricing.securityDeposit > 0 && (
@@ -406,53 +453,60 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             )}
             {applyWallet && walletDiscount > 0 && (
               <div style={{ ...s.priceRow, color: '#16a34a', fontWeight: '600' }}>
-                <span>💰 Wallet credit applied</span>
-                <span>−{formatINR(walletDiscount)}</span>
+                <span>💰 Wallet credit applied</span><span>−{formatINR(walletDiscount)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#111827', borderTop: '2px solid #f3f4f6', marginTop: '8px', paddingTop: '10px' }}>
               <span>Total</span><span style={{ color: '#65a30d' }}>{formatINR(finalTotal)}</span>
             </div>
+
+            {/* Savings line */}
+            {selectedPackage?.original_price && (
+              <div style={{ marginTop: '8px', fontSize: '13px', color: '#166534', fontWeight: '600', textAlign: 'center' }}>
+                🎉 You save {formatINR(selectedPackage.original_price - selectedPackage.price)} vs standard rate
+              </div>
+            )}
+
+            {/* Included items */}
+            {packageItems.length > 0 && (
+              <div style={{ marginTop: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '6px' }}>Included</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {packageItems.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '6px', fontSize: '12px', color: '#374151' }}>
+                      <span style={{ color: '#84cc16', fontWeight: '700' }}>✓</span>{item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Package rules */}
+            {selectedPackage?.rules && (
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#9ca3af', lineHeight: '1.5' }}>
+                📋 Package rules: {selectedPackage.rules}
+              </div>
+            )}
           </div>
 
-          {/* Wallet credit toggle */}
+          {/* Wallet toggle */}
           {!walletLoading && walletBalance > 0 && (
             <div style={{ background: '#f0fdf4', border: `1px solid ${applyWallet ? '#84cc16' : '#d1fae5'}`, borderRadius: '12px', padding: '14px 16px', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>
-                    💰 You have {formatINR(walletBalance)} wallet credit
-                  </div>
+                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>💰 You have {formatINR(walletBalance)} wallet credit</div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                    {applyWallet
-                      ? `New total: ${formatINR(finalTotal)}`
-                      : 'Apply to this booking?'}
+                    {applyWallet ? `New total: ${formatINR(finalTotal)}` : 'Apply to this booking?'}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setApplyWallet(v => !v)}
-                  style={{
-                    flexShrink: 0,
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    fontFamily: 'inherit',
-                    background: applyWallet ? '#84cc16' : '#e5e7eb',
-                    color: applyWallet ? '#111827' : '#374151',
-                    transition: 'background .15s',
-                  }}
-                >
+                <button type="button" onClick={() => setApplyWallet(v => !v)}
+                  style={{ flexShrink: 0, padding: '8px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', background: applyWallet ? '#84cc16' : '#e5e7eb', color: applyWallet ? '#111827' : '#374151' }}>
                   {applyWallet ? 'Applied ✓' : 'Apply'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* No payment note */}
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px', marginBottom: '16px', display: 'flex', gap: '10px', fontSize: '13px', color: '#15803d' }}>
             <span style={{ fontSize: '18px', flexShrink: 0 }}>✅</span>
             <div>
@@ -461,11 +515,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             </div>
           </div>
 
-          {/* Submit */}
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="button" onClick={() => { setStep(2); setError('') }} style={s.btnGhost} disabled={submitting}>
-              ← Back
-            </button>
+            <button type="button" onClick={() => { setStep(2); setError('') }} style={s.btnGhost} disabled={submitting}>← Back</button>
             <button type="button" onClick={handleSubmit} disabled={submitting}
               style={{ ...(submitting ? s.btnOff : s.btn), flex: 2 }}
               onMouseOver={e => { if (!submitting) e.currentTarget.style.background = '#65a30d' }}

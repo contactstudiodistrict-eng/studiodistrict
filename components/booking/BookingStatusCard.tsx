@@ -232,9 +232,12 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
       <div style={c.card}>
         <div style={{ padding: '12px 16px' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '10px' }}>
-            Payment Summary
+            {booking.package_name ? `📦 Package: ${booking.package_name}` : 'Payment Summary'}
           </div>
-          <div style={c.prRow}><span>Studio charges</span><span>{formatINR(booking.subtotal)}</span></div>
+          <div style={c.prRow}>
+            <span>{booking.package_name ? `Package price (${booking.duration_hours} hrs)` : 'Studio charges'}</span>
+            <span>{formatINR(booking.subtotal)}</span>
+          </div>
           <div style={c.prRow}><span>Platform fee</span><span>{formatINR(booking.platform_fee)}</span></div>
           <div style={c.prRow}><span>GST</span><span>{formatINR(booking.gst_amount)}</span></div>
           {booking.security_deposit > 0 && (

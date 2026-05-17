@@ -46,6 +46,25 @@ export function formatINR(amount: number): string {
   return `₹${amount.toLocaleString('en-IN')}`
 }
 
+export interface PackagePricingBreakdown {
+  subtotal: number
+  platformFee: number
+  gstAmount: number
+  securityDeposit: number
+  totalAmount: number
+  studioPayout: number
+}
+
+export function calculatePackagePricing(packagePrice: number): PackagePricingBreakdown {
+  const subtotal        = packagePrice
+  const platformFee     = Math.round(subtotal * (COMMISSION_PERCENT / 100))
+  const gstAmount       = Math.round(platformFee * (GST_PERCENT / 100))
+  const securityDeposit = SECURITY_DEPOSIT
+  const totalAmount     = subtotal + platformFee + gstAmount + securityDeposit
+  const studioPayout    = subtotal - platformFee
+  return { subtotal, platformFee, gstAmount, securityDeposit, totalAmount, studioPayout }
+}
+
 // For display in booking summary UI
 export function getPricingLineItems(breakdown: PricingBreakdown) {
   return [

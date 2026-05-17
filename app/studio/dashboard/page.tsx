@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { SiteHeader } from '@/components/shared/SiteHeader'
 import { ShareButtons } from '@/components/studio/ShareButtons'
+import { PackagesSection } from './PackagesSection'
 import { formatINR } from '@/lib/pricing'
 import Link from 'next/link'
 
@@ -49,14 +50,56 @@ export default async function OwnerDashboardPage() {
   const studioIds = studios.map(s => s.id)
 
   // Get all bookings for this owner's studios
-  const { data: allBookings } = await supabase
-    .from('bookings')
-    .select('id, booking_ref, status, booking_date, start_time, end_time, shoot_type, customer_name, customer_phone, total_amount, studio_payout_amount, studio_id, created_at')
-    .in('studio_id', studioIds)
-    .order('created_at', { ascending: false })
-    .limit(50)
+  const [bookingsResult, packagesResult] = await Promise.all([
+    supabase
+      .from('bookings')
+      .select('id, booking_ref, status, booking_date, start_time, end_time, shoot_type, customer_name, customer_phone, total_amount, studio_payout_amount, studio_id, package_id, package_name, created_at')
+      .in('studio_id', studioIds)
+      .order('created_at', { ascending: false })
+      .limit(50),
+    supabase
+      .from('studio_packages')
+      .select('*')
+      .in('studio_id', studioIds)
+      .order('display_order', { ascending: true }),
+  ])
+
+  const { data: allBookings } = bookingsResult
+  const allPackages = (packagesResult.data ?? []) as any[]
 
   const bookings = allBookings || []
+
+  // Build amenity/equipment option lists for package form (from first studio)
+  const primaryStudioId = studios[0]?.id
+  const { data: studioAmenities } = primaryStudioId
+    ? await supabase.from('studio_amenities').select('*').eq('studio_id', primaryStudioId).single()
+    : { data: null }
+  const { data: studioEquipment } = primaryStudioId
+    ? await supabase.from('studio_equipment').select('*').eq('studio_id', primaryStudioId).single()
+    : { data: null }
+
+  const AMENITY_LABELS: Record<string, string> = {
+    ac: 'AC', parking: 'Parking', makeup_room: 'MUA Room', changing_room: 'Changing Room',
+    restroom: 'Restroom', wifi: 'WiFi', power_backup: 'UPS Backup', natural_light: 'Natural Light',
+    elevator: 'Elevator', props: 'Props', waiting_area: 'Waiting Area', pantry: 'Pantry',
+  }
+  const EQUIPMENT_LABELS: Record<string, string> = {
+    softboxes: 'Softboxes', led_panels: 'LED Panels', ring_lights: 'Ring Lights',
+    tripods: 'Tripods', light_stands: 'Light Stands', backdrop_white: 'White Backdrop',
+    backdrop_black: 'Black Backdrop', backdrop_colors: 'Coloured Backdrops',
+  }
+
+  const amenityOptions = studioAmenities
+    ? Object.entries(studioAmenities as Record<string,any>)
+        .filter(([k, v]) => k !== 'id' && k !== 'studio_id' && v === true)
+        .map(([k]) => AMENITY_LABELS[k] ?? k)
+    : []
+
+  const equipmentOptions = studioEquipment
+    ? Object.entries(studioEquipment as Record<string,any>)
+        .filter(([k, v]) => k !== 'id' && k !== 'studio_id' && v === true)
+        .map(([k]) => EQUIPMENT_LABELS[k] ?? k)
+    : []
 
   // Calculate earnings stats
   const paidBookings    = bookings.filter(b => ['paid', 'completed'].includes(b.status))
@@ -169,6 +212,16 @@ export default async function OwnerDashboardPage() {
           </div>
         </section>
 
+        {/* Packages */}
+        {primaryStudioId && (
+          <PackagesSection
+            studioId={primaryStudioId}
+            initialPackages={allPackages.filter(p => p.studio_id === primaryStudioId)}
+            amenityOptions={amenityOptions}
+            equipmentOptions={equipmentOptions}
+          />
+        )}
+
         {/* Pending requests — most important section */}
         {pendingBookings.length > 0 && (
           <section className="mb-8">
@@ -255,6 +308,9 @@ export default async function OwnerDashboardPage() {
                           <td className="px-4 py-3">
                             <div className="font-medium text-gray-800">{b.customer_name}</div>
                             <div className="text-xs text-gray-400">{b.customer_phone}</div>
+                            {(b as any).package_name && (
+                              <div className="text-xs text-brand-600 font-medium mt-0.5">📦 {(b as any).package_name}</div>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                             {formatDate(b.booking_date)}<br />
