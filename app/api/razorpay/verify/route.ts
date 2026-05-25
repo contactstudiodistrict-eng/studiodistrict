@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendBookingConfirmedCustomer, sendPaymentReceivedOwner } from '@/lib/whatsapp'
+import { sendBookingConfirmedEmail, sendPayoutReceiptEmail } from '@/lib/email'
 import { getReferralAmount } from '@/lib/referral-config'
 import { format, addDays } from 'date-fns'
 import crypto from 'crypto'
@@ -124,6 +125,48 @@ export async function POST(req: NextRequest) {
     payoutDate:   format(payoutDate, 'd MMM yyyy'),
     accountLast4: studio.account_number?.slice(-4),
   }).catch(console.error)
+
+  // Email notifications (non-blocking)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://studiodistrict.in'
+
+  if (booking.customer_email) {
+    sendBookingConfirmedEmail({
+      customerEmail:   booking.customer_email,
+      customerName:    booking.customer_name,
+      studioName:      studio.studio_name,
+      studioArea:      studio.area ?? '',
+      address:         studio.address,
+      ownerPhone:      studio.owner_phone,
+      bookingDate,
+      timeRange,
+      shootType:       booking.shoot_type,
+      bookingRef:      booking.booking_ref,
+      subtotal:        booking.subtotal,
+      platformFee:     booking.platform_fee,
+      gstAmount:       booking.gst_amount,
+      securityDeposit: booking.security_deposit,
+      totalAmount:     booking.total_amount,
+      packageName:     (booking as any).package_name ?? null,
+      mapsLink:        studio.google_maps_link,
+      bookingUrl:      `${appUrl}/bookings/${booking.id}`,
+    }).catch(console.error)
+  }
+
+  if (studio.email) {
+    sendPayoutReceiptEmail({
+      ownerEmail:   studio.email,
+      ownerName:    studio.owner_name,
+      customerName: booking.customer_name,
+      studioName:   studio.studio_name,
+      bookingDate,
+      timeRange,
+      bookingRef:   booking.booking_ref,
+      payoutAmount: booking.studio_payout_amount,
+      payoutDate:   format(payoutDate, 'd MMM yyyy'),
+      accountLast4: studio.account_number?.slice(-4),
+      dashboardUrl: `${appUrl}/studio/dashboard`,
+    }).catch(console.error)
+  }
 
   // Referral rewards (non-blocking)
   handleReferralReward(admin, booking).catch(console.error)
