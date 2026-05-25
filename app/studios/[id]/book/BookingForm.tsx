@@ -55,6 +55,12 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const [applyWallet, setApplyWallet]     = useState(false)
   const [walletLoading, setWalletLoading] = useState(false)
 
+  // Referral code
+  const [referralCode,   setReferralCode]   = useState('')
+  const [referralStatus, setReferralStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
+  const [referralMsg,    setReferralMsg]    = useState('')
+  const [showReferral,   setShowReferral]   = useState(false)
+
   // Form fields
   const [date,      setDate]      = useState('')
   const [startTime, setStartTime] = useState('')
@@ -128,6 +134,20 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
     ...(selectedPackage.included_extras ?? []),
   ] : []
 
+  async function validateReferralCode(code: string) {
+    const trimmed = code.trim().toUpperCase()
+    if (!trimmed) { setReferralStatus('idle'); setReferralMsg(''); return }
+    setReferralStatus('checking')
+    try {
+      const res = await fetch(`/api/referral/validate?code=${encodeURIComponent(trimmed)}`)
+      const d = await res.json()
+      if (res.ok) { setReferralStatus('valid'); setReferralMsg(d.message) }
+      else        { setReferralStatus('invalid'); setReferralMsg(d.error) }
+    } catch {
+      setReferralStatus('invalid'); setReferralMsg('Could not validate code')
+    }
+  }
+
   function validateStep1(): string {
     if (!date)      return 'Please select a date'
     if (!startTime) return 'Please select a start time'
@@ -161,6 +181,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
       shoot_type:          shootType,
       notes:               notes.trim() || null,
       apply_wallet_credit: applyWallet && walletBalance > 0,
+      ...(referralStatus === 'valid' && referralCode.trim() ? { referral_code: referralCode.trim().toUpperCase() } : {}),
     }
 
     if (selectedPackage) {
@@ -398,6 +419,45 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
               placeholder="e.g. Team of 4, need 3 backdrop changes…"
               style={{ ...s.input, resize: 'none', lineHeight: '1.5' }} />
+          </div>
+
+          {/* Referral code */}
+          <div style={{ marginBottom: '18px' }}>
+            {!showReferral ? (
+              <button type="button" onClick={() => setShowReferral(true)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#84cc16', fontWeight: '600', padding: 0, fontFamily: 'inherit' }}>
+                🎟 Have a referral code?
+              </button>
+            ) : (
+              <div>
+                <label style={s.label}>Referral code</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={referralCode}
+                    onChange={e => { setReferralCode(e.target.value.toUpperCase()); setReferralStatus('idle'); setReferralMsg('') }}
+                    placeholder="e.g. ARJUN2X"
+                    maxLength={12}
+                    style={{ ...s.input, flex: 1, textTransform: 'uppercase', letterSpacing: '.05em',
+                      borderColor: referralStatus === 'valid' ? '#84cc16' : referralStatus === 'invalid' ? '#ef4444' : '#e5e7eb' }}
+                    onFocus={e => e.target.style.borderColor = '#84cc16'}
+                    onBlur={e => { if (referralStatus === 'idle') e.target.style.borderColor = '#e5e7eb' }}
+                  />
+                  <button type="button"
+                    onClick={() => validateReferralCode(referralCode)}
+                    disabled={referralStatus === 'checking' || !referralCode.trim()}
+                    style={{ padding: '0 16px', borderRadius: '10px', border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: 'inherit', flexShrink: 0, opacity: !referralCode.trim() ? 0.5 : 1 }}>
+                    {referralStatus === 'checking' ? '…' : 'Apply'}
+                  </button>
+                </div>
+                {referralMsg && (
+                  <div style={{ marginTop: '6px', fontSize: '12px', fontWeight: '500',
+                    color: referralStatus === 'valid' ? '#15803d' : '#dc2626' }}>
+                    {referralStatus === 'valid' ? '✓ ' : '✗ '}{referralMsg}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>

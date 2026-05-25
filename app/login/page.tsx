@@ -8,7 +8,6 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') || '/'
-  const ref  = searchParams.get('ref')  || ''
 
   const supabase = createClient()
   const otpInputRef  = useRef<HTMLInputElement>(null)
@@ -101,19 +100,6 @@ function LoginForm() {
         setTimeout(() => otpInputRef.current?.focus(), 50)
         return
       }
-
-      // Apply referral code
-      const pendingRef = ref || localStorage.getItem('sd_referral_code') || ''
-      if (pendingRef && data.user) {
-        fetch('/api/referral/apply', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: pendingRef }),
-        })
-          .then(() => localStorage.removeItem('sd_referral_code'))
-          .catch(() => {})
-      }
-      if (ref) localStorage.setItem('sd_referral_code', ref)
 
       router.replace(next)
       // Intentionally no setLoading(false) — button stays disabled during navigation

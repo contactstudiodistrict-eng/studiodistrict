@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const {
       studio_id, customer_name, customer_phone, customer_email,
       booking_date, start_time, end_time, duration_hours, shoot_type, notes,
-      package_id, package_name, package_price,
+      package_id, package_name, package_price, referral_code,
     } = body
 
     // 3. Validate required fields
@@ -173,6 +173,13 @@ export async function POST(req: NextRequest) {
       console.error('[bookings] Audit log failed (non-fatal):', auditErr)
     }
 
+    // 10. Apply referral code if provided (non-fatal — booking still succeeds)
+    if (referral_code && booking) {
+      applyReferralCode(adminClient, user.id, referral_code.toString().toUpperCase().trim()).catch(err =>
+        console.error('[bookings] Referral apply failed (non-fatal):', err.message)
+      )
+    }
+
     return NextResponse.json({
       success:     true,
       booking_id:  booking.id,
@@ -213,4 +220,24 @@ function formatTime(t: string) {
   if (!t) return ''
   const [h, m] = t.split(':').map(Number)
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
+}
+
+async function applyReferralCode(admin: any, userId: string, code: string) {
+  const { data: codeRow } = await admin.from('referral_codes').select('id, user_id').eq('code', code).single()
+  if (!codeRow || codeRow.user_id === userId) return
+
+  const { data: currentUser } = await admin.from('users').select('referred_by').eq('id', userId).single()
+  if (currentUser?.referred_by) return
+
+  const { count } = await admin.from('bookings').select('id', { count: 'exact', head: true })
+    .eq('user_id', userId).in('status', ['paid', 'completed'])
+  if ((count ?? 0) > 0) return
+
+  await admin.from('users').update({ referred_by: code }).eq('id', userId)
+  await admin.from('referrals').insert({
+    referrer_user_id: codeRow.user_id,
+    referred_user_id: userId,
+    referral_code: code,
+    status: 'pending',
+  })
 }
