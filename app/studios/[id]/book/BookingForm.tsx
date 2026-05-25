@@ -508,10 +508,6 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
               <div style={s.priceRow}><span>Studio ({duration} hrs × ₹{studio.price_per_hour.toLocaleString('en-IN')})</span><span>{formatINR(pricing.subtotal)}</span></div>
             )}
             <div style={s.priceRow}><span>Platform fee (10%)</span><span>{formatINR(pricing.platformFee)}</span></div>
-            <div style={s.priceRow}><span>GST (18% on fee)</span><span>{formatINR(pricing.gstAmount)}</span></div>
-            {pricing.securityDeposit > 0 && (
-              <div style={s.priceRow}><span>Security deposit (refundable)</span><span>{formatINR(pricing.securityDeposit)}</span></div>
-            )}
             {referralDiscount > 0 && (
               <div style={{ ...s.priceRow, color: '#16a34a', fontWeight: '600' }}>
                 <span>🎟 Referral discount</span><span>−{formatINR(referralDiscount)}</span>
@@ -523,7 +519,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#111827', borderTop: '2px solid #f3f4f6', marginTop: '8px', paddingTop: '10px' }}>
-              <span>Total</span><span style={{ color: '#65a30d' }}>{formatINR(finalTotal)}</span>
+              <span>Total <span style={{ fontSize: '11px', fontWeight: '400', color: '#94a3b8' }}>(all inclusive)</span></span>
+              <span style={{ color: '#65a30d' }}>{formatINR(finalTotal)}</span>
             </div>
 
             {/* Savings line */}

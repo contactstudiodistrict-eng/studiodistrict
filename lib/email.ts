@@ -115,18 +115,10 @@ export async function sendBookingConfirmedEmail({
               <td style="padding:5px 0;font-size:14px;color:#0f172a;text-align:right;">${fmt(platformFee)}</td>
             </tr>
             <tr>
-              <td style="padding:5px 0;font-size:14px;color:#475569;">GST (18% on fee)</td>
-              <td style="padding:5px 0;font-size:14px;color:#0f172a;text-align:right;">${fmt(gstAmount)}</td>
-            </tr>
-            <tr>
-              <td style="padding:5px 0;font-size:14px;color:#475569;">Security deposit <span style="font-size:12px;">(refundable)</span></td>
-              <td style="padding:5px 0;font-size:14px;color:#0f172a;text-align:right;">${fmt(securityDeposit)}</td>
-            </tr>
-            <tr>
               <td colspan="2" style="padding-top:8px;border-top:2px solid #f1f5f9;"></td>
             </tr>
             <tr>
-              <td style="padding:4px 0;font-size:15px;font-weight:700;color:#0f172a;">Total paid</td>
+              <td style="padding:4px 0;font-size:15px;font-weight:700;color:#0f172a;">Total paid <span style="font-size:12px;font-weight:400;color:#94a3b8;">(all inclusive)</span></td>
               <td style="padding:4px 0;font-size:15px;font-weight:700;color:#65a30d;text-align:right;">${fmt(totalAmount)}</td>
             </tr>
           </table>
@@ -147,7 +139,7 @@ export async function sendBookingConfirmedEmail({
           </a>
 
           <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.6;">
-            The security deposit of ${fmt(securityDeposit)} will be refunded to your original payment method after the session, subject to the studio's refund policy.
+            The amount shown is all-inclusive. No hidden charges.
           </p>
         </td></tr>
 

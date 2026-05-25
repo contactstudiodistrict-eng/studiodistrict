@@ -128,8 +128,6 @@ export function PaymentForm(props: Props) {
               {[
                 { label: 'Studio charges', value: fmt(props.subtotal) },
                 { label: 'Platform fee (10%)', value: fmt(props.platformFee) },
-                { label: 'GST (18% on fee)', value: fmt(props.gstAmount) },
-                ...(props.securityDeposit > 0 ? [{ label: 'Refundable deposit', value: fmt(props.securityDeposit) }] : []),
               ].map(row => (
                 <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
                   <span style={{ color: '#6b7280' }}>{row.label}</span>
@@ -149,7 +147,7 @@ export function PaymentForm(props: Props) {
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid #f1f5f9', paddingTop: 12, marginTop: 4 }}>
-                <span style={{ color: '#111827' }}>Total</span>
+                <span style={{ color: '#111827' }}>Total <span style={{ fontSize: 11, fontWeight: 400, color: '#94a3b8' }}>(all inclusive)</span></span>
                 <span style={{ color: '#16a34a' }}>{fmt(props.totalAmount)}</span>
               </div>
             </div>
