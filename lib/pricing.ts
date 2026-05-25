@@ -2,6 +2,8 @@
 // All pricing calculations in one place — easy to test and audit
 
 const COMMISSION_PERCENT = Number(process.env.PLATFORM_COMMISSION_PERCENT ?? 10)
+export const WALLET_CAP = 200
+export const REFERRAL_DISCOUNT = 100
 const GST_PERCENT = Number(process.env.GST_PERCENT ?? 18)
 const SECURITY_DEPOSIT = Number(process.env.SECURITY_DEPOSIT_AMOUNT ?? 1200)
 

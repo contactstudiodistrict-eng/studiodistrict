@@ -19,6 +19,8 @@ interface Props {
   customerName: string
   customerPhone: string
   customerEmail: string | null
+  referralDiscount: number
+  walletCreditApplied: number
   orderId: string
   orderAmount: number   // paise
   razorpayKeyId: string
@@ -134,6 +136,18 @@ export function PaymentForm(props: Props) {
                   <span style={{ color: '#374151' }}>{row.value}</span>
                 </div>
               ))}
+              {props.referralDiscount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>🎟 Referral discount</span>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>−{fmt(props.referralDiscount)}</span>
+                </div>
+              )}
+              {props.walletCreditApplied > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>💰 Wallet credit</span>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>−{fmt(props.walletCreditApplied)}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid #f1f5f9', paddingTop: 12, marginTop: 4 }}>
                 <span style={{ color: '#111827' }}>Total</span>
                 <span style={{ color: '#16a34a' }}>{fmt(props.totalAmount)}</span>

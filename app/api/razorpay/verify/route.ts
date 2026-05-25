@@ -168,6 +168,11 @@ export async function POST(req: NextRequest) {
     }).catch(console.error)
   }
 
+  // Deduct wallet credit if applied (non-blocking)
+  if ((booking as any).wallet_credit_applied > 0) {
+    deductWalletCredit(admin, booking.user_id, (booking as any).wallet_credit_applied).catch(console.error)
+  }
+
   // Referral rewards (non-blocking)
   handleReferralReward(admin, booking).catch(console.error)
 
@@ -183,41 +188,49 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true })
 }
 
-async function handleReferralReward(admin: any, booking: any) {
-  const { data: booker } = await admin
-    .from('users')
-    .select('referred_by')
-    .eq('id', booking.user_id)
-    .single()
+async function deductWalletCredit(admin: any, userId: string, amount: number) {
+  const { data: u } = await admin.from('users').select('wallet_balance').eq('id', userId).single()
+  const newBalance = Math.max(0, ((u as any)?.wallet_balance ?? 0) - amount)
+  await admin.from('users').update({ wallet_balance: newBalance }).eq('id', userId)
+}
 
+async function handleReferralReward(admin: any, booking: any) {
+  const { data: booker } = await admin.from('users').select('referred_by').eq('id', booking.user_id).single()
   if (!booker?.referred_by) return
 
-  const { count: prevBookings } = await admin
-    .from('bookings')
+  // Only fires on first paid booking
+  const { count: prevBookings } = await admin.from('bookings')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', booking.user_id)
     .in('status', ['paid', 'completed'])
     .neq('id', booking.id)
-
   if ((prevBookings ?? 0) > 0) return
 
-  const { data: referrerCode } = await admin
-    .from('referral_codes')
-    .select('user_id')
-    .eq('code', booker.referred_by)
-    .single()
-
+  const { data: referrerCode } = await admin.from('referral_codes').select('user_id').eq('code', booker.referred_by).single()
   if (!referrerCode) return
 
   const referrerId   = referrerCode.user_id
-  const rewardAmount = await getReferralAmount()
+  const rewardAmount = await getReferralAmount() // ₹100
 
-  await admin.from('wallet_credits').insert({ user_id: booking.user_id, amount: rewardAmount, type: 'referral_bonus', description: 'Welcome bonus — first booking via referral' })
-  await admin.from('wallet_credits').insert({ user_id: referrerId, amount: rewardAmount, type: 'referral_reward', description: 'Referral reward — friend completed first booking' })
+  // Referrer gets wallet credit — referred user already got checkout discount
+  await admin.from('wallet_credits').insert({
+    user_id:     referrerId,
+    amount:      rewardAmount,
+    type:        'referral_reward',
+    description: 'Referral reward — friend completed first booking',
+  })
+  const { data: referrerUser } = await admin.from('users').select('wallet_balance').eq('id', referrerId).single()
+  await admin.from('users').update({
+    wallet_balance: ((referrerUser as any)?.wallet_balance ?? 0) + rewardAmount,
+  }).eq('id', referrerId)
+
   await admin.from('referrals').update({ status: 'rewarded', rewarded_at: new Date().toISOString() }).eq('referred_user_id', booking.user_id)
 
   const { data: codeStats } = await admin.from('referral_codes').select('total_referrals, total_earned').eq('user_id', referrerId).single()
   if (codeStats) {
-    await admin.from('referral_codes').update({ total_referrals: (codeStats.total_referrals || 0) + 1, total_earned: (codeStats.total_earned || 0) + rewardAmount }).eq('user_id', referrerId)
+    await admin.from('referral_codes').update({
+      total_referrals: ((codeStats as any).total_referrals || 0) + 1,
+      total_earned:    ((codeStats as any).total_earned    || 0) + rewardAmount,
+    }).eq('user_id', referrerId)
   }
 }

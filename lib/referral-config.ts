@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 
-const DEFAULT_AMOUNT = 200
+const DEFAULT_AMOUNT = 100
 
 export async function getReferralAmount(): Promise<number> {
   try {

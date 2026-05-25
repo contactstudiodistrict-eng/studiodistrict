@@ -1,7 +1,7 @@
 // app/api/bookings/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { calculatePricing, calculatePackagePricing } from '@/lib/pricing'
+import { calculatePricing, calculatePackagePricing, WALLET_CAP, REFERRAL_DISCOUNT } from '@/lib/pricing'
 import { sendBookingRequest } from '@/lib/whatsapp'
 import { format } from 'date-fns'
 
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const {
       studio_id, customer_name, customer_phone, customer_email,
       booking_date, start_time, end_time, duration_hours, shoot_type, notes,
-      package_id, package_name, package_price, referral_code,
+      package_id, package_name, package_price, referral_code, apply_wallet_credit,
     } = body
 
     // 3. Validate required fields
@@ -92,7 +92,24 @@ export async function POST(req: NextRequest) {
       verifiedPackageId   = (pkg as any).id
     }
 
-    // 7. Insert booking
+    // 7. Compute discounts server-side
+    // Referral: check eligibility without applying yet
+    let referralDiscountAmount = 0
+    if (referral_code) {
+      referralDiscountAmount = await computeReferralDiscount(adminClient, user.id, referral_code.toString().toUpperCase().trim())
+    }
+
+    // Wallet: fetch live balance and cap at WALLET_CAP
+    let walletCreditApplied = 0
+    if (apply_wallet_credit) {
+      const { data: userRow } = await adminClient.from('users').select('wallet_balance').eq('id', user.id).single()
+      const balance = (userRow as any)?.wallet_balance ?? 0
+      walletCreditApplied = Math.min(balance, WALLET_CAP)
+    }
+
+    const adjustedTotal = Math.max(0, pricing.totalAmount - referralDiscountAmount - walletCreditApplied)
+
+    // 8. Insert booking
     const { data: booking, error: insertErr } = await adminClient
       .from('bookings')
       .insert({
@@ -111,9 +128,11 @@ export async function POST(req: NextRequest) {
         subtotal:             pricing.subtotal,
         platform_fee:         pricing.platformFee,
         gst_amount:           pricing.gstAmount,
-        total_amount:         pricing.totalAmount,
+        total_amount:         adjustedTotal,
         security_deposit:     pricing.securityDeposit,
         studio_payout_amount: pricing.studioPayout,
+        referral_discount:    referralDiscountAmount,
+        wallet_credit_applied: walletCreditApplied,
         package_id:           verifiedPackageId,
         package_name:         verifiedPackageName,
         package_price:        verifiedPackageId ? pricing.subtotal : null,
@@ -129,7 +148,7 @@ export async function POST(req: NextRequest) {
 
     console.log('[bookings] Created:', booking.booking_ref, booking.id)
 
-    // 8. Send WhatsApp to studio owner (fire and forget — use void, not .catch)
+    // 9. Send WhatsApp to studio owner (fire and forget — use void, not .catch)
     const dateStr   = format(new Date(booking_date), 'EEE, d MMM yyyy')
     const timeRange = `${formatTime(start_time)} – ${formatTime(end_time)}`
 
@@ -159,7 +178,7 @@ export async function POST(req: NextRequest) {
       console.error('[bookings] WhatsApp failed (non-fatal):', err.message)
     })
 
-    // 9. Audit log — use await with try/catch, NOT .catch() on the builder
+    // 10. Audit log — use await with try/catch, NOT .catch() on the builder
     try {
       await adminClient.from('audit_logs').insert({
         user_id:     user.id,
@@ -173,7 +192,7 @@ export async function POST(req: NextRequest) {
       console.error('[bookings] Audit log failed (non-fatal):', auditErr)
     }
 
-    // 10. Apply referral code if provided (non-fatal — booking still succeeds)
+    // 11. Apply referral code if provided (non-fatal — booking still succeeds)
     if (referral_code && booking) {
       applyReferralCode(adminClient, user.id, referral_code.toString().toUpperCase().trim()).catch(err =>
         console.error('[bookings] Referral apply failed (non-fatal):', err.message)
@@ -220,6 +239,17 @@ function formatTime(t: string) {
   if (!t) return ''
   const [h, m] = t.split(':').map(Number)
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
+}
+
+async function computeReferralDiscount(admin: any, userId: string, code: string): Promise<number> {
+  const { data: codeRow } = await admin.from('referral_codes').select('id, user_id').eq('code', code).single()
+  if (!codeRow || codeRow.user_id === userId) return 0
+  const { data: currentUser } = await admin.from('users').select('referred_by').eq('id', userId).single()
+  if (currentUser?.referred_by) return 0
+  const { count } = await admin.from('bookings').select('id', { count: 'exact', head: true })
+    .eq('user_id', userId).in('status', ['paid', 'completed'])
+  if ((count ?? 0) > 0) return 0
+  return REFERRAL_DISCOUNT
 }
 
 async function applyReferralCode(admin: any, userId: string, code: string) {

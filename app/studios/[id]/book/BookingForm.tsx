@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { calculatePricing, calculatePackagePricing, formatINR } from '@/lib/pricing'
+import { calculatePricing, calculatePackagePricing, formatINR, WALLET_CAP, REFERRAL_DISCOUNT } from '@/lib/pricing'
 
 const SHOOT_TYPES = [
   'Model Portfolio', 'Product Creative', 'Social Media / Reels',
@@ -125,8 +125,9 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
     ? calculatePackagePricing(selectedPackage.price)
     : calculatePricing(studio.price_per_hour, duration)
 
-  const walletDiscount = applyWallet ? Math.min(walletBalance, pricing.totalAmount) : 0
-  const finalTotal     = pricing.totalAmount - walletDiscount
+  const referralDiscount = referralStatus === 'valid' ? REFERRAL_DISCOUNT : 0
+  const walletDiscount   = applyWallet ? Math.min(walletBalance, WALLET_CAP) : 0
+  const finalTotal       = Math.max(0, pricing.totalAmount - referralDiscount - walletDiscount)
 
   const packageItems = selectedPackage ? [
     ...(selectedPackage.included_equipment ?? []),
@@ -511,9 +512,14 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             {pricing.securityDeposit > 0 && (
               <div style={s.priceRow}><span>Security deposit (refundable)</span><span>{formatINR(pricing.securityDeposit)}</span></div>
             )}
+            {referralDiscount > 0 && (
+              <div style={{ ...s.priceRow, color: '#16a34a', fontWeight: '600' }}>
+                <span>🎟 Referral discount</span><span>−{formatINR(referralDiscount)}</span>
+              </div>
+            )}
             {applyWallet && walletDiscount > 0 && (
               <div style={{ ...s.priceRow, color: '#16a34a', fontWeight: '600' }}>
-                <span>💰 Wallet credit applied</span><span>−{formatINR(walletDiscount)}</span>
+                <span>💰 Wallet credit</span><span>−{formatINR(walletDiscount)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#111827', borderTop: '2px solid #f3f4f6', marginTop: '8px', paddingTop: '10px' }}>
@@ -554,9 +560,14 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <div style={{ background: '#f0fdf4', border: `1px solid ${applyWallet ? '#84cc16' : '#d1fae5'}`, borderRadius: '12px', padding: '14px 16px', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>💰 You have {formatINR(walletBalance)} wallet credit</div>
+                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>
+                    💰 Wallet: {formatINR(walletBalance)}
+                    {walletBalance > WALLET_CAP && <span style={{ fontSize: '12px', fontWeight: '400', color: '#64748b' }}> (max {formatINR(WALLET_CAP)}/booking)</span>}
+                  </div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                    {applyWallet ? `New total: ${formatINR(finalTotal)}` : 'Apply to this booking?'}
+                    {applyWallet
+                      ? `−${formatINR(walletDiscount)} applied · New total: ${formatINR(finalTotal)}`
+                      : `Apply up to ${formatINR(Math.min(walletBalance, WALLET_CAP))} to this booking?`}
                   </div>
                 </div>
                 <button type="button" onClick={() => setApplyWallet(v => !v)}
