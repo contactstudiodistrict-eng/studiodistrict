@@ -125,15 +125,10 @@ export function PaymentForm(props: Props) {
 
             {/* Breakdown */}
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 16, marginBottom: 20 }}>
-              {[
-                { label: 'Studio charges', value: fmt(props.subtotal) },
-                { label: 'Platform fee (10%)', value: fmt(props.platformFee) },
-              ].map(row => (
-                <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
-                  <span style={{ color: '#6b7280' }}>{row.label}</span>
-                  <span style={{ color: '#374151' }}>{row.value}</span>
-                </div>
-              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
+                <span style={{ color: '#6b7280' }}>Studio charges</span>
+                <span style={{ color: '#374151' }}>{fmt(props.subtotal)}</span>
+              </div>
               {props.referralDiscount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
                   <span style={{ color: '#16a34a', fontWeight: 600 }}>🎟 Referral discount</span>

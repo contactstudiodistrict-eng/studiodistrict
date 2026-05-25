@@ -507,7 +507,6 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             ) : (
               <div style={s.priceRow}><span>Studio ({duration} hrs × ₹{studio.price_per_hour.toLocaleString('en-IN')})</span><span>{formatINR(pricing.subtotal)}</span></div>
             )}
-            <div style={s.priceRow}><span>Platform fee (10%)</span><span>{formatINR(pricing.platformFee)}</span></div>
             {referralDiscount > 0 && (
               <div style={{ ...s.priceRow, color: '#16a34a', fontWeight: '600' }}>
                 <span>🎟 Referral discount</span><span>−{formatINR(referralDiscount)}</span>

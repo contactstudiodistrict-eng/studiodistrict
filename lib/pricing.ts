@@ -24,9 +24,8 @@ export function calculatePricing(
   durationHours: number,
   _includeDeposit: boolean = true
 ): PricingBreakdown {
-  const subtotal = Math.round(pricePerHour * durationHours)
+  const subtotal    = Math.round(pricePerHour * durationHours)
   const platformFee = Math.round(subtotal * (COMMISSION_PERCENT / 100))
-  const totalAmount = subtotal + platformFee
 
   return {
     studioRate: pricePerHour,
@@ -35,8 +34,8 @@ export function calculatePricing(
     platformFee,
     gstAmount: 0,
     securityDeposit: 0,
-    totalAmount,
-    studioPayout: subtotal - platformFee,
+    totalAmount:  subtotal,               // customer pays the listed price
+    studioPayout: subtotal - platformFee, // platform fee deducted internally
     commissionPercent: COMMISSION_PERCENT,
   }
 }
@@ -57,7 +56,7 @@ export interface PackagePricingBreakdown {
 export function calculatePackagePricing(packagePrice: number): PackagePricingBreakdown {
   const subtotal    = packagePrice
   const platformFee = Math.round(subtotal * (COMMISSION_PERCENT / 100))
-  return { subtotal, platformFee, gstAmount: 0, securityDeposit: 0, totalAmount: subtotal + platformFee, studioPayout: subtotal - platformFee }
+  return { subtotal, platformFee, gstAmount: 0, securityDeposit: 0, totalAmount: subtotal, studioPayout: subtotal - platformFee }
 }
 
 // For display in booking summary UI

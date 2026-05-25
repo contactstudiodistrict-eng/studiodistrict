@@ -111,10 +111,6 @@ export async function sendBookingConfirmedEmail({
               <td style="padding:5px 0;font-size:14px;color:#0f172a;text-align:right;">${fmt(subtotal)}</td>
             </tr>
             <tr>
-              <td style="padding:5px 0;font-size:14px;color:#475569;">Platform fee (10%)</td>
-              <td style="padding:5px 0;font-size:14px;color:#0f172a;text-align:right;">${fmt(platformFee)}</td>
-            </tr>
-            <tr>
               <td colspan="2" style="padding-top:8px;border-top:2px solid #f1f5f9;"></td>
             </tr>
             <tr>
