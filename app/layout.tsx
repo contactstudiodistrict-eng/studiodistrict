@@ -1,6 +1,6 @@
 // app/layout.tsx
 import type { Metadata } from 'next'
-import { Space_Grotesk, DM_Serif_Display, Space_Mono } from 'next/font/google'
+import { Space_Grotesk, DM_Serif_Display, Space_Mono, Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ClientLayout } from '@/components/shared/ClientLayout'
 import './globals.css'
@@ -25,6 +25,27 @@ const spaceMono = Space_Mono({
   display: 'swap',
 })
 
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-bricolage',
+  display: 'swap',
+})
+
+const hanken = Hanken_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-hanken',
+  display: 'swap',
+})
+
+const jetbrains = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: { default: 'Studio District — Book Studio Spaces in Chennai', template: '%s | Studio District' },
   description: 'Book photography, podcast, video, and music studios in Chennai. Instant availability, transparent pricing.',
@@ -41,7 +62,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${dmSerif.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`${spaceGrotesk.variable} ${dmSerif.variable} ${spaceMono.variable} ${bricolage.variable} ${hanken.variable} ${jetbrains.variable}`}>
       <body className="font-sans bg-white text-ink-900 antialiased">
         <ClientLayout>
           {children}
