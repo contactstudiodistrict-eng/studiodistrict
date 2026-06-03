@@ -51,6 +51,21 @@ export function HomepageClient({
   const [fading, setFading] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
+  // Live favourite state — starts from server-fetched IDs
+  const [liveFavIds, setLiveFavIds] = useState<Set<string>>(() => new Set(favouriteIds))
+
+  function handleFavouriteToggle(studioId: string, isFav: boolean) {
+    setLiveFavIds(prev => {
+      const next = new Set(prev)
+      isFav ? next.add(studioId) : next.delete(studioId)
+      return next
+    })
+  }
+
+  // Derive saved studios live from allStudios so the strip updates instantly
+  const liveFavStudios = allStudios.filter(s => liveFavIds.has(s.id))
+  const liveFavIdsArray = Array.from(liveFavIds)
+
   // Derived banners
   const announcementBanner = banners.find(b => b.type === 'announcement') ?? null
   const offerBanner        = banners.find(b => b.type === 'offer')        ?? null
@@ -121,17 +136,17 @@ export function HomepageClient({
           />
 
           {/* Saved studios */}
-          {isLoggedIn && favouriteStudios.length > 0 && (
+          {isLoggedIn && liveFavStudios.length > 0 && (
             <div style={{ marginBottom: 40 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0 }}>Your saved studios</h2>
-                <span style={{ fontSize: 13, color: '#9ca3af' }}>{favouriteStudios.length} saved</span>
+                <span style={{ fontSize: 13, color: '#9ca3af' }}>{liveFavStudios.length} saved</span>
               </div>
               <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:overflow-visible"
                 style={{ scrollbarWidth: 'none' }}>
-                {favouriteStudios.map((studio: any) => (
+                {liveFavStudios.map((studio: any) => (
                   <div key={studio.id} className="flex-shrink-0 w-72 sm:w-auto">
-                    <StudioCard studio={studio} isFavourited={true} />
+                    <StudioCard studio={studio} isFavourited={true} onFavouriteToggle={handleFavouriteToggle} />
                   </div>
                 ))}
               </div>
@@ -170,9 +185,10 @@ export function HomepageClient({
             {filtered.length > 0 ? (
               <StudioGrid
                 studios={filtered}
-                favouriteIds={favouriteIds}
+                favouriteIds={liveFavIdsArray}
                 featureBanner={featureBanner}
                 insertAtIndex={2}
+                onFavouriteToggle={handleFavouriteToggle}
               />
             ) : (
               <EmptyState

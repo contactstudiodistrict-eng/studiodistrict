@@ -10,9 +10,10 @@ interface Props {
   favouriteIds?: string[]
   featureBanner?: Banner | null
   insertAtIndex?: number
+  onFavouriteToggle?: (studioId: string, isFav: boolean) => void
 }
 
-export function StudioGrid({ studios, favouriteIds = [], featureBanner, insertAtIndex = 2 }: Props) {
+export function StudioGrid({ studios, favouriteIds = [], featureBanner, insertAtIndex = 2, onFavouriteToggle }: Props) {
   const [showFeatureCard, setShowFeatureCard] = useState(true)
   const favSet = new Set(favouriteIds)
   const cards: React.ReactNode[] = []
@@ -32,6 +33,7 @@ export function StudioGrid({ studios, favouriteIds = [], featureBanner, insertAt
         key={studio.id}
         studio={studio}
         isFavourited={favSet.has(studio.id)}
+        onFavouriteToggle={onFavouriteToggle}
       />
     )
   })
