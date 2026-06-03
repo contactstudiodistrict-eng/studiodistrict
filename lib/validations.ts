@@ -26,13 +26,13 @@ export const studioOnboardSchema = z.object({
   // Step 1: Basic info
   studio_name:    z.string().min(3, 'Studio name must be at least 3 characters'),
   studio_type:    z.enum(['photography', 'videography', 'audio', 'music', 'mixed']),
-  owner_name:     z.string().min(2),
-  owner_phone:    z.string().regex(/^[6-9]\d{9}$/, 'Enter valid WhatsApp number'),
+  owner_name:     z.string().min(2, 'Owner name is required'),
+  owner_phone:    z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit WhatsApp number'),
   owner_alt_phone: z.string().optional(),
-  email:          z.string().email(),
-  address:        z.string().min(10),
+  email:          z.string().email('Enter a valid email address'),
+  address:        z.string().min(10, 'Enter the full address (street, area, PIN)'),
   google_maps_link: z.string().url().optional().or(z.literal('')),
-  area:           z.string().min(2),
+  area:           z.string().min(2, 'Area / locality is required'),
 
   // Step 2: Pricing
   price_per_hour: z.number().min(200, 'Minimum ₹200/hr').max(50000),

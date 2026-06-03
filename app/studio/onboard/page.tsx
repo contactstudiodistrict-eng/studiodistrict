@@ -61,15 +61,15 @@ export default function StudioOnboardPage() {
   const watchWorkingDays = watch('working_days') || []
   const watchIdealFor = watch('ideal_for') || []
 
-  // Watch required fields per step to drive Next button disabled state
-  const watchStep1 = watch(['studio_name', 'studio_type', 'owner_name', 'owner_phone', 'email', 'area', 'address'])
-  const watchStep2 = watch(['price_per_hour'])
-
-  function isNextDisabled(): boolean {
-    if (step === 1) return watchStep1.some(v => !v || String(v).trim() === '')
-    if (step === 2) return !watchStep2[0] || Number(watchStep2[0]) <= 0
-    if (step === 8) return watchWorkingDays.length === 0
-    return false
+  const FIELD_LABELS: Partial<Record<keyof StudioOnboardData, string>> = {
+    studio_name:    'Studio name',
+    owner_name:     'Owner name',
+    owner_phone:    'WhatsApp number',
+    email:          'Email address',
+    area:           'Area / Locality',
+    address:        'Full address',
+    price_per_hour: 'Price per hour',
+    working_days:   'Working days',
   }
 
   function toggleDay(day: typeof DAYS[number]) {
@@ -94,7 +94,24 @@ export default function StudioOnboardPage() {
     const fields = STEP_FIELDS[step]
     if (fields && fields.length > 0) {
       const valid = await trigger(fields)
-      if (!valid) return
+      if (!valid) {
+        const values = getValues()
+        const empty = fields.filter(f => {
+          const v = values[f as keyof StudioOnboardData]
+          return v === undefined || v === null || v === '' || (typeof v === 'string' && !v.trim())
+        })
+        if (empty.length > 0) {
+          const names = empty.map(f => FIELD_LABELS[f as keyof StudioOnboardData] || f).join(', ')
+          toast.error(`Please fill in: ${names}`)
+        } else {
+          toast.error('Please fix the highlighted errors before continuing')
+        }
+        return
+      }
+    }
+    if (step === 8 && watchWorkingDays.length === 0) {
+      toast.error('Please select at least one working day')
+      return
     }
     if (step === 3) {
       const photoCount = uploadedImages.filter(i => i.image_type !== 'video').length
@@ -648,9 +665,9 @@ export default function StudioOnboardPage() {
                   ← Back
                 </button>
               )}
-              <button type="button" onClick={handleNext} disabled={isNextDisabled()}
-                className={`${step > 1 ? 'flex-[2]' : 'flex-1'} py-3.5 rounded-xl font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed`}
-                style={{ backgroundColor: isNextDisabled() ? '#d9f99d' : '#84cc16', color: '#111827' }}>
+              <button type="button" onClick={handleNext}
+                className={`${step > 1 ? 'flex-[2]' : 'flex-1'} py-3.5 rounded-xl font-semibold transition-colors hover:opacity-90`}
+                style={{ backgroundColor: '#84cc16', color: '#111827' }}>
                 {step === 9 ? 'Review submission →' : 'Next →'}
               </button>
             </div>
