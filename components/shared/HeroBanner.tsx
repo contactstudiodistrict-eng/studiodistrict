@@ -31,8 +31,8 @@ const AREA_OPTIONS = [
 ]
 
 // HD Unsplash images – replace with actual studio photos once available
-const UNS = (id: string, w = 640, h = 280) =>
-  `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&crop=center&auto=format&q=80`
+const UNS = (id: string, w = 640, h = 280, crop = 'center') =>
+  `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&crop=${crop}&auto=format&q=80`
 
 const SHOOT_TYPES = [
   {
@@ -72,7 +72,7 @@ const SHOOT_TYPES = [
     tags: ['Backdrops', 'Props', 'Print-ready'],
     accent: 'oklch(0.60 0.18 50)', accentBg: 'oklch(0.95 0.04 50)',
     searchType: 'photography',
-    img: UNS('photo-1531746020798-e6953c6e8e04'),   // portrait studio lighting
+    img: UNS('photo-1531746020798-e6953c6e8e04', 640, 280, 'faces'),   // portrait studio lighting
     emoji: '👨‍👩‍👧',
   },
   {
@@ -92,7 +92,7 @@ const SHOOT_TYPES = [
     tags: ['Quick turnaround', 'LinkedIn-ready', 'Team pkg'],
     accent: 'oklch(0.45 0.12 250)', accentBg: 'oklch(0.95 0.03 250)',
     searchType: 'photography',
-    img: UNS('photo-1507003211169-0a1dd7228f2d'),   // professional headshot
+    img: UNS('photo-1507003211169-0a1dd7228f2d', 640, 280, 'faces'),   // professional headshot
     emoji: '💼',
   },
 ]
@@ -309,15 +309,10 @@ export function HeroBanner({ thumbnails = [], onSearch }: Props) {
   const D_SIH  = 150   // image strip height (side)
   const D_GAP  = 14    // gap between cards
 
-  // translateX for each slot in the peek carousel
-  const dCenterX = (colW - D_CW) / 2
-  const dLeftX   = dCenterX - D_CW / 2 - D_GAP - D_SW / 2   // left card center x → left edge
-  const dRightX  = dCenterX + D_CW / 2 + D_GAP + D_SW / 2
-
-  // Actual left-edge positions for absolute children
-  const dCenterLeft = dCenterX
-  const dLeftLeft   = dLeftX   - D_SW / 2    // left card starts here
-  const dRightLeft  = dRightX  - D_SW / 2    // right card starts here
+  // Left-edge positions for each slot in the peek carousel
+  const dCenterLeft = (colW - D_CW) / 2
+  const dLeftLeft   = dCenterLeft - D_GAP - D_SW
+  const dRightLeft  = dCenterLeft + D_CW + D_GAP
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -360,13 +355,13 @@ export function HeroBanner({ thumbnails = [], onSearch }: Props) {
             rgba(255,255,255,0.58) 75%,rgba(255,255,255,0.28) 90%,
             rgba(255,255,255,0.12) 100%); }}
 
-        .sd2-grid{ display:grid; grid-template-columns:1.15fr 0.85fr; min-height:100vh; padding:0 48px; }
+        .sd2-grid{ display:grid; grid-template-columns:1.15fr 0.85fr; min-height:clamp(680px,88vh,820px); padding:0 48px; }
         .sd2-left{ display:flex; flex-direction:column; justify-content:center; padding:64px 40px 72px 0; }
         .sd2-right{ display:flex; align-items:center; justify-content:center; padding:48px 0 72px; }
         .sd2-srow{ flex-direction:row; }
 
         @media(min-width:768px) and (max-width:1023px){
-          .sd2-grid{ grid-template-columns:1.1fr 0.9fr; min-height:90vh; padding:0 32px; }
+          .sd2-grid{ grid-template-columns:1.1fr 0.9fr; min-height:clamp(600px,82vh,720px); padding:0 32px; }
           .sd2-left{ padding:56px 32px 64px 0; }
           .sd2-right{ padding:40px 0 60px; }}
         @media(max-width:767px){
