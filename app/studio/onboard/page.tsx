@@ -56,7 +56,8 @@ export default function StudioOnboardPage() {
   }
 
   const { register, handleSubmit, watch, setValue, getValues, trigger, reset, formState: { errors } } = useForm<StudioOnboardData>({
-    mode: 'onChange',
+    resolver: zodResolver(studioOnboardSchema),
+    mode: 'onTouched',
     defaultValues: DEFAULT_VALUES,
   })
 
@@ -232,9 +233,11 @@ export default function StudioOnboardPage() {
         {/* Step tabs */}
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-8 pb-1">
           {STEPS.map(s => (
-            <button key={s.id} type="button" onClick={() => setStep(s.id)}
+            <button key={s.id} type="button"
+              onClick={() => s.id <= step && setStep(s.id)}
+              disabled={s.id > step}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                ${step === s.id ? 'bg-brand-500 text-white' : s.id < step ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                ${step === s.id ? 'bg-brand-500 text-white' : s.id < step ? 'bg-green-100 text-green-700 cursor-pointer' : 'bg-white text-gray-300 border border-gray-100 cursor-not-allowed'}`}>
               {s.id < step ? '✓' : s.icon} {s.title}
             </button>
           ))}
