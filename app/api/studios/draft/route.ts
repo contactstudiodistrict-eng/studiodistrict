@@ -33,7 +33,7 @@ export async function GET() {
   const admin = createAdminClient()
   const { data: draft } = await (admin as any)
     .from('studios')
-    .select('*, studio_amenities(*), studio_equipment(*)')
+    .select('*, studio_amenities(*), studio_equipment(*), studio_images(*)')
     .eq('owner_id', user.id)
     .eq('status', 'draft')
     .order('updated_at', { ascending: false })
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
   const body = await req.json()
-  const { image_urls: _imgs, ...formValues } = body
+  const { image_urls: imageUrls, ...formValues } = body
 
   const { studio: raw, amenity: amenityData, equipment: equipmentData } = splitFields(formValues)
 
@@ -123,6 +123,21 @@ export async function POST(req: NextRequest) {
     draftId = newDraft.id
     await (admin as any).from('studio_amenities').insert({ studio_id: draftId, ...amenityData })
     await (admin as any).from('studio_equipment').insert({ studio_id: draftId, ...equipmentData })
+  }
+
+  // Persist images: delete existing draft images, re-insert current set
+  if (Array.isArray(imageUrls) && imageUrls.length > 0) {
+    await (admin as any).from('studio_images').delete().eq('studio_id', draftId)
+    type DbImageType = 'studio' | 'backdrop' | 'equipment' | 'walkthrough'
+    const imageRows = imageUrls.map((img: any, i: number) => ({
+      studio_id:     draftId,
+      url:           img.url,
+      cloudinary_id: img.cloudinary_id,
+      image_type:    (img.image_type === 'video' ? 'walkthrough' : img.image_type) as DbImageType,
+      is_thumbnail:  i === 0 && img.image_type !== 'video',
+      display_order: i,
+    }))
+    await (admin as any).from('studio_images').insert(imageRows)
   }
 
   return NextResponse.json({ draft_id: draftId })

@@ -76,16 +76,27 @@ export default function StudioOnboardPage() {
         if (!d?.draft) return
         setDraftId(d.draft.id)
         setDraftBanner(true)
-        const { studio_amenities: am, studio_equipment: eq,
+        const { studio_amenities: amArr, studio_equipment: eqArr,
+          studio_images: imgArr,
           id: _id, owner_id: _oid, status: _st,
           created_at: _ca, updated_at: _ua,
           rating: _r, review_count: _rc, is_featured: _if, thumbnail_url: _th,
           ...studioFields
         } = d.draft
         const merged: Record<string, any> = { ...DEFAULT_VALUES, ...studioFields }
+        const am = Array.isArray(amArr) ? amArr[0] : amArr
+        const eq = Array.isArray(eqArr) ? eqArr[0] : eqArr
         if (am)  { const { id: _, studio_id: __, ...f } = am;  Object.assign(merged, f) }
         if (eq)  { const { id: _, studio_id: __, ...f } = eq;  Object.assign(merged, f) }
         reset(merged as StudioOnboardData)
+        // Restore uploaded images
+        if (Array.isArray(imgArr) && imgArr.length > 0) {
+          setUploadedImages(imgArr.map((img: any) => ({
+            url: img.url,
+            cloudinary_id: img.cloudinary_id,
+            image_type: img.image_type === 'walkthrough' ? 'video' : img.image_type,
+          })))
+        }
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -251,7 +262,22 @@ export default function StudioOnboardPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, (errs) => {
+          const stepFieldMap: Record<number, string[]> = {
+            1: ['studio_name','studio_type','owner_name','owner_phone','email','area','address'],
+            2: ['price_per_hour'],
+            8: ['working_days'],
+          }
+          const errorKeys = Object.keys(errs)
+          for (const [s, fields] of Object.entries(stepFieldMap)) {
+            if (fields.some(f => errorKeys.includes(f))) {
+              setStep(Number(s))
+              toast.error('Please fix the highlighted fields before submitting')
+              return
+            }
+          }
+          toast.error('Please check your form — some required fields are missing')
+        })}>
           {/* ── Step 1: Basic Info ────────────────────────────── */}
           {step === 1 && (
             <StepCard title="Basic Information" icon="🏠" subtitle="Tell us about your studio and how to reach you">
@@ -374,17 +400,19 @@ export default function StudioOnboardPage() {
             <StepCard title="Photos & Media" icon="📸" subtitle="Good photos get 3× more bookings. Minimum 5, up to 15.">
               <div className="space-y-4">
                 <ImageUploadZone label="Studio photos (5–15)" sublabel="Main space, lighting setup, overall look" icon="🖼️"
-                  hint="First photo becomes your thumbnail. Landscape orientation works best."
+                  hint="First photo becomes your thumbnail. Landscape orientation works best. Max 10 MB per photo (JPG/PNG/WEBP)."
                   imageType="studio" images={uploadedImages.filter(i => i.image_type === 'studio')}
                   onAdd={addImages} onRemove={removeImage} multiple />
                 <ImageUploadZone label="Backdrop & set photos" sublabel="All available backdrops and set configurations" icon="🎨"
+                  hint="Max 10 MB per photo (JPG/PNG/WEBP)."
                   imageType="backdrop" images={uploadedImages.filter(i => i.image_type === 'backdrop')}
                   onAdd={addImages} onRemove={removeImage} multiple />
                 <ImageUploadZone label="Equipment photos" sublabel="Lights, cameras, audio gear, props" icon="🔧"
+                  hint="Max 10 MB per photo (JPG/PNG/WEBP)."
                   imageType="equipment" images={uploadedImages.filter(i => i.image_type === 'equipment')}
                   onAdd={addImages} onRemove={removeImage} multiple />
-                <ImageUploadZone label="Walkthrough video (optional)" sublabel="Short 1–3 min tour of the studio. MP4, max 100MB." icon="🎬"
-                  hint="Video tours convert 40% more visitors."
+                <ImageUploadZone label="Walkthrough video (optional)" sublabel="Short 1–3 min tour of the studio." icon="🎬"
+                  hint="MP4 or MOV format. Max 100 MB. Video tours convert 40% more visitors."
                   imageType="video" images={uploadedImages.filter(i => i.image_type === 'video')}
                   onAdd={addImages} onRemove={removeImage} accept="video/mp4,video/quicktime" resourceType="video" />
 
@@ -730,25 +758,25 @@ export default function StudioOnboardPage() {
           )}
 
           {/* Navigation */}
-          {step < 10 && (
-            <div className="flex gap-3 mt-6">
-              {step > 1 && (
-                <button type="button" onClick={() => setStep(s => s - 1)}
-                  className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors">
-                  ← Back
-                </button>
-              )}
-              <button type="button" onClick={saveDraft} disabled={savingDraft}
-                className="flex-1 py-3.5 rounded-xl border border-dashed border-gray-300 text-gray-500 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm">
-                {savingDraft ? 'Saving…' : draftId ? '💾 Saved' : '💾 Save draft'}
+          <div className="flex gap-3 mt-6">
+            {step > 1 && (
+              <button type="button" onClick={() => setStep(s => s - 1)}
+                className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors">
+                ← Back
               </button>
+            )}
+            <button type="button" onClick={saveDraft} disabled={savingDraft}
+              className="flex-1 py-3.5 rounded-xl border border-dashed border-gray-300 text-gray-500 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm">
+              {savingDraft ? 'Saving…' : draftId ? '💾 Saved' : '💾 Save draft'}
+            </button>
+            {step < 10 && (
               <button type="button" onClick={handleNext}
                 className={`${step > 1 ? 'flex-[2]' : 'flex-[3]'} py-3.5 rounded-xl font-semibold transition-colors hover:opacity-90`}
                 style={{ backgroundColor: '#84cc16', color: '#111827' }}>
                 {step === 9 ? 'Review submission →' : 'Next →'}
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </form>
       </main>
     </div>

@@ -78,8 +78,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       .upsert({ studio_id: params.id, ...equipmentData }, { onConflict: 'studio_id' })
   }
 
-  // Insert images when finalising
+  // Upsert images when finalising (delete existing draft images first to avoid duplicates)
   if (studioData.status === 'pending' && rawImageUrls?.length > 0) {
+    await (adminClient as any).from('studio_images').delete().eq('studio_id', params.id)
     type DbImageType = 'studio' | 'backdrop' | 'equipment' | 'walkthrough'
     const imageRows = (rawImageUrls as any[]).map((img, i) => ({
       studio_id:     params.id,

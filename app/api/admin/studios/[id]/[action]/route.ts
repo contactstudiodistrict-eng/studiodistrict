@@ -40,10 +40,13 @@ async function handler(req: NextRequest, params: { id: string; action: string })
     .from('studios')
     .update({ status: newStatus })
     .eq('id', studioId)
-    .select('studio_name, owner_id, owner_phone, owner_name, owner_email, area, studio_type')
+    .select('studio_name, owner_id, owner_phone, owner_name, email, area, studio_type')
     .single()
 
-  if (error || !studio) return NextResponse.json({ error: 'Studio not found' }, { status: 404 })
+  if (error || !studio) {
+    console.error('[Admin action] studio update error:', error)
+    return NextResponse.json({ error: 'Studio not found' }, { status: 404 })
+  }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!
 
@@ -63,9 +66,9 @@ async function handler(req: NextRequest, params: { id: string; action: string })
     }).catch(console.error)
 
     // Send approval email via Resend
-    if (studio.owner_email) {
+    if (studio.email) {
       sendStudioApprovalEmail({
-        ownerEmail: studio.owner_email,
+        ownerEmail: studio.email,
         ownerName: studio.owner_name,
         studioName: studio.studio_name,
         dashboardUrl: `${appUrl}/studio/dashboard`,
