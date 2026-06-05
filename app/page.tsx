@@ -70,10 +70,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           .limit(10)
       : Promise.resolve({ data: null }),
 
-    // Package counts + min prices for studio cards
+    // Packages — full fields for hero cards + stats for studio cards
     supabase
       .from('studio_packages')
-      .select('studio_id, price')
+      .select('studio_id, price, id, package_name, original_price, duration_hours, badge_text, included_equipment, included_amenities, included_extras')
       .eq('is_active', true),
   ])
 
@@ -81,8 +81,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   const allStudios    = (studioResult.data ?? []) as any[]
 
-  // Build per-studio package stats
-  const pkgRows = (packagesResult.data ?? []) as { studio_id: string; price: number }[]
+  // Build per-studio package stats + hero package cards
+  const pkgRows = (packagesResult.data ?? []) as any[]
   const packageStatsByStudio: Record<string, { count: number; minPrice: number }> = {}
   for (const row of pkgRows) {
     const s = packageStatsByStudio[row.studio_id]
@@ -95,6 +95,32 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     studio._packageCount    = stats?.count    ?? 0
     studio._minPackagePrice = stats?.minPrice ?? undefined
   }
+
+  // Hero packages — join with live-studio data already fetched
+  const liveStudioMap = new Map(allStudios.map((s: any) => [s.id, s]))
+  const heroPackages = pkgRows
+    .map((p: any) => {
+      const studio = liveStudioMap.get(p.studio_id) as any
+      if (!studio) return null
+      return {
+        id:                  p.id,
+        package_name:        p.package_name,
+        price:               p.price,
+        original_price:      p.original_price ?? null,
+        duration_hours:      p.duration_hours,
+        badge_text:          p.badge_text ?? null,
+        included_equipment:  p.included_equipment ?? [],
+        included_amenities:  p.included_amenities ?? [],
+        included_extras:     p.included_extras ?? [],
+        studio_id:           p.studio_id,
+        studio_name:         studio.studio_name,
+        area:                studio.area,
+        studio_type:         studio.studio_type,
+        thumbnail_url:       studio.thumbnail_url ?? null,
+      }
+    })
+    .filter(Boolean)
+    .slice(0, 8) as any[]
   const allBanners    = (bannersResult.data   ?? []) as Banner[]
   const heroThumbnails = (thumbnailsResult.data ?? []).map((s: any) => s.thumbnail_url as string)
 
@@ -116,6 +142,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       allStudios={allStudios}
       banners={allBanners}
       heroThumbnails={heroThumbnails}
+      heroPackages={heroPackages}
       favouriteIds={favouriteIds}
       favouriteStudios={favouriteStudios}
       recentBookings={recentBookings}

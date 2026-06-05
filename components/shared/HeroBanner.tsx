@@ -97,6 +97,42 @@ const SHOOT_TYPES = [
   },
 ]
 
+// ── Hero package type (from DB) ────────────────────────────────────────────
+export interface HeroPackage {
+  id: string
+  package_name: string
+  price: number
+  original_price: number | null
+  duration_hours: number
+  badge_text: string | null
+  included_equipment: string[]
+  included_amenities: string[]
+  included_extras: string[]
+  studio_id: string
+  studio_name: string
+  area: string
+  studio_type: string
+  thumbnail_url: string | null
+}
+
+const ACCENT: Record<string, string> = {
+  photography: 'oklch(0.64 0.19 36)',
+  videography: 'oklch(0.58 0.18 280)',
+  audio:       'oklch(0.62 0.19 155)',
+  music:       'oklch(0.60 0.18 50)',
+  mixed:       'oklch(0.55 0.19 320)',
+}
+const ACCENT_BG: Record<string, string> = {
+  photography: 'oklch(0.95 0.04 36)',
+  videography: 'oklch(0.95 0.04 280)',
+  audio:       'oklch(0.95 0.04 155)',
+  music:       'oklch(0.95 0.04 50)',
+  mixed:       'oklch(0.95 0.04 320)',
+}
+const TYPE_EMOJI: Record<string, string> = {
+  photography: '📸', videography: '🎬', audio: '🎙', music: '🎵', mixed: '🎭',
+}
+
 const N = SHOOT_TYPES.length
 
 // ── Dropdown ───────────────────────────────────────────────────────────────
@@ -241,13 +277,109 @@ function ShootCard({
   )
 }
 
+// ── Package card (real DB data) ────────────────────────────────────────────
+function PackageHeroCard({
+  pkg, imgH, isActive, onClick,
+}: {
+  pkg: HeroPackage
+  imgH: number
+  isActive: boolean
+  onClick: () => void
+}) {
+  const accent   = ACCENT[pkg.studio_type]   ?? ACCENT.photography
+  const accentBg = ACCENT_BG[pkg.studio_type] ?? ACCENT_BG.photography
+  const emoji    = TYPE_EMOJI[pkg.studio_type] ?? '📦'
+
+  // Pick up to 3 tag strings from included items
+  const tags = [
+    ...(pkg.included_equipment ?? []),
+    ...(pkg.included_extras   ?? []),
+    ...(pkg.included_amenities ?? []),
+  ].filter(Boolean).slice(0, 3)
+
+  const fmtPrice = (n: number) => `₹${n.toLocaleString('en-IN')}`
+
+  return (
+    <div onClick={onClick} style={{
+      width: '100%', height: '100%',
+      background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+      borderRadius: 20, overflow: 'hidden', cursor: 'pointer',
+      border: '1px solid rgba(255,255,255,0.7)',
+      boxShadow: isActive ? '0 24px 64px -16px rgba(20,16,12,0.38)' : '0 8px 24px -10px rgba(20,16,12,0.2)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Image strip */}
+      <div style={{ height: imgH, position: 'relative', overflow: 'hidden', flexShrink: 0, background: accentBg }}>
+        {pkg.thumbnail_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={pkg.thumbnail_url} alt={pkg.studio_name} loading="lazy"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        ) : (
+          <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg,${accentBg} 0%,${accent}33 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>
+            {emoji}
+          </div>
+        )}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,transparent 40%,rgba(20,16,12,0.60) 100%)' }} />
+        {/* Package name badge */}
+        <span style={{ position: 'absolute', top: 10, left: 10, font: `600 11px/1 ${FB}`, color: '#fff', padding: '5px 10px', borderRadius: 999, background: 'rgba(20,16,12,0.52)', backdropFilter: 'blur(8px)' }}>
+          {pkg.package_name}
+        </span>
+        {/* Duration badge */}
+        <span style={{ position: 'absolute', top: 10, right: 10, font: `600 10px/1 ${FM}`, letterSpacing: '0.04em', color: '#fff', padding: '5px 9px', borderRadius: 999, background: 'rgba(20,16,12,0.52)', backdropFilter: 'blur(8px)' }}>
+          {pkg.duration_hours} hrs
+        </span>
+        {/* Studio name + area */}
+        <span style={{ position: 'absolute', bottom: 10, left: 12, right: 12, font: `500 12px/1.3 ${FB}`, color: 'rgba(255,255,255,0.90)' }}>
+          {pkg.studio_name} · {pkg.area}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+          <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
+            <div style={{ font: `600 14px/1.2 ${FD}`, color: '#1c1917', letterSpacing: '-0.01em', marginBottom: 2 }}>{pkg.package_name}</div>
+            {pkg.badge_text && (
+              <span style={{ font: `600 9px/1 ${FM}`, letterSpacing: '0.06em', textTransform: 'uppercase', color: accent, padding: '3px 7px', borderRadius: 999, background: accentBg, display: 'inline-block', marginTop: 2 }}>{pkg.badge_text}</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
+            {pkg.original_price && (
+              <span style={{ font: `400 10px/1 ${FB}`, color: '#c4b5a5', textDecoration: 'line-through' }}>{fmtPrice(pkg.original_price)}</span>
+            )}
+            <span style={{ font: `700 16px/1 ${FD}`, color: accent }}>{fmtPrice(pkg.price)}</span>
+          </div>
+        </div>
+
+        {tags.length > 0 && (
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+            {tags.map(t => (
+              <span key={t} style={{ font: `500 10px/1 ${FB}`, color: '#2b2824', padding: '4px 8px', borderRadius: 999, background: accentBg, border: `1px solid ${accent}33` }}>{t}</span>
+            ))}
+          </div>
+        )}
+
+        <a href={`/studios/${pkg.studio_id}/book?package=${pkg.id}`}
+          onClick={e => e.stopPropagation()}
+          style={{ width: '100%', marginTop: 'auto', padding: '10px 0', borderRadius: 10, border: 'none', background: accent, color: '#fff', font: `600 12px/1 ${FB}`, cursor: 'pointer', transition: 'filter .15s', display: 'block', textAlign: 'center', textDecoration: 'none' }}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.filter = 'brightness(0.88)')}
+          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.filter = 'none')}
+        >
+          Book this package →
+        </a>
+      </div>
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────
 interface Props {
   thumbnails?: string[]
+  packages?: HeroPackage[]
   onSearch?: (type: string, area: string) => void
 }
 
-export function HeroBanner({ thumbnails = [], onSearch }: Props) {
+export function HeroBanner({ thumbnails = [], packages = [], onSearch }: Props) {
   const [wordIdx,  setWordIdx]  = useState(0)
   const [wordAnim, setWordAnim] = useState<'enter' | 'exit'>('enter')
   const [type, setType] = useState('')
@@ -255,6 +387,10 @@ export function HeroBanner({ thumbnails = [], onSearch }: Props) {
   const [active, setActive]   = useState(0)
   const [vw, setVw]           = useState(1280)
   const [colW, setColW]       = useState(500)   // measured right-column width
+
+  // Use real packages when available, fall back to hardcoded SHOOT_TYPES
+  const usePackages = packages.length > 0
+  const cardCount   = usePackages ? packages.length : SHOOT_TYPES.length
 
   const carouselRef = useRef<HTMLDivElement>(null)
   const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -271,8 +407,8 @@ export function HeroBanner({ thumbnails = [], onSearch }: Props) {
   // Carousel auto-rotate
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => setActive(a => (a + 1) % N), 4200)
-  }, [])
+    timerRef.current = setInterval(() => setActive(a => (a + 1) % cardCount), 4200)
+  }, [cardCount])
   useEffect(() => { resetTimer(); return () => { if (timerRef.current) clearInterval(timerRef.current) } }, [resetTimer])
 
   // Viewport + carousel column width
@@ -446,11 +582,11 @@ export function HeroBanner({ thumbnails = [], onSearch }: Props) {
                 /* ── Desktop: 3-card peek carousel ──────────── */
                 <>
                   <div style={{ position: 'relative', overflow: 'hidden', width: '100%', height: D_CH }}>
-                    {SHOOT_TYPES.map((shoot, i) => {
-                      const offset = ((i - active + N) % N)
+                    {(usePackages ? packages : SHOOT_TYPES).map((item: any, i: number) => {
+                      const offset   = ((i - active + cardCount) % cardCount)
                       const isCenter = offset === 0
                       const isRight  = offset === 1
-                      const isLeft   = offset === N - 1
+                      const isLeft   = offset === cardCount - 1
                       const visible  = isCenter || isLeft || isRight
 
                       const w   = isCenter ? D_CW  : D_SW
@@ -462,50 +598,81 @@ export function HeroBanner({ thumbnails = [], onSearch }: Props) {
                       const zi  = isCenter ? 10 : 4
 
                       return (
-                        <div key={shoot.title} style={{
+                        <div key={usePackages ? item.id : item.title} style={{
                           position: 'absolute', top, left: 0, width: w, height: h, zIndex: zi,
                           opacity: visible ? op : 0,
                           transform: `translateX(${lft}px)`,
                           transition: 'transform .55s cubic-bezier(.22,1,.36,1), opacity .4s',
                           pointerEvents: visible ? 'auto' : 'none',
                         }}>
-                          <ShootCard shoot={shoot} imgH={ih} isActive={isCenter} onClick={() => { setActive(i); resetTimer() }} onCta={() => { onSearch?.(shoot.searchType, ''); resetTimer() }} />
+                          {usePackages
+                            ? <PackageHeroCard pkg={item} imgH={ih} isActive={isCenter} onClick={() => { setActive(i); resetTimer() }} />
+                            : <ShootCard shoot={item} imgH={ih} isActive={isCenter} onClick={() => { setActive(i); resetTimer() }} onCta={() => { onSearch?.(item.searchType, ''); resetTimer() }} />
+                          }
                         </div>
                       )
                     })}
                   </div>
 
-                  {/* Dots */}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-                    {SHOOT_TYPES.map((shoot, i) => (
-                      <button key={i} type="button" onClick={() => { setActive(i); resetTimer() }} style={{ width: active === i ? 28 : 8, height: 8, borderRadius: 999, border: 'none', cursor: 'pointer', padding: 0, background: active === i ? shoot.accent : 'oklch(0.82 0.01 80)', transition: 'all .3s cubic-bezier(.22,1,.36,1)' }} />
-                    ))}
+                  {/* Dots + explore link */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 20 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {(usePackages ? packages : SHOOT_TYPES).map((item: any, i: number) => {
+                        const dotColor = usePackages
+                          ? (ACCENT[item.studio_type] ?? ACCENT.photography)
+                          : item.accent
+                        return (
+                          <button key={i} type="button" onClick={() => { setActive(i); resetTimer() }} style={{ width: active === i ? 28 : 8, height: 8, borderRadius: 999, border: 'none', cursor: 'pointer', padding: 0, background: active === i ? dotColor : 'oklch(0.82 0.01 80)', transition: 'all .3s cubic-bezier(.22,1,.36,1)' }} />
+                        )
+                      })}
+                    </div>
+                    {usePackages && (
+                      <a href="/packages" style={{ font: `500 12px/1 ${FB}`, color: 'oklch(0.42 0.012 60)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, opacity: 0.75, transition: 'opacity .15s' }}
+                        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
+                        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.75')}
+                      >Explore all packages →</a>
+                    )}
                   </div>
                 </>
               ) : (
                 /* ── Mobile / tablet: stacking depth carousel ── */
                 <>
                   <div style={{ position: 'relative', width: stackCW, height: stackCH + 60, margin: '0 auto' }}>
-                    {SHOOT_TYPES.map((shoot, i) => {
-                      const offset = ((i - active + N) % N)
+                    {(usePackages ? packages : SHOOT_TYPES).map((item: any, i: number) => {
+                      const offset = ((i - active + cardCount) % cardCount)
                       let transform: string, opacity: number, zIndex: number
-                      if (offset === 0)     { transform = 'translateY(0) scale(1)';       opacity = 1;   zIndex = 6 }
+                      if (offset === 0)      { transform = 'translateY(0) scale(1)';       opacity = 1;   zIndex = 6 }
                       else if (offset === 1) { transform = 'translateY(22px) scale(0.96)'; opacity = 0.6; zIndex = 5 }
                       else if (offset === 2) { transform = 'translateY(40px) scale(0.92)'; opacity = 0.3; zIndex = 4 }
                       else                   { transform = 'translateY(55px) scale(0.88)'; opacity = 0;   zIndex = 1 }
 
                       return (
-                        <div key={shoot.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: stackCH, zIndex, opacity, transform, transition: 'all .55s cubic-bezier(.22,1,.36,1)' }}>
-                          <ShootCard shoot={shoot} imgH={stackIH} isActive={offset === 0} onClick={() => { setActive(i); resetTimer() }} onCta={() => { onSearch?.(shoot.searchType, ''); resetTimer() }} />
+                        <div key={usePackages ? item.id : item.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: stackCH, zIndex, opacity, transform, transition: 'all .55s cubic-bezier(.22,1,.36,1)' }}>
+                          {usePackages
+                            ? <PackageHeroCard pkg={item} imgH={stackIH} isActive={offset === 0} onClick={() => { setActive(i); resetTimer() }} />
+                            : <ShootCard shoot={item} imgH={stackIH} isActive={offset === 0} onClick={() => { setActive(i); resetTimer() }} onCta={() => { onSearch?.(item.searchType, ''); resetTimer() }} />
+                          }
                         </div>
                       )
                     })}
 
                     {/* Dots */}
-                    <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
-                      {SHOOT_TYPES.map((shoot, i) => (
-                        <button key={i} type="button" onClick={() => { setActive(i); resetTimer() }} style={{ width: active === i ? 28 : 8, height: 8, borderRadius: 999, border: 'none', cursor: 'pointer', padding: 0, background: active === i ? shoot.accent : 'oklch(0.82 0.01 80)', transition: 'all .3s cubic-bezier(.22,1,.36,1)' }} />
-                      ))}
+                    <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {(usePackages ? packages : SHOOT_TYPES).map((item: any, i: number) => {
+                          const dotColor = usePackages
+                            ? (ACCENT[item.studio_type] ?? ACCENT.photography)
+                            : item.accent
+                          return (
+                            <button key={i} type="button" onClick={() => { setActive(i); resetTimer() }} style={{ width: active === i ? 28 : 8, height: 8, borderRadius: 999, border: 'none', cursor: 'pointer', padding: 0, background: active === i ? dotColor : 'oklch(0.82 0.01 80)', transition: 'all .3s cubic-bezier(.22,1,.36,1)' }} />
+                          )
+                        })}
+                      </div>
+                      {usePackages && (
+                        <a href="/packages" style={{ font: `500 11px/1 ${FB}`, color: 'oklch(0.42 0.012 60)', textDecoration: 'none', marginTop: 4, opacity: 0.75 }}>
+                          Explore all packages →
+                        </a>
+                      )}
                     </div>
                   </div>
                 </>

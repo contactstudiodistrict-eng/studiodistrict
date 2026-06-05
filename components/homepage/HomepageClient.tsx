@@ -29,6 +29,7 @@ interface Props {
   allStudios: any[]
   banners: Banner[]
   heroThumbnails: string[]
+  heroPackages: any[]
   favouriteIds: string[]
   favouriteStudios: any[]
   recentBookings: any[]
@@ -40,6 +41,7 @@ export function HomepageClient({
   allStudios,
   banners,
   heroThumbnails,
+  heroPackages,
   favouriteIds,
   favouriteStudios,
   recentBookings,
@@ -109,7 +111,7 @@ export function HomepageClient({
 
       {announcementBanner && <AnnouncementBanner banner={announcementBanner} />}
 
-      <HeroBanner thumbnails={heroThumbnails} onSearch={handleHeroSearch} />
+      <HeroBanner thumbnails={heroThumbnails} packages={heroPackages} onSearch={handleHeroSearch} />
 
       {offerBanner && (
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px' }}>
