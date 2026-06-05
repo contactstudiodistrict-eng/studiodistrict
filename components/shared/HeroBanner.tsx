@@ -413,7 +413,7 @@ export function HeroBanner({ thumbnails = [], onSearch }: Props) {
               see real photos, check availability, and book in under 2 minutes.
             </p>
 
-            <form className="sd2-f4" onSubmit={handleSearch} style={{ marginTop: mobile ? 24 : 34, maxWidth: 560 }}>
+            <form className="sd2-f4" onSubmit={handleSearch} style={{ marginTop: mobile ? 24 : 34, maxWidth: 560, position: 'relative', zIndex: 2 }}>
               <div className="sd2-srow" style={{ display: 'flex', alignItems: 'stretch', background: '#fff', border: '1px solid #dedbd7', borderRadius: mobile ? 16 : 18, padding: mobile ? 6 : 7, boxShadow: '0 20px 50px -20px rgba(20,16,12,0.22)' }}>
                 <div style={{ flex: 1, padding: mobile ? '10px 14px' : '10px 18px' }}>
                   <HeroDropdown label="Studio type" options={STUDIO_TYPES} value={type} onChange={setType} />

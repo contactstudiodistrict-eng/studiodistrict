@@ -41,7 +41,7 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
   const [editPkg, setEditPkg]     = useState<Package | null>(null)
   const [form, setForm]           = useState({ ...EMPTY_FORM })
   const [saving, setSaving]       = useState(false)
-  const [formError, setFormError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [toast, setToast]         = useState('')
 
   function showToast(msg: string) {
@@ -52,7 +52,7 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
   function openAdd() {
     setEditPkg(null)
     setForm({ ...EMPTY_FORM })
-    setFormError('')
+    setFieldErrors({})
     setShowModal(true)
   }
 
@@ -71,7 +71,7 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
       included_amenities: pkg.included_amenities ?? [],
       included_extras:    pkg.included_extras?.length ? pkg.included_extras : [''],
     })
-    setFormError('')
+    setFieldErrors({})
     setShowModal(true)
   }
 
@@ -91,16 +91,17 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
   function removeExtra(i: number) { setForm(f => ({ ...f, included_extras: f.included_extras.filter((_, idx) => idx !== i) })) }
 
   async function save() {
-    setFormError('')
+    const errs: Record<string, string> = {}
     if (!form.package_name.trim() || form.package_name.length < 2)
-      return setFormError('Package name must be at least 2 characters')
+      errs.package_name = 'At least 2 characters required'
     if (!form.duration_hours || Number(form.duration_hours) <= 0)
-      return setFormError('Duration must be greater than 0')
+      errs.duration_hours = 'Must be greater than 0'
     if (!form.price || Number(form.price) <= 0)
-      return setFormError('Price must be greater than 0')
+      errs.price = 'Must be greater than 0'
     if (form.original_price && Number(form.original_price) <= Number(form.price))
-      return setFormError('Original price must be greater than sale price')
-
+      errs.original_price = 'Must be greater than the sale price'
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setFieldErrors({})
     setSaving(true)
     const payload = {
       package_name:       form.package_name.trim(),
@@ -123,7 +124,7 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
       const method = editPkg ? 'PATCH' : 'POST'
       const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const d      = await res.json()
-      if (!res.ok) { setFormError(d.error || 'Save failed'); return }
+      if (!res.ok) { setFieldErrors({ _form: d.error || 'Save failed' }); return }
 
       if (editPkg) {
         setPackages(prev => prev.map(p => p.id === editPkg.id ? d.package : p))
@@ -132,7 +133,7 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
       }
       showToast('Package saved!')
       closeModal()
-    } catch { setFormError('Network error. Try again.') }
+    } catch { setFieldErrors({ _form: 'Network error. Try again.' }) }
     finally { setSaving(false) }
   }
 
@@ -154,8 +155,10 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
     }
   }
 
-  const input: React.CSSProperties = { width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }
-  const label: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '5px' }
+  const inputBase: React.CSSProperties = { width: '100%', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', color: '#111827', background: '#fff' }
+  const inputCls  = (field: string): React.CSSProperties => ({ ...inputBase, border: `1px solid ${fieldErrors[field] ? '#fca5a5' : '#d1d5db'}`, background: fieldErrors[field] ? '#fff7f7' : '#fff' })
+  const label: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '5px' }
+  const errMsg: React.CSSProperties = { fontSize: '11px', color: '#dc2626', marginTop: '3px', fontWeight: '500' }
 
   return (
     <section className="mb-8">
@@ -223,37 +226,41 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
             </div>
 
             <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-              {formError && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626' }}>{formError}</div>
+              {fieldErrors._form && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626', fontWeight: 500 }}>{fieldErrors._form}</div>
               )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px' }}>
                 <div>
-                  <label style={label}>Package name *</label>
-                  <input style={input} value={form.package_name} onChange={e => setForm(f => ({ ...f, package_name: e.target.value }))} placeholder="Half Day Shoot" />
+                  <label style={label}>Package name <span style={{ color: '#ef4444' }}>*</span></label>
+                  <input style={inputCls('package_name')} value={form.package_name} onChange={e => setForm(f => ({ ...f, package_name: e.target.value }))} placeholder="Half Day Shoot" />
+                  {fieldErrors.package_name && <p style={errMsg}>{fieldErrors.package_name}</p>}
                 </div>
                 <div>
                   <label style={label}>Description</label>
-                  <textarea style={{ ...input, resize: 'none' }} rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Perfect for portrait sessions…" />
+                  <textarea style={{ ...inputCls('description'), resize: 'none' }} rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Perfect for portrait sessions…" />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={label}>Duration (hours) *</label>
-                    <input style={input} type="number" min={1} value={form.duration_hours} onChange={e => setForm(f => ({ ...f, duration_hours: e.target.value }))} placeholder="4" />
+                    <label style={label}>Duration (hours) <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input style={inputCls('duration_hours')} type="number" min={1} value={form.duration_hours} onChange={e => setForm(f => ({ ...f, duration_hours: e.target.value }))} placeholder="4" />
+                    {fieldErrors.duration_hours && <p style={errMsg}>{fieldErrors.duration_hours}</p>}
                   </div>
                   <div>
-                    <label style={label}>Price (₹) *</label>
-                    <input style={input} type="number" min={1} value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="4000" />
+                    <label style={label}>Price (₹) <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input style={inputCls('price')} type="number" min={1} value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="4000" />
+                    {fieldErrors.price && <p style={errMsg}>{fieldErrors.price}</p>}
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={label}>Original price (₹) <span style={{ fontWeight: 400, textTransform: 'none' }}>— shows savings</span></label>
-                    <input style={input} type="number" min={1} value={form.original_price} onChange={e => setForm(f => ({ ...f, original_price: e.target.value }))} placeholder="4800" />
+                    <label style={label}>Original price (₹) <span style={{ fontWeight: 400, textTransform: 'none', color: '#6b7280' }}>— shows savings</span></label>
+                    <input style={inputCls('original_price')} type="number" min={1} value={form.original_price} onChange={e => setForm(f => ({ ...f, original_price: e.target.value }))} placeholder="4800" />
+                    {fieldErrors.original_price && <p style={errMsg}>{fieldErrors.original_price}</p>}
                   </div>
                   <div>
                     <label style={label}>Max people</label>
-                    <input style={input} type="number" min={1} value={form.max_people} onChange={e => setForm(f => ({ ...f, max_people: e.target.value }))} placeholder="5" />
+                    <input style={inputCls('max_people')} type="number" min={1} value={form.max_people} onChange={e => setForm(f => ({ ...f, max_people: e.target.value }))} placeholder="5" />
                   </div>
                 </div>
               </div>
@@ -295,7 +302,7 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
                 <label style={label}>Extras <span style={{ fontWeight: 400, textTransform: 'none' }}>— custom items</span></label>
                 {form.included_extras.map((ex, i) => (
                   <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                    <input style={{ ...input, flex: 1 }} value={ex} onChange={e => setExtra(i, e.target.value)} placeholder="Free parking, Props library access…" />
+                    <input style={{ ...inputBase, border: '1px solid #d1d5db', flex: 1 }} value={ex} onChange={e => setExtra(i, e.target.value)} placeholder="Free parking, Props library access…" />
                     {form.included_extras.length > 1 && (
                       <button onClick={() => removeExtra(i)} style={{ padding: '0 10px', border: '1px solid #fecaca', borderRadius: '8px', background: '#fff', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>×</button>
                     )}
@@ -309,13 +316,13 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={label}>Badge</label>
-                  <select style={{ ...input, background: '#fff', appearance: 'none' }} value={form.badge_text} onChange={e => setForm(f => ({ ...f, badge_text: e.target.value }))}>
+                  <select style={{ ...inputBase, border: '1px solid #d1d5db', appearance: 'none' }} value={form.badge_text} onChange={e => setForm(f => ({ ...f, badge_text: e.target.value }))}>
                     {BADGE_OPTIONS.map(b => <option key={b} value={b}>{b || '— None —'}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={label}>Package rules</label>
-                  <input style={input} value={form.rules} onChange={e => setForm(f => ({ ...f, rules: e.target.value }))} placeholder="No outside equipment…" />
+                  <input style={{ ...inputBase, border: '1px solid #d1d5db' }} value={form.rules} onChange={e => setForm(f => ({ ...f, rules: e.target.value }))} placeholder="No outside equipment…" />
                 </div>
               </div>
 
