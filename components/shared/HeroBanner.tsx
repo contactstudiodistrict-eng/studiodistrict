@@ -626,12 +626,11 @@ export function HeroBanner({ thumbnails = [], packages = [], onSearch }: Props) 
                         )
                       })}
                     </div>
-                    {usePackages && (
-                      <a href="/packages" style={{ font: `500 12px/1 ${FB}`, color: 'oklch(0.42 0.012 60)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, opacity: 0.75, transition: 'opacity .15s' }}
-                        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
-                        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.75')}
-                      >Explore all packages →</a>
-                    )}
+                    <a href="/packages"
+                      style={{ font: `600 11px/1 ${FB}`, color: '#1c1917', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 999, border: '1px solid #dedbd7', background: '#fff', transition: 'border-color .15s, background .15s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#84cc16'; (e.currentTarget as HTMLElement).style.background = '#f7fee7' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#dedbd7'; (e.currentTarget as HTMLElement).style.background = '#fff' }}
+                    >📦 Explore all packages →</a>
                   </div>
                 </>
               ) : (
@@ -668,11 +667,9 @@ export function HeroBanner({ thumbnails = [], packages = [], onSearch }: Props) 
                           )
                         })}
                       </div>
-                      {usePackages && (
-                        <a href="/packages" style={{ font: `500 11px/1 ${FB}`, color: 'oklch(0.42 0.012 60)', textDecoration: 'none', marginTop: 4, opacity: 0.75 }}>
-                          Explore all packages →
-                        </a>
-                      )}
+                      <a href="/packages"
+                        style={{ font: `600 11px/1 ${FB}`, color: '#1c1917', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 999, border: '1px solid #dedbd7', background: '#fff', marginTop: 2 }}
+                      >📦 Explore all packages →</a>
                     </div>
                   </div>
                 </>
