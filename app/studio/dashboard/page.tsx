@@ -69,31 +69,28 @@ export default async function OwnerDashboardPage() {
 
   const bookings = allBookings || []
 
-  // Build amenity/equipment option lists for package form (from first studio)
+  // Build equipment option list for package form (from first studio)
   const primaryStudioId = studios[0]?.id
-  const { data: studioAmenities } = primaryStudioId
-    ? await supabase.from('studio_amenities').select('*').eq('studio_id', primaryStudioId).single()
-    : { data: null }
   const { data: studioEquipment } = primaryStudioId
     ? await supabase.from('studio_equipment').select('*').eq('studio_id', primaryStudioId).single()
     : { data: null }
 
-  const AMENITY_LABELS: Record<string, string> = {
-    ac: 'AC', parking: 'Parking', makeup_room: 'MUA Room', changing_room: 'Changing Room',
-    restroom: 'Restroom', wifi: 'WiFi', power_backup: 'UPS Backup', natural_light: 'Natural Light',
-    elevator: 'Elevator', props: 'Props', waiting_area: 'Waiting Area', pantry: 'Pantry',
-  }
   const EQUIPMENT_LABELS: Record<string, string> = {
+    // Photo / Video
     softboxes: 'Softboxes', led_panels: 'LED Panels', ring_lights: 'Ring Lights',
-    tripods: 'Tripods', light_stands: 'Light Stands', backdrop_white: 'White Backdrop',
-    backdrop_black: 'Black Backdrop', backdrop_colors: 'Coloured Backdrops',
+    tripods: 'Tripods', light_stands: 'Light Stands',
+    backdrop_white: 'White Backdrop', backdrop_black: 'Black Backdrop', backdrop_colors: 'Coloured Backdrops',
+    green_matte: 'Green Screen / Matte', audio_gear: 'Audio Gear', camera_rental: 'Camera Rental',
+    teleprompter: 'Teleprompter', video_monitor: "Director's Monitor", soundproofing: 'Soundproofing',
+    // Podcast / Audio
+    condenser_mic: 'Condenser Mic', dynamic_mic: 'Dynamic Mic', broadcast_mic: 'Broadcast Mic (SM7B / RE20)',
+    pop_filter: 'Pop Filter', podcast_mixer: 'Podcast Mixer / Interface',
+    headphone_amp: 'Headphone Amp', acoustic_treatment: 'Acoustic Panels',
+    // Music
+    studio_monitors: 'Studio Monitors', mixing_console: 'Mixing Console',
+    daw_computer: 'DAW Workstation', isolation_booth: 'Isolation Booth',
+    di_box: 'DI Box', instrument_amps: 'Guitar / Bass Amps',
   }
-
-  const amenityOptions = studioAmenities
-    ? Object.entries(studioAmenities as Record<string,any>)
-        .filter(([k, v]) => k !== 'id' && k !== 'studio_id' && v === true)
-        .map(([k]) => AMENITY_LABELS[k] ?? k)
-    : []
 
   const equipmentOptions = studioEquipment
     ? Object.entries(studioEquipment as Record<string,any>)
@@ -217,7 +214,6 @@ export default async function OwnerDashboardPage() {
           <PackagesSection
             studioId={primaryStudioId}
             initialPackages={allPackages.filter(p => p.studio_id === primaryStudioId)}
-            amenityOptions={amenityOptions}
             equipmentOptions={equipmentOptions}
           />
         )}

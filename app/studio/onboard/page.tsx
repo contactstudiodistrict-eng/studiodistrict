@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { studioOnboardSchema, type StudioOnboardData } from '@/lib/validations'
+import { ALL_AREAS } from '@/components/filters/types'
 
 type UploadedImage = { url: string; cloudinary_id: string; image_type: string }
 
@@ -23,11 +24,13 @@ const STEPS = [
   { id: 10,title: 'Review',        icon: '🚀' },
 ]
 
-const IDEAL_FOR_OPTIONS = [
-  'Model Portfolio', 'Product Creative', 'Brand Campaign',
-  'YouTube Content', 'Social Media / Reels', 'Podcast Recording',
-  'Music Recording', 'Corporate Videos', 'Personal / Family', 'Event Coverage',
-]
+const IDEAL_FOR_BY_TYPE: Record<string, string[]> = {
+  photography:  ['Model Portfolio', 'Product Creative', 'Brand Campaign', 'Social Media / Reels', 'Personal / Family', 'Event Coverage'],
+  videography:  ['YouTube Content', 'Social Media / Reels', 'Brand Campaign', 'Corporate Videos', 'Event Coverage', 'Personal / Family'],
+  audio:        ['Podcast Recording', 'YouTube Content', 'Corporate Videos', 'Social Media / Reels', 'Music Recording'],
+  music:        ['Music Recording', 'Podcast Recording', 'Corporate Videos', 'YouTube Content'],
+  mixed:        ['Model Portfolio', 'Product Creative', 'Brand Campaign', 'YouTube Content', 'Social Media / Reels', 'Podcast Recording', 'Music Recording', 'Corporate Videos', 'Personal / Family', 'Event Coverage'],
+}
 
 const DAYS = ['mon','tue','wed','thu','fri','sat','sun'] as const
 const DAY_LABELS: Record<string, string> = {
@@ -295,7 +298,10 @@ export default function StudioOnboardPage() {
                   </select>
                 </Field>
                 <Field label="Area / Locality" required error={errors.area?.message}>
-                  <input {...register('area')} placeholder="e.g. Velachery" className={inputCls} />
+                  <select {...register('area')} className={selectCls}>
+                    <option value="">Select area…</option>
+                    {ALL_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
                 </Field>
                 <Field label="Owner name" required error={errors.owner_name?.message}>
                   <input {...register('owner_name')} placeholder="Your full name" className={inputCls} />
@@ -344,7 +350,7 @@ export default function StudioOnboardPage() {
               </div>
 
               <div className="mt-4 p-4 bg-brand-50 border border-brand-100 rounded-xl text-sm text-brand-700">
-                💡 Studio District charges a 10% platform fee on each booking. This is deducted from the customer&apos;s payment — your listed price is what you receive.
+                💡 Studio District deducts a 10% platform fee from your listed price — factor this into your pricing. E.g. if you list ₹1,200/hr, you receive ₹1,080/hr.
               </div>
 
               <div className="mt-4">
@@ -442,7 +448,7 @@ export default function StudioOnboardPage() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ideal for (select all that apply)</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {IDEAL_FOR_OPTIONS.map(item => (
+                    {(IDEAL_FOR_BY_TYPE[watch('studio_type')] ?? IDEAL_FOR_BY_TYPE.mixed).map(item => (
                       <button key={item} type="button" onClick={() => toggleIdealFor(item)}
                         className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm transition-all text-left
                           ${watchIdealFor.includes(item) ? 'border-brand-400 bg-brand-50 text-brand-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
@@ -454,6 +460,7 @@ export default function StudioOnboardPage() {
                       </button>
                     ))}
                   </div>
+                  <p className="text-xs text-gray-400 mt-2">Showing options relevant to your studio type. Change type in Step 1 to see different options.</p>
                 </div>
               </div>
             </StepCard>
