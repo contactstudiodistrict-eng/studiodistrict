@@ -82,6 +82,10 @@ export function SiteHeader() {
             style={{ textDecoration: 'none' }}>
             Discover
           </a>
+          <a href="/packages" className={`no-underline font-medium transition-colors hover:text-brand-600 ${pathname === '/packages' ? 'text-brand-600' : 'text-slate-500'}`}
+            style={{ textDecoration: 'none' }}>
+            Packages
+          </a>
           <a href="/how-it-works" className={`no-underline font-medium transition-colors hover:text-brand-600 ${pathname === '/how-it-works' ? 'text-brand-600' : 'text-slate-500'}`}
             style={{ textDecoration: 'none' }}>
             How it works
@@ -151,6 +155,7 @@ export function SiteHeader() {
                     {/* Nav links on mobile — shown here */}
                     <div className="md:hidden border-b border-slate-100">
                       <DropItem href="/" icon="🔍" label="Discover" onClick={() => setMenuOpen(false)} active={pathname === '/'} />
+                      <DropItem href="/packages" icon="📦" label="Packages" onClick={() => setMenuOpen(false)} active={pathname === '/packages'} />
                       <DropItem href="/how-it-works" icon="💡" label="How it works" onClick={() => setMenuOpen(false)} active={pathname === '/how-it-works'} />
                       <DropItem href="/studio/list" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />
                       {isAdmin && <DropItem href="/admin" icon="⚡" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
@@ -212,6 +217,7 @@ export function SiteHeader() {
                     <div onClick={() => setMobileNav(false)} className="fixed inset-0 z-40" />
                     <div className="absolute right-0 top-[calc(100%+8px)] w-52 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden p-1.5">
                       <DropItem href="/" icon="🔍" label="Discover" onClick={() => setMobileNav(false)} active={pathname === '/'} />
+                      <DropItem href="/packages" icon="📦" label="Packages" onClick={() => setMobileNav(false)} active={pathname === '/packages'} />
                       <DropItem href="/how-it-works" icon="💡" label="How it works" onClick={() => setMobileNav(false)} active={pathname === '/how-it-works'} />
                       <DropItem href="/studio/list" icon="➕" label="List a Studio" onClick={() => setMobileNav(false)} active={pathname === '/studio/list'} />
                     </div>
