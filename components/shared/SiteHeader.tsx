@@ -39,7 +39,7 @@ export function SiteHeader() {
     setProfile(data)
     if (data?.wallet_balance) setWallet(data.wallet_balance)
 
-    if (data?.role === 'studio_owner' || data?.role === 'admin') {
+    if (data?.role === 'studio_owner' || data?.role === 'admin' || data?.role === 'super_admin') {
       // Fetch studio status + pending bookings count in parallel
       const [studiosRes, bookingsRes] = await Promise.all([
         supabase.from('studios').select('id, status').eq('owner_id', userId).order('created_at', { ascending: false }).limit(1),
@@ -63,8 +63,8 @@ export function SiteHeader() {
 
   const displayName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'
   const initial     = displayName.charAt(0).toUpperCase()
-  const isOwner     = profile?.role === 'studio_owner'
-  const isAdmin     = profile?.role === 'admin'
+  const isOwner     = profile?.role === 'studio_owner' || profile?.role === 'admin' || profile?.role === 'super_admin'
+  const isAdmin     = profile?.role === 'admin' || profile?.role === 'super_admin'
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm">

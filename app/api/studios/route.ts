@@ -93,12 +93,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Update user role to studio_owner (and set full_name if not yet set / came from Google OAuth)
-    const { data: userProfile } = await adminClient.from('users').select('full_name').eq('id', user.id).single()
-    const profileUpdates: Record<string, string> = { role: 'studio_owner' }
+    // Never downgrade an existing admin/super_admin
+    const { data: userProfile } = await adminClient.from('users').select('full_name, role').eq('id', user.id).single()
+    const profileUpdates: Record<string, string> = {}
+    if (!['super_admin', 'admin'].includes((userProfile as any)?.role)) {
+      profileUpdates.role = 'studio_owner'
+    }
     if (!userProfile?.full_name || userProfile.full_name.includes('@')) {
       profileUpdates.full_name = data.owner_name
     }
-    await adminClient.from('users').update(profileUpdates).eq('id', user.id)
+    if (Object.keys(profileUpdates).length > 0) {
+      await adminClient.from('users').update(profileUpdates).eq('id', user.id)
+    }
 
     // Insert studio (status = pending for admin review)
     const { data: studio, error: studioErr } = await adminClient

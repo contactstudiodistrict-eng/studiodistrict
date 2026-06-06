@@ -120,12 +120,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // On finalise: update role, notify admin, audit
   if (studioData.status === 'pending') {
     const { data: profileUpdates }: any = await (adminClient as any)
-      .from('users').select('full_name').eq('id', user.id).single()
-    const updates: Record<string, string> = { role: 'studio_owner' }
+      .from('users').select('full_name, role').eq('id', user.id).single()
+    const updates: Record<string, string> = {}
+    // Never downgrade an existing admin/super_admin
+    const adminRoles = ['super_admin', 'admin']
+    if (!adminRoles.includes(profileUpdates?.role)) {
+      updates.role = 'studio_owner'
+    }
     if (!profileUpdates?.full_name || profileUpdates.full_name.includes('@')) {
       updates.full_name = studioData.owner_name || ''
     }
-    await (adminClient as any).from('users').update(updates).eq('id', user.id)
+    if (Object.keys(updates).length > 0) {
+      await (adminClient as any).from('users').update(updates).eq('id', user.id)
+    }
 
     const { data: studio }: any = await (adminClient as any)
       .from('studios').select('studio_name, area, studio_type, owner_name').eq('id', params.id).single()
