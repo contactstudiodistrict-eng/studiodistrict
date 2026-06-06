@@ -458,7 +458,7 @@ export function HeroBanner({ thumbnails = [], packages = [], onSearch }: Props) 
   const heroImg = thumbnails[0]
 
   return (
-    <div style={{ position: 'relative', width: '100%', overflow: 'hidden', background: '#fff' }}>
+    <div style={{ position: 'relative', width: '100%', background: '#fff' }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes sd2-wi  { from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1} }
@@ -507,18 +507,19 @@ export function HeroBanner({ thumbnails = [], packages = [], onSearch }: Props) 
           .sd2-srow{ flex-direction:column; }}
       `}} />
 
-      {/* Background image */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        {heroImg
-          ? <img src={heroImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> // eslint-disable-line @next/next/no-img-element
-          : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#f7fee7 0%,#fef9c3 40%,#f0fdf4 100%)' }} />
-        }
+      {/* Background — clipped separately so dropdowns above can overflow */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0 }}>
+          {heroImg
+            ? <img src={heroImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> // eslint-disable-line @next/next/no-img-element
+            : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#f7fee7 0%,#fef9c3 40%,#f0fdf4 100%)' }} />
+          }
+        </div>
+        <div className="sd2-grad" style={{ position: 'absolute', inset: 0 }} />
+        {/* Glow blobs */}
+        <div className="sd2-glow" style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle,rgba(132,204,22,0.18) 0%,transparent 70%)', top: -100, left: -60, pointerEvents: 'none' }} />
+        <div className="sd2-glow" style={{ position: 'absolute', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle,rgba(124,58,237,0.10) 0%,transparent 70%)', bottom: -80, right: '28%', pointerEvents: 'none', animationDelay: '3s' }} />
       </div>
-      <div className="sd2-grad" style={{ position: 'absolute', inset: 0, zIndex: 1 }} />
-
-      {/* Glow blobs */}
-      <div className="sd2-glow" style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle,rgba(132,204,22,0.18) 0%,transparent 70%)', top: -100, left: -60, zIndex: 1, pointerEvents: 'none' }} />
-      <div className="sd2-glow" style={{ position: 'absolute', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle,rgba(124,58,237,0.10) 0%,transparent 70%)', bottom: -80, right: '28%', zIndex: 1, pointerEvents: 'none', animationDelay: '3s' }} />
 
       <div style={{ position: 'relative', zIndex: 5 }}>
         <div className="sd2-grid">
