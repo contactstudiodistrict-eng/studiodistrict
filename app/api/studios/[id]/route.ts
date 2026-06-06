@@ -14,6 +14,25 @@ const EQUIPMENT_FIELDS = [
   'studio_monitors','mixing_console','daw_computer','isolation_booth','di_box','instrument_amps',
 ]
 
+// GET /api/studios/[id] — fetch studio for owner edit prefill
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const supabase    = createClient()
+  const adminClient = createAdminClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+
+  const { data: studio } = await (adminClient as any)
+    .from('studios')
+    .select('*, studio_amenities(*), studio_equipment(*), studio_images(*)')
+    .eq('id', params.id)
+    .eq('owner_id', user.id)
+    .single()
+
+  if (!studio) return NextResponse.json({ error: 'Studio not found' }, { status: 404 })
+  return NextResponse.json({ studio })
+}
+
 // PATCH /api/studios/[id] — update an existing studio (draft → pending, or draft → draft)
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const supabase    = createClient()

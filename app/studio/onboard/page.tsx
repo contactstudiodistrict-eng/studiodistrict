@@ -1,7 +1,7 @@
 'use client'
 // app/studio/onboard/page.tsx
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -37,10 +37,14 @@ const DAY_LABELS: Record<string, string> = {
   mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun'
 }
 
-export default function StudioOnboardPage() {
+function StudioOnboardForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit')
+
   const [step, setStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
+  const [loadingEdit, setLoadingEdit] = useState(!!editId)
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
 
   const DEFAULT_VALUES: Partial<StudioOnboardData> = {
@@ -58,7 +62,7 @@ export default function StudioOnboardPage() {
     ideal_for: [],
   }
 
-  const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors } } = useForm<StudioOnboardData>({
+  const { register, handleSubmit, watch, setValue, getValues, trigger, reset, formState: { errors } } = useForm<StudioOnboardData>({
     resolver: zodResolver(studioOnboardSchema),
     mode: 'onTouched',
     defaultValues: DEFAULT_VALUES,
@@ -68,6 +72,42 @@ export default function StudioOnboardPage() {
   const watchIdealFor      = watch('ideal_for') || []
   const watchExtraCharges  = (watch('extra_charges_json') || {}) as Record<string, number>
 
+  useEffect(() => {
+    if (!editId) return
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/studios/${editId}`)
+        if (!res.ok) {
+          toast.error('Could not load studio data — please try again')
+          return
+        }
+        const { studio } = await res.json()
+        const amenities  = studio.studio_amenities?.[0] || {}
+        const equipment  = studio.studio_equipment?.[0]  || {}
+        const images     = (studio.studio_images || []) as Array<{ url: string; cloudinary_id: string; image_type: string }>
+
+        // Restore uploaded images
+        setUploadedImages(images.map(img => ({
+          url:            img.url,
+          cloudinary_id:  img.cloudinary_id,
+          image_type:     img.image_type === 'walkthrough' ? 'video' : img.image_type,
+        })))
+
+        // Build merged data, converting null → undefined for Zod
+        const merged: Record<string, any> = { ...DEFAULT_VALUES }
+        const allFields = { ...studio, ...amenities, ...equipment }
+        for (const [k, v] of Object.entries(allFields)) {
+          if (!['id','created_at','updated_at','owner_id','studio_amenities','studio_equipment','studio_images','thumbnail_url','status'].includes(k)) {
+            merged[k] = v === null ? undefined : v
+          }
+        }
+        reset(merged as StudioOnboardData)
+      } finally {
+        setLoadingEdit(false)
+      }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId])
 
   const FIELD_LABELS: Partial<Record<keyof StudioOnboardData, string>> = {
     studio_name:    'Studio name',
@@ -121,10 +161,10 @@ export default function StudioOnboardPage() {
       toast.error('Please select at least one working day')
       return
     }
-    if (step === 3) {
+    if (step === 3 && !editId) {
       const photoCount = uploadedImages.filter(i => i.image_type !== 'video').length
-      if (photoCount > 0 && photoCount < 3) {
-        toast.error('Please upload at least 3 studio photos')
+      if (photoCount < 2) {
+        toast.error('Please upload at least 2 studio photos to continue')
         return
       }
     }
@@ -142,14 +182,21 @@ export default function StudioOnboardPage() {
   const onSubmit = async (data: StudioOnboardData) => {
     setSubmitting(true)
     try {
-      const res = await fetch('/api/studios', {
-        method: 'POST',
+      const url    = editId ? `/api/studios/${editId}` : '/api/studios'
+      const method = editId ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, image_urls: uploadedImages }),
+        body: JSON.stringify({ ...data, status: 'pending', image_urls: uploadedImages }),
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Submission failed')
-      router.push('/studio/submitted')
+      if (editId) {
+        toast.success('Studio updated — pending re-approval')
+        router.push('/studio/dashboard')
+      } else {
+        router.push('/studio/submitted')
+      }
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -158,6 +205,14 @@ export default function StudioOnboardPage() {
   }
 
   const progress = (step / 10) * 100
+
+  if (loadingEdit) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500 text-sm">Loading studio details…</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -175,15 +230,21 @@ export default function StudioOnboardPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
+        {editId && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 flex items-center gap-2">
+            ✏️ <span>Editing your submission — update any details and re-submit for review.</span>
+          </div>
+        )}
+
         {/* Step tabs */}
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-8 pb-1">
           {STEPS.map(s => (
             <button key={s.id} type="button"
-              onClick={() => s.id <= step && setStep(s.id)}
-              disabled={s.id > step}
+              onClick={() => (editId || s.id <= step) && setStep(s.id)}
+              disabled={!editId && s.id > step}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                ${step === s.id ? 'bg-brand-500 text-white' : s.id < step ? 'bg-green-100 text-green-700 cursor-pointer' : 'bg-white text-gray-300 border border-gray-100 cursor-not-allowed'}`}>
-              {s.id < step ? '✓' : s.icon} {s.title}
+                ${step === s.id ? 'bg-brand-500 text-white' : (editId || s.id < step) ? 'bg-green-100 text-green-700 cursor-pointer' : 'bg-white text-gray-300 border border-gray-100 cursor-not-allowed'}`}>
+              {(editId || s.id < step) && step !== s.id ? '✓' : s.icon} {s.title}
             </button>
           ))}
         </div>
@@ -329,9 +390,9 @@ export default function StudioOnboardPage() {
 
           {/* ── Step 3: Media ─────────────────────────────────── */}
           {step === 3 && (
-            <StepCard title="Photos & Media" icon="📸" subtitle="Good photos get 3× more bookings. Minimum 5, up to 15.">
+            <StepCard title="Photos & Media" icon="📸" subtitle="Good photos get 3× more bookings. At least 2 photos required.">
               <div className="space-y-4">
-                <ImageUploadZone label="Studio photos (5–15)" sublabel="Main space, lighting setup, overall look" icon="🖼️"
+                <ImageUploadZone label="Studio photos (min. 2, up to 15)" sublabel="Main space, lighting setup, overall look" icon="🖼️"
                   hint="First photo becomes your thumbnail. Landscape orientation works best. Max 10 MB per photo (JPG/PNG/WEBP)."
                   imageType="studio" images={uploadedImages.filter(i => i.image_type === 'studio')}
                   onAdd={addImages} onRemove={removeImage} multiple />
@@ -664,7 +725,10 @@ export default function StudioOnboardPage() {
 
           {/* ── Step 10: Review & Submit ──────────────────────── */}
           {step === 10 && (
-            <StepCard title="Ready to go live!" icon="🚀" subtitle="Review your submission before we send it for approval">
+            <StepCard
+              title={editId ? 'Update your submission' : 'Ready to go live!'}
+              icon="🚀"
+              subtitle={editId ? 'Review changes and re-submit for admin approval' : 'Review your submission before we send it for approval'}>
               <div className="space-y-4">
                 <ReviewRow label="Studio name" value={getValues('studio_name')} />
                 <ReviewRow label="Type" value={getValues('studio_type')} />
@@ -675,16 +739,26 @@ export default function StudioOnboardPage() {
                 <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
                   <div className="text-sm font-semibold text-green-700 mb-2">✅ What happens next</div>
                   <ul className="text-sm text-green-600 space-y-1">
-                    <li>1. Our team reviews your listing within 24–48 hours</li>
-                    <li>2. You&apos;ll receive a WhatsApp confirmation once live</li>
-                    <li>3. Your studio goes live and starts receiving bookings</li>
-                    <li>4. You can update photos and details any time</li>
+                    {editId ? (
+                      <>
+                        <li>1. Your updated listing goes back to our review queue</li>
+                        <li>2. Our team reviews changes within 24–48 hours</li>
+                        <li>3. You&apos;ll receive a WhatsApp confirmation once approved</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>1. Our team reviews your listing within 24–48 hours</li>
+                        <li>2. You&apos;ll receive a WhatsApp confirmation once live</li>
+                        <li>3. Your studio goes live and starts receiving bookings</li>
+                        <li>4. You can update photos and details any time</li>
+                      </>
+                    )}
                   </ul>
                 </div>
 
                 <button type="submit" disabled={submitting}
                   className="w-full py-4 rounded-xl bg-brand-500 text-white font-bold text-base hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {submitting ? 'Submitting…' : 'Submit for Review 🚀'}
+                  {submitting ? (editId ? 'Updating…' : 'Submitting…') : (editId ? 'Update Submission 🚀' : 'Submit for Review 🚀')}
                 </button>
               </div>
             </StepCard>
@@ -709,6 +783,14 @@ export default function StudioOnboardPage() {
         </form>
       </main>
     </div>
+  )
+}
+
+export default function StudioOnboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-500 text-sm">Loading…</div></div>}>
+      <StudioOnboardForm />
+    </Suspense>
   )
 }
 
