@@ -1,6 +1,6 @@
 'use client'
 // app/studio/onboard/page.tsx
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -58,7 +58,7 @@ export default function StudioOnboardPage() {
     ideal_for: [],
   }
 
-  const { register, handleSubmit, watch, setValue, getValues, trigger, reset, formState: { errors } } = useForm<StudioOnboardData>({
+  const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors } } = useForm<StudioOnboardData>({
     resolver: zodResolver(studioOnboardSchema),
     mode: 'onTouched',
     defaultValues: DEFAULT_VALUES,
@@ -68,46 +68,6 @@ export default function StudioOnboardPage() {
   const watchIdealFor      = watch('ideal_for') || []
   const watchExtraCharges  = (watch('extra_charges_json') || {}) as Record<string, number>
 
-  const [draftId,        setDraftId]        = useState<string | null>(null)
-  const [savingDraft,    setSavingDraft]    = useState(false)
-  const [draftBanner,    setDraftBanner]    = useState(false)
-
-  // On mount: check for an existing draft and pre-fill the form
-  useEffect(() => {
-    fetch('/api/studios/draft')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (!d?.draft) return
-        setDraftId(d.draft.id)
-        setDraftBanner(true)
-        const { studio_amenities: amArr, studio_equipment: eqArr,
-          studio_images: imgArr,
-          id: _id, owner_id: _oid, status: _st,
-          created_at: _ca, updated_at: _ua,
-          rating: _r, review_count: _rc, is_featured: _if, thumbnail_url: _th,
-          ...studioFields
-        } = d.draft
-        const merged: Record<string, any> = { ...DEFAULT_VALUES, ...studioFields }
-        const am = Array.isArray(amArr) ? amArr[0] : amArr
-        const eq = Array.isArray(eqArr) ? eqArr[0] : eqArr
-        if (am)  { const { id: _, studio_id: __, ...f } = am;  Object.assign(merged, f) }
-        if (eq)  { const { id: _, studio_id: __, ...f } = eq;  Object.assign(merged, f) }
-        // Zod .optional() rejects null — convert DB nulls to undefined before reset
-        for (const key of Object.keys(merged)) {
-          if (merged[key] === null) merged[key] = undefined
-        }
-        reset(merged as StudioOnboardData)
-        // Restore uploaded images
-        if (Array.isArray(imgArr) && imgArr.length > 0) {
-          setUploadedImages(imgArr.map((img: any) => ({
-            url: img.url,
-            cloudinary_id: img.cloudinary_id,
-            image_type: img.image_type === 'walkthrough' ? 'video' : img.image_type,
-          })))
-        }
-      })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const FIELD_LABELS: Partial<Record<keyof StudioOnboardData, string>> = {
     studio_name:    'Studio name',
@@ -179,48 +139,14 @@ export default function StudioOnboardPage() {
     setUploadedImages(prev => prev.filter(i => i.cloudinary_id !== cloudinaryId))
   }
 
-  async function saveDraft() {
-    const values = getValues()
-    if (!values.studio_name?.trim() || !values.owner_phone?.trim()) {
-      toast.error('Complete Step 1 (Basic Info) before saving a draft')
-      return
-    }
-    setSavingDraft(true)
-    try {
-      const res = await fetch('/api/studios/draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, image_urls: uploadedImages }),
-      })
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Failed to save draft')
-      if (result.draft_id && !draftId) setDraftId(result.draft_id)
-      toast.success('Draft saved ✓')
-    } catch (err: any) {
-      toast.error(err.message)
-    } finally {
-      setSavingDraft(false)
-    }
-  }
-
   const onSubmit = async (data: StudioOnboardData) => {
     setSubmitting(true)
     try {
-      let res: Response
-      if (draftId) {
-        // Update existing draft → pending
-        res = await fetch(`/api/studios/${draftId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...data, status: 'pending', image_urls: uploadedImages }),
-        })
-      } else {
-        res = await fetch('/api/studios', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...data, image_urls: uploadedImages }),
-        })
-      }
+      const res = await fetch('/api/studios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, image_urls: uploadedImages }),
+      })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Submission failed')
       router.push('/studio/submitted')
@@ -261,14 +187,6 @@ export default function StudioOnboardPage() {
             </button>
           ))}
         </div>
-
-        {draftBanner && (
-          <div className="flex items-center justify-between gap-3 mb-6 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-            <span>📋 <strong>Resuming your saved draft</strong> — your progress has been restored.</span>
-            <button type="button" onClick={() => setDraftBanner(false)}
-              className="text-amber-500 hover:text-amber-700 font-bold text-base leading-none">✕</button>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit(onSubmit, (errs) => {
           const stepFieldMap: Record<number, string[]> = {
@@ -780,10 +698,6 @@ export default function StudioOnboardPage() {
                 ← Back
               </button>
             )}
-            <button type="button" onClick={saveDraft} disabled={savingDraft}
-              className="flex-1 py-3.5 rounded-xl border border-dashed border-gray-300 text-gray-500 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm">
-              {savingDraft ? 'Saving…' : draftId ? '💾 Save as draft' : '💾 Save draft'}
-            </button>
             {step < 10 && (
               <button type="button" onClick={handleNext}
                 className={`${step > 1 ? 'flex-[2]' : 'flex-[3]'} py-3.5 rounded-xl font-semibold transition-colors hover:opacity-90`}
