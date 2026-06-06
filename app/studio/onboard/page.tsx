@@ -64,8 +64,9 @@ export default function StudioOnboardPage() {
     defaultValues: DEFAULT_VALUES,
   })
 
-  const watchWorkingDays = watch('working_days') || []
-  const watchIdealFor = watch('ideal_for') || []
+  const watchWorkingDays   = watch('working_days') || []
+  const watchIdealFor      = watch('ideal_for') || []
+  const watchExtraCharges  = (watch('extra_charges_json') || {}) as Record<string, number>
 
   const [draftId,        setDraftId]        = useState<string | null>(null)
   const [savingDraft,    setSavingDraft]    = useState(false)
@@ -91,6 +92,10 @@ export default function StudioOnboardPage() {
         const eq = Array.isArray(eqArr) ? eqArr[0] : eqArr
         if (am)  { const { id: _, studio_id: __, ...f } = am;  Object.assign(merged, f) }
         if (eq)  { const { id: _, studio_id: __, ...f } = eq;  Object.assign(merged, f) }
+        // Zod .optional() rejects null — convert DB nulls to undefined before reset
+        for (const key of Object.keys(merged)) {
+          if (merged[key] === null) merged[key] = undefined
+        }
         reset(merged as StudioOnboardData)
         // Restore uploaded images
         if (Array.isArray(imgArr) && imgArr.length > 0) {
@@ -389,9 +394,12 @@ export default function StudioOnboardPage() {
                         type="number"
                         placeholder="0"
                         className={inputCls}
+                        value={watchExtraCharges[key] || ''}
                         onChange={e => {
                           const current = (getValues('extra_charges_json') as Record<string, number>) || {}
-                          setValue('extra_charges_json', { ...current, [key]: Number(e.target.value) })
+                          const val = e.target.value === '' ? undefined : Number(e.target.value)
+                          if (val === undefined) { const next = { ...current }; delete next[key]; setValue('extra_charges_json', next) }
+                          else setValue('extra_charges_json', { ...current, [key]: val })
                         }}
                       />
                     </div>
@@ -774,7 +782,7 @@ export default function StudioOnboardPage() {
             )}
             <button type="button" onClick={saveDraft} disabled={savingDraft}
               className="flex-1 py-3.5 rounded-xl border border-dashed border-gray-300 text-gray-500 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm">
-              {savingDraft ? 'Saving…' : draftId ? '💾 Saved' : '💾 Save draft'}
+              {savingDraft ? 'Saving…' : draftId ? '💾 Save as draft' : '💾 Save draft'}
             </button>
             {step < 10 && (
               <button type="button" onClick={handleNext}
