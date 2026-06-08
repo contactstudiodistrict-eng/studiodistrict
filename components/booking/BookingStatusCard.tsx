@@ -235,16 +235,19 @@ export function BookingStatusCard({ booking: initial }: { booking: any }) {
             {booking.package_name ? `📦 Package: ${booking.package_name}` : 'Payment Summary'}
           </div>
           <div style={c.prRow}>
-            <span>{booking.package_name ? `Package price (${booking.duration_hours} hrs)` : 'Studio charges'}</span>
+            <span>
+              {booking.package_name
+                ? `📦 ${booking.package_name} (${booking.duration_hours} hrs)`
+                : `Studio (${booking.duration_hours} hrs × ${formatINR(booking.subtotal / booking.duration_hours)})`}
+            </span>
             <span>{formatINR(booking.subtotal)}</span>
           </div>
-          <div style={c.prRow}><span>Platform fee</span><span>{formatINR(booking.platform_fee)}</span></div>
-          <div style={c.prRow}><span>GST</span><span>{formatINR(booking.gst_amount)}</span></div>
           {booking.security_deposit > 0 && (
             <div style={c.prRow}><span>Security deposit (refundable)</span><span>{formatINR(booking.security_deposit)}</span></div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#0f172a', borderTop: '1px solid #f1f5f9', marginTop: '8px', paddingTop: '10px' }}>
-            <span>Total</span><span style={{ color: '#65a30d' }}>{formatINR(booking.total_amount)}</span>
+            <span>Total <span style={{ fontSize: '11px', fontWeight: 400, color: '#94a3b8' }}>(all inclusive)</span></span>
+            <span style={{ color: '#65a30d' }}>{formatINR(booking.total_amount)}</span>
           </div>
         </div>
       </div>

@@ -59,20 +59,12 @@ export function calculatePackagePricing(packagePrice: number): PackagePricingBre
   return { subtotal, platformFee, gstAmount: 0, securityDeposit: 0, totalAmount: subtotal, studioPayout: subtotal - platformFee }
 }
 
-// For display in booking summary UI
+// For display in booking summary UI — pricing shown to customer is all-inclusive
 export function getPricingLineItems(breakdown: PricingBreakdown) {
   return [
     {
       label: `Studio (${breakdown.durationHours} hrs × ${formatINR(breakdown.studioRate)})`,
       amount: breakdown.subtotal,
-    },
-    {
-      label: `Platform fee (${breakdown.commissionPercent}%)`,
-      amount: breakdown.platformFee,
-    },
-    {
-      label: `GST (18% on fee)`,
-      amount: breakdown.gstAmount,
     },
     ...(breakdown.securityDeposit > 0
       ? [{
@@ -82,7 +74,7 @@ export function getPricingLineItems(breakdown: PricingBreakdown) {
         }]
       : []),
     {
-      label: 'Total payable',
+      label: 'Total (all inclusive)',
       amount: breakdown.totalAmount,
       isTotal: true,
     },
