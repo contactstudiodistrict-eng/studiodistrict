@@ -3,6 +3,31 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { calculatePricing, calculatePackagePricing, formatINR, WALLET_CAP, REFERRAL_DISCOUNT } from '@/lib/pricing'
 
+function makeTimeSlots(opening: string, closing: string): string[] {
+  const slots: string[] = []
+  const [oh, om] = (opening || '09:00').split(':').map(Number)
+  const [ch, cm] = (closing  || '21:00').split(':').map(Number)
+  for (let m = oh * 60 + om; m < ch * 60 + cm; m += 30) {
+    slots.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`)
+  }
+  return slots
+}
+
+function getNextWholeHour(slots: string[]): string {
+  const now  = new Date()
+  const nextH = now.getMinutes() > 0 ? now.getHours() + 1 : now.getHours()
+  if (nextH < 24) {
+    const candidate = `${String(nextH).padStart(2, '0')}:00`
+    if (slots.includes(candidate)) return candidate
+  }
+  return slots[0] || '09:00'
+}
+
+function todayLocalISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 const SHOOT_TYPES = [
   'Model Portfolio', 'Product Creative', 'Social Media / Reels',
   'Brand Campaign', 'YouTube Content', 'Podcast Recording',
@@ -41,10 +66,12 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const rebookId  = searchParams.get('rebook')
   const packageId = searchParams.get('package')
 
+  const timeSlots = makeTimeSlots(studio.opening_time, studio.closing_time)
+
   const [step, setStep]           = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]         = useState('')
-  const [rebookBanner, setRebookBanner] = useState(false)
+  const [rebookBanner, setRebookBanner] = useState(!!rebookId)
 
   // Package state
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null)
@@ -62,8 +89,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const [showReferral,   setShowReferral]   = useState(false)
 
   // Form fields
-  const [date,      setDate]      = useState('')
-  const [startTime, setStartTime] = useState('')
+  const [date,      setDate]      = useState(() => todayLocalISO())
+  const [startTime, setStartTime] = useState(() => getNextWholeHour(makeTimeSlots(studio.opening_time, studio.closing_time)))
   const [duration,  setDuration]  = useState(studio.minimum_hours)
   const [name,      setName]      = useState('')
   const [phone,     setPhone]     = useState('')
@@ -104,8 +131,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           if (b.shoot_type)     setShootType(b.shoot_type)
           if (b.customer_name)  setName(b.customer_name)
           if (b.customer_phone) setPhone(b.customer_phone)
+          if (b.customer_email) setEmail(b.customer_email)
           if (b.notes)          setNotes(b.notes)
-          setRebookBanner(true)
         })
     }
   }, [rebookId, packageId, studio.id])
@@ -321,10 +348,11 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           <div style={{ ...s.row2, marginBottom: '14px' }}>
             <div>
               <label style={s.label}>Start time</label>
-              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-                min={studio.opening_time} max={studio.closing_time} style={s.input}
-                onFocus={e => e.target.style.borderColor = '#84cc16'}
-                onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
+              <select value={startTime} onChange={e => setStartTime(e.target.value)} style={s.select}
+                onFocus={e => (e.target as HTMLSelectElement).style.borderColor = '#84cc16'}
+                onBlur={e => (e.target as HTMLSelectElement).style.borderColor = '#e5e7eb'}>
+                {timeSlots.map(t => <option key={t} value={t}>{fTime(t)}</option>)}
+              </select>
             </div>
             <div>
               <label style={s.label}>End time</label>
