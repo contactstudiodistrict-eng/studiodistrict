@@ -28,6 +28,30 @@ function todayLocalISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const DAY_ABBR: Record<string, string> = {
+  Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu',
+  Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun',
+}
+
+function isWorkingDay(dateISO: string, workingDays: string[]): boolean {
+  if (!workingDays?.length) return true
+  const [y, m, d] = dateISO.split('-').map(Number)
+  return workingDays.includes(DAY_NAMES[new Date(y, m - 1, d).getDay()])
+}
+
+function nextWorkingDay(workingDays: string[]): string {
+  if (!workingDays?.length) return todayLocalISO()
+  const now = new Date()
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i)
+    if (workingDays.includes(DAY_NAMES[d.getDay()])) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    }
+  }
+  return todayLocalISO()
+}
+
 const SHOOT_TYPES = [
   'Model Portfolio', 'Product Creative', 'Social Media / Reels',
   'Brand Campaign', 'YouTube Content', 'Podcast Recording',
@@ -89,7 +113,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const [showReferral,   setShowReferral]   = useState(false)
 
   // Form fields
-  const [date,      setDate]      = useState(() => todayLocalISO())
+  const [date,      setDate]      = useState(() => nextWorkingDay(studio.working_days))
   const [startTime, setStartTime] = useState(() => getNextWholeHour(makeTimeSlots(studio.opening_time, studio.closing_time)))
   const [duration,  setDuration]  = useState(studio.minimum_hours)
   const [name,      setName]      = useState('')
@@ -179,7 +203,12 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   function validateStep1(): string {
     if (!date)      return 'Please select a date'
     if (!startTime) return 'Please select a start time'
-    if (date < new Date().toISOString().split('T')[0]) return 'Please select a future date'
+    if (date < todayLocalISO()) return 'Please select a future date'
+    if (studio.working_days?.length && !isWorkingDay(date, studio.working_days)) {
+      const [y, m, d] = date.split('-').map(Number)
+      const dayName = DAY_NAMES[new Date(y, m - 1, d).getDay()]
+      return `${studio.studio_name} is closed on ${dayName}s. Please pick a working day.`
+    }
     return ''
   }
   function validateStep2(): string {
@@ -340,9 +369,16 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           <div style={s.field}>
             <label style={s.label}>Booking date</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]} style={s.input}
+              min={todayLocalISO()} style={s.input}
               onFocus={e => e.target.style.borderColor = '#84cc16'}
               onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
+            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>
+              {studio.working_days?.length
+                ? `Open: ${studio.working_days.map(d => DAY_ABBR[d] ?? d).join(', ')}`
+                : 'Open daily'}
+              {' · '}
+              {fTime(studio.opening_time)} – {fTime(studio.closing_time)}
+            </div>
           </div>
 
           <div style={{ ...s.row2, marginBottom: '14px' }}>
