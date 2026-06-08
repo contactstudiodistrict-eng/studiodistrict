@@ -236,10 +236,6 @@ function ShootCard({
         <span style={{ position: 'absolute', top: 10, left: 10, font: `600 11px/1 ${FB}`, color: '#fff', padding: '5px 10px', borderRadius: 999, background: 'rgba(20,16,12,0.52)', backdropFilter: 'blur(8px)' }}>
           {shoot.title}
         </span>
-        {/* Studio count */}
-        <span style={{ position: 'absolute', top: 10, right: 10, font: `600 10px/1 ${FM}`, letterSpacing: '0.04em', color: '#fff', padding: '5px 9px', borderRadius: 999, background: 'rgba(20,16,12,0.52)', backdropFilter: 'blur(8px)' }}>
-          {shoot.studios} studios
-        </span>
         {/* Tagline */}
         <span style={{ position: 'absolute', bottom: 10, left: 12, right: 12, font: `500 12px/1.3 ${FB}`, color: '#fff' }}>
           {shoot.tagline}
