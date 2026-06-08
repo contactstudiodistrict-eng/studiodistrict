@@ -4,7 +4,6 @@ import { useState } from 'react'
 const RATES  = [500, 800, 1000, 1200, 1500, 2000, 2500, 3000]
 const HOURS  = [5, 8, 10, 15, 20, 25, 30]
 const FEE    = 0.10
-const WEEKS  = 4.33 // average weeks per month
 
 function fmt(n: number) {
   return '₹' + Math.round(n).toLocaleString('en-IN')
@@ -14,7 +13,7 @@ export function EarningsCalculator() {
   const [rate,  setRate]  = useState(1200)
   const [hours, setHours] = useState(10)
 
-  const gross   = rate * hours * WEEKS
+  const gross   = rate * hours
   const payout  = gross * (1 - FEE)
   const fee     = gross * FEE
 
@@ -62,7 +61,7 @@ export function EarningsCalculator() {
       {/* Result */}
       <div className="rounded-xl px-5 py-4" style={{ backgroundColor: '#111827', border: '1px solid #1e293b' }}>
         <div className="flex items-baseline justify-between mb-1">
-          <span className="text-xs" style={{ color: '#64748b' }}>Estimated monthly payout</span>
+          <span className="text-xs" style={{ color: '#64748b' }}>Estimated weekly payout</span>
           <span className="text-2xl font-black" style={{ color: '#a3e635' }}>
             {fmt(payout)}
           </span>
