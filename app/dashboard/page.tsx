@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       .from('bookings')
       .select(`
         id, booking_ref, status, booking_date, start_time, end_time,
-        shoot_type, total_amount, duration_hours,
+        studio_id, shoot_type, total_amount, duration_hours,
         studios(studio_name, area, thumbnail_url)
       `)
       .eq('user_id', user.id)
@@ -167,16 +167,27 @@ export default async function DashboardPage() {
               {past.map(b => {
                 const badge = STATUS_BADGE[b.status]
                 const studio = (b as any).studios
+                const studioId = (b as any).studio_id
                 return (
-                  <Link key={b.id} href={`/bookings/${b.id}`}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all opacity-75 hover:opacity-100">
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">📸</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-700 truncate">{studio?.studio_name}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{formatDate(b.booking_date)} · {b.shoot_type}</div>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${badge.classes}`}>{badge.label}</span>
-                  </Link>
+                  <div key={b.id} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all opacity-75 hover:opacity-100">
+                    <Link href={`/bookings/${b.id}`} className="flex items-center gap-3 flex-1 min-w-0" style={{ textDecoration: 'none' }}>
+                      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0">📸</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-700 truncate text-sm">{studio?.studio_name}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{formatDate(b.booking_date)} · {b.shoot_type}</div>
+                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium border ${badge.classes}`}>{badge.label}</span>
+                      </div>
+                    </Link>
+                    {studioId && (
+                      <Link
+                        href={`/studios/${studioId}/book?rebook=${b.id}`}
+                        className="flex-shrink-0 px-3 py-2 rounded-lg text-xs font-bold transition-colors"
+                        style={{ background: '#84cc16', color: '#111827', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                      >
+                        Book again →
+                      </Link>
+                    )}
+                  </div>
                 )
               })}
             </div>

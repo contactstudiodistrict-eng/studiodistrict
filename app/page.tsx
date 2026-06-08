@@ -19,7 +19,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const audience = user ? 'logged_in' : 'logged_out'
   const now = new Date().toISOString()
 
-  const [studioResult, bannersResult, thumbnailsResult, favouritesResult, recentResult, packagesResult] = await Promise.all([
+  const [studioResult, bannersResult, thumbnailsResult, favouritesResult, packagesResult] = await Promise.all([
     // Fetch ALL live studios — client handles filtering
     supabase
       .from('studios')
@@ -58,16 +58,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(8)
-      : Promise.resolve({ data: null }),
-
-    user
-      ? supabase
-          .from('bookings')
-          .select('id, studio_id, shoot_type, duration_hours, start_time, customer_name, customer_phone, studios(studio_name, area, price_per_hour, thumbnail_url)')
-          .eq('user_id', user.id)
-          .in('status', ['paid', 'completed'])
-          .order('created_at', { ascending: false })
-          .limit(10)
       : Promise.resolve({ data: null }),
 
     // Packages — full fields for hero cards + stats for studio cards
@@ -124,15 +114,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const allBanners    = (bannersResult.data   ?? []) as Banner[]
   const heroThumbnails = (thumbnailsResult.data ?? []).map((s: any) => s.thumbnail_url as string)
 
-  // Deduplicate recent bookings by studio (max 3)
-  const recentRaw = (recentResult.data ?? []) as any[]
-  const seenStudio = new Set<string>()
-  const recentBookings = recentRaw.filter(b => {
-    if (seenStudio.has(b.studio_id)) return false
-    seenStudio.add(b.studio_id)
-    return true
-  }).slice(0, 3)
-
   const favRows        = (favouritesResult.data ?? []) as any[]
   const favouriteIds   = favRows.map(r => r.studio_id)
   const favouriteStudios = favRows.map(r => r.studios).filter(Boolean)
@@ -145,7 +126,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       heroPackages={heroPackages}
       favouriteIds={favouriteIds}
       favouriteStudios={favouriteStudios}
-      recentBookings={recentBookings}
       isLoggedIn={!!user}
       initialParams={searchParams as Record<string, string | undefined>}
     />

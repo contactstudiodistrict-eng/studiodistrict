@@ -7,9 +7,8 @@ import { HeroBanner } from '@/components/shared/HeroBanner'
 import { SiteFooter } from '@/components/shared/SiteFooter'
 import { AnnouncementBanner } from '@/components/banners/AnnouncementBanner'
 import { OfferBanner } from '@/components/banners/OfferBanner'
-import { StudioCard } from '@/components/studio/StudioCard'
 import { StudioGrid } from '@/components/studio/StudioGrid'
-import { RecentlyBookedCard } from '@/components/booking/RecentlyBookedCard'
+import { SavedStudioCard } from '@/components/studio/SavedStudioCard'
 import { FilterBar } from '@/components/filters/FilterBar'
 import { ResultsHeader } from '@/components/filters/ResultsHeader'
 
@@ -32,7 +31,6 @@ interface Props {
   heroPackages: any[]
   favouriteIds: string[]
   favouriteStudios: any[]
-  recentBookings: any[]
   isLoggedIn: boolean
   initialParams: Record<string, string | undefined>
 }
@@ -44,7 +42,6 @@ export function HomepageClient({
   heroPackages,
   favouriteIds,
   favouriteStudios,
-  recentBookings,
   isLoggedIn,
   initialParams,
 }: Props) {
@@ -137,42 +134,23 @@ export function HomepageClient({
             onFilterChange={handleFilterChange}
           />
 
-          {/* Saved studios */}
-          {isLoggedIn && liveFavStudios.length > 0 && (
+          {/* Saved studios — hidden when search/filter is active */}
+          {isLoggedIn && !filtersActive && liveFavStudios.length > 0 && (
             <div style={{ marginBottom: 40 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0 }}>Your saved studios</h2>
                 <span style={{ fontSize: 13, color: '#9ca3af' }}>{liveFavStudios.length} saved</span>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:overflow-visible"
-                style={{ scrollbarWidth: 'none' }}>
+              <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
                 {liveFavStudios.map((studio: any) => (
-                  <div key={studio.id} className="flex-shrink-0 w-72 sm:w-auto">
-                    <StudioCard studio={studio} isFavourited={true} onFavouriteToggle={handleFavouriteToggle} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Book again */}
-          {isLoggedIn && recentBookings.length > 0 && (
-            <div style={{ marginBottom: 40 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 16 }}>Book again</h2>
-              <div className="flex gap-3 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible"
-                style={{ scrollbarWidth: 'none' }}>
-                {recentBookings.map((b: any) => (
-                  <RecentlyBookedCard
-                    key={b.id}
-                    bookingId={b.id}
-                    studioId={b.studio_id}
-                    studioName={b.studios?.studio_name || ''}
-                    area={b.studios?.area || ''}
-                    pricePerHour={b.studios?.price_per_hour || 0}
-                    shootType={b.shoot_type}
-                    durationHours={b.duration_hours}
-                    startTime={b.start_time}
-                    thumbnail={b.studios?.thumbnail_url || ''}
+                  <SavedStudioCard
+                    key={studio.id}
+                    studioId={studio.id}
+                    studioName={studio.studio_name}
+                    area={studio.area}
+                    pricePerHour={studio.price_per_hour}
+                    thumbnail={studio.thumbnail_url || studio.studio_images?.[0]?.url || ''}
+                    onFavouriteToggle={handleFavouriteToggle}
                   />
                 ))}
               </div>
