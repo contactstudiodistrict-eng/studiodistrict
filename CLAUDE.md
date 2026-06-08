@@ -136,7 +136,7 @@ ID:     d6568998-2025-4dee-9280-8f347caf7487
 - Homepage studio cards show "📦 X packages from ₹Y" pill
 - Booking status page shows package name in payment summary
 
-### Studio Onboarding (10-step wizard at /studio/onboard or /studio/list)
+### Studio Onboarding (10-step wizard at /studio/onboard)
 - Step 1: Basic info (name, type, owner, phone, area, address, Maps link)
 - Step 2: Pricing (hourly rate, min hours, half/full-day rates) + **type-specific extra charges**:
   - Photo/Video: lighting tech, camera rental, backdrop change, overtime

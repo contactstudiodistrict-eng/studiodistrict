@@ -322,7 +322,6 @@ export default function StudioListPage() {
                   {[
                     ['Your hourly rate', '100%', true],
                     ['Platform fee (10%)', 'on subtotal', false],
-                    ['GST on fee (18%)', 'on fee only', false],
                   ].map(([label, val, highlight]) => (
                     <div key={String(label)} className="flex justify-between items-center py-2" style={{ borderBottom: '1px solid #1e293b' }}>
                       <span className="text-sm" style={{ color: highlight ? '#a3e635' : '#94a3b8' }}>{label}</span>
@@ -347,7 +346,7 @@ export default function StudioListPage() {
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-4">Security deposit collected and returned to the customer separately.</p>
+                <p className="text-xs text-gray-400 mt-4">No hidden charges — the rate you set is what the customer pays.</p>
               </div>
             </div>
           </div>

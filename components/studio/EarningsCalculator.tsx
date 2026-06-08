@@ -49,7 +49,7 @@ export function EarningsCalculator() {
           </select>
         </div>
         <div>
-          <label className="block text-xs mb-1.5" style={{ color: '#64748b' }}>Bookings/week</label>
+          <label className="block text-xs mb-1.5" style={{ color: '#64748b' }}>Hours/week</label>
           <select value={hours} onChange={e => setHours(Number(e.target.value))}
             className={selectCls} style={selStyle}>
             {HOURS.map(h => (
