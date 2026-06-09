@@ -237,8 +237,7 @@ export async function GET(req: NextRequest) {
 
 function formatTime(t: string) {
   if (!t) return ''
-  const [h, m] = t.split(':').map(Number)
-  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
+  return t.slice(0, 5)
 }
 
 async function computeReferralDiscount(admin: any, userId: string, code: string): Promise<number> {

@@ -28,28 +28,10 @@ function todayLocalISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+const DAY_MAP   = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const DAY_ABBR: Record<string, string> = {
-  Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu',
-  Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun',
-}
-
-function isWorkingDay(dateISO: string, workingDays: string[]): boolean {
-  if (!workingDays?.length) return true
-  const [y, m, d] = dateISO.split('-').map(Number)
-  return workingDays.includes(DAY_NAMES[new Date(y, m - 1, d).getDay()])
-}
-
-function nextWorkingDay(workingDays: string[]): string {
-  if (!workingDays?.length) return todayLocalISO()
-  const now = new Date()
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i)
-    if (workingDays.includes(DAY_NAMES[d.getDay()])) {
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    }
-  }
-  return todayLocalISO()
+  sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat',
 }
 
 const SHOOT_TYPES = [
@@ -84,6 +66,32 @@ type Package = {
   badge_text: string | null
 }
 
+function getSmartDefault(s: Studio): { date: string; startTime: string } {
+  const now     = new Date()
+  const [ch, cm] = s.closing_time.slice(0, 5).split(':').map(Number)
+  const threshold = Math.max(0, ch - 1) * 60 + cm
+  const nowMins   = now.getHours() * 60 + now.getMinutes()
+  const openTime  = s.opening_time.slice(0, 5)
+
+  function fmt(d: Date) {
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+  }
+
+  if (s.working_days.includes(DAY_MAP[now.getDay()]) && nowMins < threshold) {
+    return { date: fmt(now), startTime: openTime }
+  }
+
+  const d = new Date(now)
+  d.setDate(d.getDate() + 1)
+  for (let i = 0; i < 7; i++) {
+    if (s.working_days.includes(DAY_MAP[d.getDay()])) {
+      return { date: fmt(d), startTime: openTime }
+    }
+    d.setDate(d.getDate() + 1)
+  }
+  return { date: fmt(now), startTime: openTime }
+}
+
 export function BookingForm({ studio, userId }: { studio: Studio; userId: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -113,8 +121,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const [showReferral,   setShowReferral]   = useState(false)
 
   // Form fields
-  const [date,      setDate]      = useState(() => nextWorkingDay(studio.working_days))
-  const [startTime, setStartTime] = useState(() => getNextWholeHour(makeTimeSlots(studio.opening_time, studio.closing_time)))
+  const [date,      setDate]      = useState(() => getSmartDefault(studio).date)
+  const [startTime, setStartTime] = useState(() => getSmartDefault(studio).startTime)
   const [duration,  setDuration]  = useState(studio.minimum_hours)
   const [name,      setName]      = useState('')
   const [phone,     setPhone]     = useState('')
@@ -204,11 +212,9 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
     if (!date)      return 'Please select a date'
     if (!startTime) return 'Please select a start time'
     if (date < todayLocalISO()) return 'Please select a future date'
-    if (studio.working_days?.length && !isWorkingDay(date, studio.working_days)) {
-      const [y, m, d] = date.split('-').map(Number)
-      const dayName = DAY_NAMES[new Date(y, m - 1, d).getDay()]
-      return `${studio.studio_name} is closed on ${dayName}s. Please pick a working day.`
-    }
+    const dayIdx = new Date(date + 'T00:00:00').getDay()
+    if (studio.working_days?.length && !studio.working_days.includes(DAY_MAP[dayIdx]))
+      return `${studio.studio_name} is closed on ${DAY_NAMES[dayIdx]}s. Please pick a working day.`
     return ''
   }
   function validateStep2(): string {
@@ -283,8 +289,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   }
   function fTime(t: string) {
     if (!t) return ''
-    const [h, m] = t.split(':').map(Number)
-    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
+    return t.slice(0, 5)
   }
 
   const steps = ['Date & Time', 'Your Details', 'Review & Send']
@@ -410,7 +415,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
                 <button type="button" onClick={() => setDuration(d => Math.min(12, d + 1))}
                   style={{ padding: '11px 18px', background: '#f9fafb', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#374151', fontWeight: '300' }}>+</button>
               </div>
-              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>Minimum {studio.minimum_hours} hours · Opens {studio.opening_time} – Closes {studio.closing_time}</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>Minimum {studio.minimum_hours} hours · Opens {studio.opening_time.slice(0, 5)} – Closes {studio.closing_time.slice(0, 5)}</div>
             </div>
           ) : (
             <div style={{ ...s.field, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px' }}>
