@@ -292,10 +292,11 @@ function StudioOnboardForm() {
                   </select>
                 </Field>
                 <Field label="Area / Locality" required error={errors.area?.message}>
-                  <select {...register('area')} className={selectCls}>
-                    <option value="">Select area…</option>
-                    {ALL_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-                  </select>
+                  <AreaAutosuggest
+                    value={watch('area') || ''}
+                    onChange={v => setValue('area', v, { shouldValidate: true })}
+                    error={errors.area?.message}
+                  />
                 </Field>
                 <Field label="Owner name" required error={errors.owner_name?.message}>
                   <input {...register('owner_name')} placeholder="Your full name" className={inputCls} />
@@ -948,6 +949,69 @@ function ImageUploadZone({
             )
           })}
         </div>
+      )}
+    </div>
+  )
+}
+
+function AreaAutosuggest({
+  value, onChange, error,
+}: { value: string; onChange: (v: string) => void; error?: string }) {
+  const [query, setQuery] = useState(value || '')
+  const [open,  setOpen]  = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Sync when form prefills in edit mode
+  useEffect(() => { setQuery(value || '') }, [value])
+
+  useEffect(() => {
+    function away(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', away)
+    return () => document.removeEventListener('mousedown', away)
+  }, [])
+
+  const suggestions = query.trim().length === 0
+    ? ALL_AREAS
+    : ALL_AREAS.filter(a => a.toLowerCase().includes(query.toLowerCase()))
+
+  function select(area: string) {
+    setQuery(area)
+    onChange(area)
+    setOpen(false)
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        type="text"
+        value={query}
+        placeholder="e.g. Velachery, OMR, Anna Nagar…"
+        className={`${inputCls} ${error ? 'border-red-400' : ''}`}
+        onFocus={() => setOpen(true)}
+        onBlur={() => {
+          // Commit whatever is typed (accepts custom names)
+          onChange(query)
+        }}
+        onChange={e => {
+          setQuery(e.target.value)
+          onChange(e.target.value)
+          setOpen(true)
+        }}
+      />
+      {open && suggestions.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto py-1">
+          {suggestions.map(area => (
+            <li key={area}>
+              <button type="button" onMouseDown={() => select(area)}
+                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 hover:text-brand-700 transition-colors
+                  ${area === value ? 'bg-brand-50 text-brand-700 font-medium' : 'text-gray-700'}`}>
+                {area}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )
