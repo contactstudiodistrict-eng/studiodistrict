@@ -680,10 +680,20 @@ function StudioOnboardForm() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Opening time">
-                    <input {...register('opening_time')} type="time" className={inputCls} />
+                    <select {...register('opening_time')} className={inputCls}>
+                      {Array.from({ length: 24 }, (_, h) => {
+                        const val = `${String(h).padStart(2, '0')}:00`
+                        return <option key={val} value={val}>{val}</option>
+                      })}
+                    </select>
                   </Field>
                   <Field label="Closing time">
-                    <input {...register('closing_time')} type="time" className={inputCls} />
+                    <select {...register('closing_time')} className={inputCls}>
+                      {Array.from({ length: 24 }, (_, h) => {
+                        const val = `${String(h).padStart(2, '0')}:00`
+                        return <option key={val} value={val}>{val}</option>
+                      })}
+                    </select>
                   </Field>
                 </div>
 
