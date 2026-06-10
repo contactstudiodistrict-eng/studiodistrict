@@ -10,7 +10,7 @@ const CREATOR_STEPS = [
     num: '01',
     icon: '🔍',
     title: 'Search & Discover',
-    body: 'Browse 40+ verified studios across Chennai. Use filters to find exactly what you need.',
+    body: 'Browse verified studios across Chennai. Use filters to find exactly what you need.',
     bullets: [
       'Studio type — Photography, Podcast, Video, Music',
       'Location — OMR, Velachery, T.Nagar, Anna Nagar and more',
@@ -465,7 +465,7 @@ export default function HowItWorksPage() {
                   Ready to book a studio?
                 </h3>
                 <p className="text-sm mb-6" style={{ color: '#94a3b8' }}>
-                  Browse 40+ verified studios across Chennai. Book in minutes.
+                  Browse verified studios across Chennai. Book in minutes.
                 </p>
                 <a href="/"
                   className="mt-auto block text-center py-3 rounded-xl font-bold text-sm transition-colors"
