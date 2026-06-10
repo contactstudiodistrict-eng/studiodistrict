@@ -51,7 +51,6 @@ export default async function StudioProfilePage({ params }: Props) {
         studio_equipment(*)
       `)
       .eq('id', params.id)
-      .eq('status', 'live')
       .single(),
     supabase
       .from('reviews')
@@ -102,6 +101,14 @@ export default async function StudioProfilePage({ params }: Props) {
     <>
       <SiteHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-28 lg:pb-8">
+        {studio.status !== 'live' && (
+          <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <span className="text-lg">👁️</span>
+            <div>
+              <span className="font-semibold">Preview mode</span> — this listing is <span className="font-semibold capitalize">{studio.status}</span> and not yet visible to the public.
+            </div>
+          </div>
+        )}
         <div className="lg:grid lg:grid-cols-3 lg:gap-10">
 
           {/* ── Left: Studio Info (2/3 width) ── */}
