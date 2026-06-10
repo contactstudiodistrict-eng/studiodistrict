@@ -518,7 +518,7 @@ export function HeroBanner({ thumbnails = [], packages = [], liveAreas = [], onS
         <div className="sd2-glow" style={{ position: 'absolute', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle,rgba(124,58,237,0.10) 0%,transparent 70%)', bottom: -80, right: '28%', pointerEvents: 'none', animationDelay: '3s' }} />
       </div>
 
-      <div style={{ position: 'relative', zIndex: 5 }}>
+      <div style={{ position: 'relative', zIndex: 45 }}>
         <div className="sd2-grid">
 
           {/* ── LEFT ─────────────────────────────────────────── */}
