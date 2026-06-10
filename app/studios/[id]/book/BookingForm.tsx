@@ -246,15 +246,37 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
     }) ?? null
   }
 
+  const closingMinsConst = toMins(studio.closing_time)
+
   function calcEndTime(start: string, hrs: number): string {
     if (!start) return ''
     const [h, m] = start.split(':').map(Number)
-    const endH = h + hrs
-    if (endH > 23) return '23:59'
-    return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    const endMins = h * 60 + m + hrs * 60
+    return `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+  }
+
+  function latestValidStart(): string | null {
+    const targetMins = closingMinsConst - duration * 60
+    if (targetMins < toMins(studio.opening_time)) return null
+    const candidates = timeSlots.filter(t => toMins(t) <= targetMins && !isSlotDisabled(t))
+    return candidates.length > 0 ? candidates[candidates.length - 1] : null
+  }
+
+  function findNextWorkingDay(fromDate: string): string | null {
+    const d = new Date(fromDate + 'T00:00:00')
+    d.setDate(d.getDate() + 1)
+    for (let i = 0; i < 14; i++) {
+      if (studio.working_days.includes(DAY_MAP[d.getDay()])) {
+        return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+      }
+      d.setDate(d.getDate() + 1)
+    }
+    return null
   }
 
   const endTime = calcEndTime(startTime, duration)
+  const exceedsClosing = !!(startTime && toMins(startTime) + duration * 60 > closingMinsConst)
+  const availableHoursFloor = startTime ? Math.floor((closingMinsConst - toMins(startTime)) / 60) : 0
 
   // Pricing — package mode uses flat price
   const pricing = selectedPackage
@@ -292,6 +314,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
     const dayIdx = new Date(date + 'T00:00:00').getDay()
     if (studio.working_days?.length && !studio.working_days.includes(DAY_MAP[dayIdx]))
       return `${studio.studio_name} is closed on ${DAY_NAMES[dayIdx]}s. Please pick a working day.`
+    if (exceedsClosing)
+      return `Booking end time exceeds closing time (${fTime(studio.closing_time)}). Use the suggestions below.`
     return ''
   }
   function validateStep2(): string {
@@ -486,8 +510,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             </div>
             <div>
               <label style={s.label}>End time</label>
-              <div style={{ ...s.input, background: '#f9fafb', color: endTime ? '#374151' : '#9ca3af', display: 'flex', alignItems: 'center' }}>
-                {endTime ? fTime(endTime) : '—'}
+              <div style={{ ...s.input, background: exceedsClosing ? '#fffbeb' : '#f9fafb', color: exceedsClosing ? '#92400e' : (endTime ? '#374151' : '#9ca3af'), border: exceedsClosing ? '1px solid #fcd34d' : '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {endTime ? fTime(endTime) : '—'}{exceedsClosing && <span style={{ fontSize: '12px' }}>⚠️</span>}
               </div>
             </div>
           </div>
@@ -539,7 +563,47 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             </div>
           )}
 
-          {startTime && date && (
+          {/* Closing-time overflow warning */}
+          {exceedsClosing && !availLoading && (() => {
+            const latest = latestValidStart()
+            const nextDay = findNextWorkingDay(date)
+            const remMins = closingMinsConst - toMins(startTime)
+            const remH = Math.floor(remMins / 60)
+            const remM = remMins % 60
+            const remLabel = remM > 0 ? `${remH}h ${remM}min` : `${remH} hour${remH !== 1 ? 's' : ''}`
+            return (
+              <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '10px', padding: '14px', marginBottom: '14px', fontSize: '13px', color: '#92400e' }}>
+                <div style={{ fontWeight: '600', marginBottom: '10px' }}>
+                  ⚠️ Studio closes at {fTime(studio.closing_time)} — only {remLabel} available from {fTime(startTime)}. A {duration}-hour booking can&apos;t be accommodated.
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {availableHoursFloor >= studio.minimum_hours && (
+                    <button type="button"
+                      onClick={() => setDuration(availableHoursFloor)}
+                      style={{ padding: '7px 14px', borderRadius: '8px', border: 'none', background: '#84cc16', color: '#111827', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Book for {availableHoursFloor} hour{availableHoursFloor !== 1 ? 's' : ''}
+                    </button>
+                  )}
+                  {latest && (
+                    <button type="button"
+                      onClick={() => setStartTime(latest)}
+                      style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #d97706', background: '#fff', color: '#92400e', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Start at {fTime(latest)}
+                    </button>
+                  )}
+                  {nextDay && (
+                    <button type="button"
+                      onClick={() => setDate(nextDay)}
+                      style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #d97706', background: '#fff', color: '#92400e', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Try {new Date(nextDay + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
+          {startTime && date && !exceedsClosing && (
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', color: '#15803d', marginBottom: '14px' }}>
               ✅ {fDate(date)} · {fTime(startTime)} – {fTime(endTime)}
             </div>
