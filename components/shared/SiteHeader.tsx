@@ -39,7 +39,7 @@ export function SiteHeader() {
     setProfile(data)
     if (data?.wallet_balance) setWallet(data.wallet_balance)
 
-    if (data?.role === 'studio_owner' || data?.role === 'admin') {
+    if (data?.role === 'studio_owner' || data?.role === 'admin' || data?.role === 'super_admin') {
       // Fetch studio status + pending bookings count in parallel
       const [studiosRes, bookingsRes] = await Promise.all([
         supabase.from('studios').select('id, status').eq('owner_id', userId).order('created_at', { ascending: false }).limit(1),
@@ -63,8 +63,8 @@ export function SiteHeader() {
 
   const displayName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Account'
   const initial     = displayName.charAt(0).toUpperCase()
-  const isOwner     = profile?.role === 'studio_owner'
-  const isAdmin     = profile?.role === 'admin'
+  const isOwner     = profile?.role === 'studio_owner' || profile?.role === 'admin' || profile?.role === 'super_admin'
+  const isAdmin     = profile?.role === 'admin' || profile?.role === 'super_admin'
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm">
@@ -81,6 +81,10 @@ export function SiteHeader() {
           <a href="/" className={`no-underline font-medium transition-colors hover:text-brand-600 ${pathname === '/' ? 'text-brand-600' : 'text-slate-500'}`}
             style={{ textDecoration: 'none' }}>
             Discover
+          </a>
+          <a href="/packages" className={`no-underline font-medium transition-colors hover:text-brand-600 ${pathname === '/packages' ? 'text-brand-600' : 'text-slate-500'}`}
+            style={{ textDecoration: 'none' }}>
+            Packages
           </a>
           <a href="/how-it-works" className={`no-underline font-medium transition-colors hover:text-brand-600 ${pathname === '/how-it-works' ? 'text-brand-600' : 'text-slate-500'}`}
             style={{ textDecoration: 'none' }}>
@@ -151,6 +155,7 @@ export function SiteHeader() {
                     {/* Nav links on mobile — shown here */}
                     <div className="md:hidden border-b border-slate-100">
                       <DropItem href="/" icon="🔍" label="Discover" onClick={() => setMenuOpen(false)} active={pathname === '/'} />
+                      <DropItem href="/packages" icon="📦" label="Packages" onClick={() => setMenuOpen(false)} active={pathname === '/packages'} />
                       <DropItem href="/how-it-works" icon="💡" label="How it works" onClick={() => setMenuOpen(false)} active={pathname === '/how-it-works'} />
                       <DropItem href="/studio/list" icon="➕" label="List a Studio" onClick={() => setMenuOpen(false)} active={false} />
                       {isAdmin && <DropItem href="/admin" icon="⚡" label="Admin Panel" onClick={() => setMenuOpen(false)} active={pathname.startsWith('/admin')} />}
@@ -212,6 +217,7 @@ export function SiteHeader() {
                     <div onClick={() => setMobileNav(false)} className="fixed inset-0 z-40" />
                     <div className="absolute right-0 top-[calc(100%+8px)] w-52 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden p-1.5">
                       <DropItem href="/" icon="🔍" label="Discover" onClick={() => setMobileNav(false)} active={pathname === '/'} />
+                      <DropItem href="/packages" icon="📦" label="Packages" onClick={() => setMobileNav(false)} active={pathname === '/packages'} />
                       <DropItem href="/how-it-works" icon="💡" label="How it works" onClick={() => setMobileNav(false)} active={pathname === '/how-it-works'} />
                       <DropItem href="/studio/list" icon="➕" label="List a Studio" onClick={() => setMobileNav(false)} active={pathname === '/studio/list'} />
                     </div>

@@ -106,6 +106,8 @@ export default async function PaymentPage({ params }: { params: { id: string } }
       customerName={b.customer_name}
       customerPhone={b.customer_phone}
       customerEmail={b.customer_email}
+      referralDiscount={b.referral_discount ?? 0}
+      walletCreditApplied={b.wallet_credit_applied ?? 0}
       orderId={orderId}
       orderAmount={orderAmount}
       razorpayKeyId={process.env.RAZORPAY_KEY_ID!}

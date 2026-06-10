@@ -38,6 +38,5 @@ export async function GET(req: NextRequest) {
 
   if ((count ?? 0) > 0) return NextResponse.json({ error: 'Referral codes are only for your first booking' }, { status: 400 })
 
-  const amount = await getReferralAmount()
-  return NextResponse.json({ valid: true, message: `Code valid! You'll earn ₹${amount} wallet credit after payment.` })
+  return NextResponse.json({ valid: true, message: `Code valid! ₹100 discount will be applied at checkout.` })
 }

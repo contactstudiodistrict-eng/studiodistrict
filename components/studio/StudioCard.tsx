@@ -15,12 +15,13 @@ const TYPE_LABEL: Record<string, string> = {
 interface Props {
   studio: any
   isFavourited?: boolean
+  onFavouriteToggle?: (studioId: string, isFav: boolean) => void
   bookedCount?: number
   packageCount?: number
   minPackagePrice?: number
 }
 
-export function StudioCard({ studio, isFavourited = false, bookedCount = 0, packageCount, minPackagePrice }: Props) {
+export function StudioCard({ studio, isFavourited = false, onFavouriteToggle, bookedCount = 0, packageCount, minPackagePrice }: Props) {
   const pkgCount    = packageCount    ?? studio._packageCount    ?? 0
   const pkgMinPrice = minPackagePrice ?? studio._minPackagePrice ?? undefined
   const thumbnail = studio.thumbnail_url
@@ -82,7 +83,7 @@ export function StudioCard({ studio, isFavourited = false, bookedCount = 0, pack
 
           {/* Favourite button */}
           <div className="absolute top-2 right-2">
-            <FavouriteButton studioId={studio.id} initialFavourited={isFavourited} />
+            <FavouriteButton studioId={studio.id} initialFavourited={isFavourited} onToggle={onFavouriteToggle} />
           </div>
         </div>
 

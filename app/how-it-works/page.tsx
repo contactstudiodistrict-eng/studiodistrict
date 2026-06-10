@@ -10,7 +10,7 @@ const CREATOR_STEPS = [
     num: '01',
     icon: '🔍',
     title: 'Search & Discover',
-    body: 'Browse 40+ verified studios across Chennai. Use filters to find exactly what you need.',
+    body: 'Browse verified studios across Chennai. Use filters to find exactly what you need.',
     bullets: [
       'Studio type — Photography, Podcast, Video, Music',
       'Location — OMR, Velachery, T.Nagar, Anna Nagar and more',
@@ -146,7 +146,7 @@ const FAQS = [
   },
   {
     q: 'Is there a commission?',
-    a: 'Yes, Studio District charges 10% of the studio booking subtotal. You keep 90% of your base rate. GST of 18% applies on the platform fee only.',
+    a: 'Yes, Studio District charges a 10% platform fee on each booking. The fee is deducted from your payout — customers pay exactly your listed price. You keep 90% of every booking.',
   },
   {
     q: 'What if a customer cancels?',
@@ -249,13 +249,12 @@ function EarningsBox() {
         <div className="p-6 sm:p-8" style={{ backgroundColor: '#111827' }}>
           <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#84cc16' }}>Earnings Example</p>
           <p className="text-sm mb-4" style={{ color: '#94a3b8' }}>
-            800 sq ft photography studio · ₹1,200/hr · 5 bookings/week (20 hrs/month)
+            Photography studio · ₹1,200/hr · 20 hrs/month booked
           </p>
           <div className="space-y-2 text-sm">
             {[
-              ['Monthly gross',    '₹24,000', false],
-              ['Platform fee (10%)', '−₹2,400', false],
-              ['GST on fee (18%)',   '−₹432',   false],
+              ['Monthly bookings (20 hrs)', '₹24,000'],
+              ['Platform fee (10%)',        '−₹2,400'],
             ].map(([label, val]) => (
               <div key={String(label)} className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #1e293b' }}>
                 <span style={{ color: '#94a3b8' }}>{label}</span>
@@ -264,7 +263,7 @@ function EarningsBox() {
             ))}
             <div className="flex justify-between pt-2">
               <span className="font-semibold" style={{ color: '#a3e635' }}>Your monthly payout</span>
-              <span className="font-bold" style={{ color: '#a3e635' }}>₹21,168</span>
+              <span className="font-bold" style={{ color: '#a3e635' }}>₹21,600</span>
             </div>
           </div>
         </div>
@@ -272,9 +271,9 @@ function EarningsBox() {
           <p className="text-sm font-bold mb-4" style={{ color: '#111827' }}>Per single booking — ₹1,200 × 3 hrs</p>
           <div className="space-y-2 text-sm">
             {[
-              ['Customer pays',        '₹3,600', false],
-              ['Platform fee (10%)',   '−₹360',  false],
-              ['Studio payout',        '₹3,240', true],
+              ['Customer pays',      '₹3,600', false],
+              ['Platform fee (10%)', '−₹360',  false],
+              ['You receive',        '₹3,240', true],
             ].map(([label, val, highlight]) => (
               <div key={String(label)} className="flex justify-between py-1.5 border-b border-gray-50">
                 <span className={String(highlight) === 'true' ? 'font-semibold text-gray-900' : 'text-gray-500'}>{label}</span>
@@ -283,7 +282,7 @@ function EarningsBox() {
             ))}
           </div>
           <p className="text-xs mt-4" style={{ color: '#9ca3af' }}>
-            Security deposit collected & returned separately. Zero risk of no-shows — payment before arrival.
+            Customer pays exactly the price you set — the platform fee is deducted from your payout, not added on top.
           </p>
         </div>
       </div>
@@ -466,7 +465,7 @@ export default function HowItWorksPage() {
                   Ready to book a studio?
                 </h3>
                 <p className="text-sm mb-6" style={{ color: '#94a3b8' }}>
-                  Browse 40+ verified studios across Chennai. Book in minutes.
+                  Browse verified studios across Chennai. Book in minutes.
                 </p>
                 <a href="/"
                   className="mt-auto block text-center py-3 rounded-xl font-bold text-sm transition-colors"

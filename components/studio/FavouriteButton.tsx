@@ -5,10 +5,11 @@ import { useState } from 'react'
 interface Props {
   studioId: string
   initialFavourited: boolean
+  onToggle?: (studioId: string, isFav: boolean) => void
   size?: number
 }
 
-export function FavouriteButton({ studioId, initialFavourited, size = 36 }: Props) {
+export function FavouriteButton({ studioId, initialFavourited, onToggle, size = 36 }: Props) {
   const [isFavourited, setIsFavourited] = useState(initialFavourited)
   const [loading, setLoading] = useState(false)
 
@@ -19,6 +20,7 @@ export function FavouriteButton({ studioId, initialFavourited, size = 36 }: Prop
 
     const next = !isFavourited
     setIsFavourited(next) // optimistic
+    onToggle?.(studioId, next)
 
     setLoading(true)
     try {
@@ -32,9 +34,11 @@ export function FavouriteButton({ studioId, initialFavourited, size = 36 }: Prop
 
       if (!res.ok) {
         setIsFavourited(!next) // revert
+        onToggle?.(studioId, !next)
       }
     } catch {
       setIsFavourited(!next) // revert on network error
+      onToggle?.(studioId, !next)
     } finally {
       setLoading(false)
     }

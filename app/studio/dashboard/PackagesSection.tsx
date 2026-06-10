@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { formatINR } from '@/lib/pricing'
 
 interface Package {
@@ -10,19 +10,18 @@ interface Package {
   price: number
   original_price: number | null
   included_equipment: string[] | null
-  included_amenities: string[] | null
   included_extras: string[] | null
   max_people: number | null
   rules: string | null
   badge_text: string | null
   is_active: boolean
   display_order: number
+  images: string[]
 }
 
 interface Props {
   studioId: string
   initialPackages: Package[]
-  amenityOptions: string[]
   equipmentOptions: string[]
 }
 
@@ -31,28 +30,31 @@ const BADGE_OPTIONS = ['', 'Most Popular', 'Best Value', 'Premium', 'New']
 const EMPTY_FORM = {
   package_name: '', description: '', duration_hours: '', price: '',
   original_price: '', max_people: '', badge_text: '', rules: '',
-  included_equipment: [] as string[], included_amenities: [] as string[],
+  included_equipment: [] as string[],
   included_extras: [''] as string[],
+  images: [] as string[],
 }
 
-export function PackagesSection({ studioId, initialPackages, amenityOptions, equipmentOptions }: Props) {
+export function PackagesSection({ studioId, initialPackages, equipmentOptions }: Props) {
   const [packages, setPackages] = useState<Package[]>(initialPackages)
   const [showModal, setShowModal] = useState(false)
   const [editPkg, setEditPkg]     = useState<Package | null>(null)
   const [form, setForm]           = useState({ ...EMPTY_FORM })
   const [saving, setSaving]       = useState(false)
-  const [formError, setFormError] = useState('')
-  const [toast, setToast]         = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [toastMsg, setToastMsg]   = useState('')
+  const [uploading, setUploading] = useState(false)
+  const imgInputRef               = useRef<HTMLInputElement>(null)
 
   function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
+    setToastMsg(msg)
+    setTimeout(() => setToastMsg(''), 3000)
   }
 
   function openAdd() {
     setEditPkg(null)
     setForm({ ...EMPTY_FORM })
-    setFormError('')
+    setFieldErrors({})
     setShowModal(true)
   }
 
@@ -68,19 +70,19 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
       badge_text:         pkg.badge_text ?? '',
       rules:              pkg.rules ?? '',
       included_equipment: pkg.included_equipment ?? [],
-      included_amenities: pkg.included_amenities ?? [],
       included_extras:    pkg.included_extras?.length ? pkg.included_extras : [''],
+      images:             pkg.images ?? [],
     })
-    setFormError('')
+    setFieldErrors({})
     setShowModal(true)
   }
 
   function closeModal() { setShowModal(false); setEditPkg(null) }
 
-  function toggleCheck(key: 'included_equipment' | 'included_amenities', item: string) {
+  function toggleEquip(item: string) {
     setForm(f => {
-      const arr = f[key]
-      return { ...f, [key]: arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item] }
+      const arr = f.included_equipment
+      return { ...f, included_equipment: arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item] }
     })
   }
 
@@ -90,17 +92,53 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
   function addExtra() { setForm(f => ({ ...f, included_extras: [...f.included_extras, ''] })) }
   function removeExtra(i: number) { setForm(f => ({ ...f, included_extras: f.included_extras.filter((_, idx) => idx !== i) })) }
 
-  async function save() {
-    setFormError('')
-    if (!form.package_name.trim() || form.package_name.length < 2)
-      return setFormError('Package name must be at least 2 characters')
-    if (!form.duration_hours || Number(form.duration_hours) <= 0)
-      return setFormError('Duration must be greater than 0')
-    if (!form.price || Number(form.price) <= 0)
-      return setFormError('Price must be greater than 0')
-    if (form.original_price && Number(form.original_price) <= Number(form.price))
-      return setFormError('Original price must be greater than sale price')
+  function removeImage(url: string) {
+    setForm(f => ({ ...f, images: f.images.filter(u => u !== url) }))
+  }
 
+  async function handleImageFiles(files: FileList) {
+    const remaining = 2 - form.images.length
+    if (remaining <= 0) { showToast('Max 2 photos per package'); return }
+    const toUpload = Array.from(files).slice(0, remaining)
+
+    for (const file of toUpload) {
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors(e => ({ ...e, images: `"${file.name}" exceeds 5 MB limit` }))
+        return
+      }
+    }
+    setFieldErrors(e => { const n = { ...e }; delete n.images; return n })
+    setUploading(true)
+    try {
+      for (const file of toUpload) {
+        const signRes = await fetch('/api/cloudinary/sign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder: 'framr/packages' }) })
+        if (!signRes.ok) { showToast('Cloudinary not configured yet — add keys to .env.local'); break }
+        const { cloud_name, upload_preset } = await signRes.json()
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('upload_preset', upload_preset)
+        const up = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, { method: 'POST', body: fd })
+        if (!up.ok) { showToast('Upload failed'); break }
+        const data = await up.json()
+        setForm(f => ({ ...f, images: [...f.images, data.secure_url as string] }))
+      }
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function save() {
+    const errs: Record<string, string> = {}
+    if (!form.package_name.trim() || form.package_name.length < 2)
+      errs.package_name = 'At least 2 characters required'
+    if (!form.duration_hours || Number(form.duration_hours) <= 0)
+      errs.duration_hours = 'Must be greater than 0'
+    if (!form.price || Number(form.price) <= 0)
+      errs.price = 'Must be greater than 0'
+    if (form.original_price && Number(form.original_price) <= Number(form.price))
+      errs.original_price = 'Must be greater than the sale price'
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setFieldErrors({})
     setSaving(true)
     const payload = {
       package_name:       form.package_name.trim(),
@@ -109,11 +147,11 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
       price:              Number(form.price),
       original_price:     form.original_price ? Number(form.original_price) : null,
       included_equipment: form.included_equipment,
-      included_amenities: form.included_amenities,
       included_extras:    form.included_extras.filter(e => e.trim()),
       max_people:         form.max_people ? Number(form.max_people) : null,
       badge_text:         form.badge_text || null,
       rules:              form.rules.trim() || null,
+      images:             form.images,
     }
 
     try {
@@ -123,7 +161,7 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
       const method = editPkg ? 'PATCH' : 'POST'
       const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const d      = await res.json()
-      if (!res.ok) { setFormError(d.error || 'Save failed'); return }
+      if (!res.ok) { setFieldErrors({ _form: d.error || 'Save failed' }); return }
 
       if (editPkg) {
         setPackages(prev => prev.map(p => p.id === editPkg.id ? d.package : p))
@@ -132,18 +170,14 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
       }
       showToast('Package saved!')
       closeModal()
-    } catch { setFormError('Network error. Try again.') }
+    } catch { setFieldErrors({ _form: 'Network error. Try again.' }) }
     finally { setSaving(false) }
   }
 
   async function toggleActive(pkg: Package) {
     const newActive = !pkg.is_active
     const method = newActive ? 'PATCH' : 'DELETE'
-    const url    = newActive
-      ? `/api/studios/${studioId}/packages/${pkg.id}`
-      : `/api/studios/${studioId}/packages/${pkg.id}`
-
-    const res = await fetch(url, {
+    const res = await fetch(`/api/studios/${studioId}/packages/${pkg.id}`, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: newActive ? JSON.stringify({ is_active: true }) : undefined,
@@ -154,15 +188,17 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
     }
   }
 
-  const input: React.CSSProperties = { width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }
-  const label: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '5px' }
+  const inputBase: React.CSSProperties = { width: '100%', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', color: '#111827', background: '#fff' }
+  const inputCls  = (field: string): React.CSSProperties => ({ ...inputBase, border: `1px solid ${fieldErrors[field] ? '#fca5a5' : '#d1d5db'}`, background: fieldErrors[field] ? '#fff7f7' : '#fff' })
+  const label: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '5px' }
+  const errMsg: React.CSSProperties = { fontSize: '11px', color: '#dc2626', marginTop: '3px', fontWeight: '500' }
 
   return (
     <section className="mb-8">
       {/* Toast */}
-      {toast && (
+      {toastMsg && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', background: '#111827', color: '#84cc16', padding: '10px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', zIndex: 100, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-          ✓ {toast}
+          ✓ {toastMsg}
         </div>
       )}
 
@@ -196,6 +232,7 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
                 </div>
                 <div className="text-xs text-gray-400 mt-0.5">
                   {formatINR(pkg.price)} · {pkg.duration_hours} hrs{pkg.original_price ? ` · was ${formatINR(pkg.original_price)}` : ''}
+                  {pkg.images?.length > 0 && ` · ${pkg.images.length} photo${pkg.images.length > 1 ? 's' : ''}`}
                 </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">
@@ -223,79 +260,75 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
             </div>
 
             <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-              {formError && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626' }}>{formError}</div>
+              {fieldErrors._form && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626', fontWeight: 500 }}>{fieldErrors._form}</div>
               )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px' }}>
                 <div>
-                  <label style={label}>Package name *</label>
-                  <input style={input} value={form.package_name} onChange={e => setForm(f => ({ ...f, package_name: e.target.value }))} placeholder="Half Day Shoot" />
+                  <label style={label}>Package name <span style={{ color: '#ef4444' }}>*</span></label>
+                  <input style={inputCls('package_name')} value={form.package_name} onChange={e => setForm(f => ({ ...f, package_name: e.target.value }))} placeholder="Half Day Shoot" />
+                  {fieldErrors.package_name && <p style={errMsg}>{fieldErrors.package_name}</p>}
                 </div>
                 <div>
                   <label style={label}>Description</label>
-                  <textarea style={{ ...input, resize: 'none' }} rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Perfect for portrait sessions…" />
+                  <textarea style={{ ...inputCls('description'), resize: 'none' }} rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Perfect for portrait sessions…" />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={label}>Duration (hours) *</label>
-                    <input style={input} type="number" min={1} value={form.duration_hours} onChange={e => setForm(f => ({ ...f, duration_hours: e.target.value }))} placeholder="4" />
+                    <label style={label}>Duration (hours) <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input style={inputCls('duration_hours')} type="number" min={1} value={form.duration_hours} onChange={e => setForm(f => ({ ...f, duration_hours: e.target.value }))} placeholder="4" />
+                    {fieldErrors.duration_hours && <p style={errMsg}>{fieldErrors.duration_hours}</p>}
                   </div>
                   <div>
-                    <label style={label}>Price (₹) *</label>
-                    <input style={input} type="number" min={1} value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="4000" />
+                    <label style={label}>Price (₹) <span style={{ color: '#ef4444' }}>*</span></label>
+                    <input style={inputCls('price')} type="number" min={1} value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="4000" />
+                    {fieldErrors.price && <p style={errMsg}>{fieldErrors.price}</p>}
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={label}>Original price (₹) <span style={{ fontWeight: 400, textTransform: 'none' }}>— shows savings</span></label>
-                    <input style={input} type="number" min={1} value={form.original_price} onChange={e => setForm(f => ({ ...f, original_price: e.target.value }))} placeholder="4800" />
+                    <label style={label}>Original price (₹) <span style={{ fontWeight: 400, textTransform: 'none', color: '#6b7280' }}>— shows savings</span></label>
+                    <input style={inputCls('original_price')} type="number" min={1} value={form.original_price} onChange={e => setForm(f => ({ ...f, original_price: e.target.value }))} placeholder="4800" />
+                    {fieldErrors.original_price && <p style={errMsg}>{fieldErrors.original_price}</p>}
                   </div>
                   <div>
                     <label style={label}>Max people</label>
-                    <input style={input} type="number" min={1} value={form.max_people} onChange={e => setForm(f => ({ ...f, max_people: e.target.value }))} placeholder="5" />
+                    <input style={inputCls('max_people')} type="number" min={1} value={form.max_people} onChange={e => setForm(f => ({ ...f, max_people: e.target.value }))} placeholder="5" />
                   </div>
                 </div>
               </div>
 
-              {/* Equipment */}
+              {/* Equipment checkboxes — all equipment listed with studio */}
               {equipmentOptions.length > 0 && (
                 <div>
-                  <label style={label}>Included Equipment</label>
+                  <label style={label}>Included Equipment <span style={{ fontWeight: 400, textTransform: 'none', color: '#6b7280' }}>— select what's included</span></label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {equipmentOptions.map(item => (
-                      <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={form.included_equipment.includes(item)}
-                          onChange={() => toggleCheck('included_equipment', item)} style={{ accentColor: '#84cc16' }} />
-                        {item}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Amenities */}
-              {amenityOptions.length > 0 && (
-                <div>
-                  <label style={label}>Included Amenities</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {amenityOptions.map(item => (
-                      <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={form.included_amenities.includes(item)}
-                          onChange={() => toggleCheck('included_amenities', item)} style={{ accentColor: '#84cc16' }} />
-                        {item}
-                      </label>
-                    ))}
+                    {equipmentOptions.map(item => {
+                      const checked = form.included_equipment.includes(item)
+                      return (
+                        <label key={item} style={{
+                          display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer',
+                          padding: '5px 10px', borderRadius: '8px', border: `1px solid ${checked ? '#84cc16' : '#e5e7eb'}`,
+                          background: checked ? '#f0fdf4' : '#fff', color: checked ? '#166534' : '#374151',
+                          fontWeight: checked ? '600' : '400', transition: 'all .1s',
+                        }}>
+                          <input type="checkbox" checked={checked}
+                            onChange={() => toggleEquip(item)} style={{ accentColor: '#84cc16' }} />
+                          {item}
+                        </label>
+                      )
+                    })}
                   </div>
                 </div>
               )}
 
               {/* Extras */}
               <div>
-                <label style={label}>Extras <span style={{ fontWeight: 400, textTransform: 'none' }}>— custom items</span></label>
+                <label style={label}>Extras <span style={{ fontWeight: 400, textTransform: 'none' }}>— custom items not in equipment list</span></label>
                 {form.included_extras.map((ex, i) => (
                   <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                    <input style={{ ...input, flex: 1 }} value={ex} onChange={e => setExtra(i, e.target.value)} placeholder="Free parking, Props library access…" />
+                    <input style={{ ...inputBase, border: '1px solid #d1d5db', flex: 1 }} value={ex} onChange={e => setExtra(i, e.target.value)} placeholder="Free parking, Props library access…" />
                     {form.included_extras.length > 1 && (
                       <button onClick={() => removeExtra(i)} style={{ padding: '0 10px', border: '1px solid #fecaca', borderRadius: '8px', background: '#fff', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>×</button>
                     )}
@@ -309,14 +342,57 @@ export function PackagesSection({ studioId, initialPackages, amenityOptions, equ
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={label}>Badge</label>
-                  <select style={{ ...input, background: '#fff', appearance: 'none' }} value={form.badge_text} onChange={e => setForm(f => ({ ...f, badge_text: e.target.value }))}>
+                  <select style={{ ...inputBase, border: '1px solid #d1d5db', appearance: 'none' }} value={form.badge_text} onChange={e => setForm(f => ({ ...f, badge_text: e.target.value }))}>
                     {BADGE_OPTIONS.map(b => <option key={b} value={b}>{b || '— None —'}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={label}>Package rules</label>
-                  <input style={input} value={form.rules} onChange={e => setForm(f => ({ ...f, rules: e.target.value }))} placeholder="No outside equipment…" />
+                  <input style={{ ...inputBase, border: '1px solid #d1d5db' }} value={form.rules} onChange={e => setForm(f => ({ ...f, rules: e.target.value }))} placeholder="No outside equipment…" />
                 </div>
+              </div>
+
+              {/* Package photos */}
+              <div>
+                <label style={label}>Package photos <span style={{ fontWeight: 400, textTransform: 'none', color: '#6b7280' }}>— optional, up to 2 · max 5 MB each</span></label>
+                {form.images.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                    {form.images.map(url => (
+                      <div key={url} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                        <img src={url} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                        <button onClick={() => removeImage(url)}
+                          style={{ position: 'absolute', top: '-6px', right: '-6px', width: '18px', height: '18px', borderRadius: '50%', background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '11px', lineHeight: '18px', textAlign: 'center', padding: 0, fontFamily: 'inherit' }}>
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {form.images.length < 2 && (
+                  <>
+                    <input
+                      ref={imgInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      style={{ display: 'none' }}
+                      onChange={e => e.target.files && handleImageFiles(e.target.files)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imgInputRef.current?.click()}
+                      disabled={uploading}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px',
+                        borderRadius: '8px', border: '1px dashed #d1d5db', background: '#f9fafb',
+                        fontSize: '13px', color: '#6b7280', cursor: uploading ? 'not-allowed' : 'pointer',
+                        fontFamily: 'inherit', width: '100%', justifyContent: 'center',
+                      }}>
+                      {uploading ? '⏳ Uploading…' : `📷 Add photo${form.images.length === 1 ? '' : 's'} (${2 - form.images.length} remaining)`}
+                    </button>
+                  </>
+                )}
+                {fieldErrors.images && <p style={errMsg}>{fieldErrors.images}</p>}
               </div>
 
               <div style={{ display: 'flex', gap: '10px', paddingTop: '4px' }}>

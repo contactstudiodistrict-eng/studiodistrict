@@ -33,8 +33,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const updates: Record<string, any> = { updated_at: new Date().toISOString() }
   const allowed = ['package_name','description','duration_hours','price','original_price',
-    'included_equipment','included_amenities','included_extras','max_people','rules',
-    'badge_text','display_order','is_active']
+    'included_equipment','included_extras','max_people','rules',
+    'badge_text','display_order','is_active','images']
   for (const key of allowed) {
     if (key in body) updates[key] = body[key]
   }

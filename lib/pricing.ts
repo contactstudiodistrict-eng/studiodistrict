@@ -2,6 +2,8 @@
 // All pricing calculations in one place — easy to test and audit
 
 const COMMISSION_PERCENT = Number(process.env.PLATFORM_COMMISSION_PERCENT ?? 10)
+export const WALLET_CAP = 200
+export const REFERRAL_DISCOUNT = 100
 const GST_PERCENT = Number(process.env.GST_PERCENT ?? 18)
 const SECURITY_DEPOSIT = Number(process.env.SECURITY_DEPOSIT_AMOUNT ?? 1200)
 
@@ -20,24 +22,20 @@ export interface PricingBreakdown {
 export function calculatePricing(
   pricePerHour: number,
   durationHours: number,
-  includeDeposit: boolean = true
+  _includeDeposit: boolean = true
 ): PricingBreakdown {
-  const subtotal = Math.round(pricePerHour * durationHours)
+  const subtotal    = Math.round(pricePerHour * durationHours)
   const platformFee = Math.round(subtotal * (COMMISSION_PERCENT / 100))
-  const gstAmount = Math.round(platformFee * (GST_PERCENT / 100))
-  const securityDeposit = includeDeposit ? SECURITY_DEPOSIT : 0
-  const totalAmount = subtotal + platformFee + gstAmount + securityDeposit
-  const studioPayout = subtotal - platformFee  // studio gets subtotal minus commission
 
   return {
     studioRate: pricePerHour,
     durationHours,
     subtotal,
     platformFee,
-    gstAmount,
-    securityDeposit,
-    totalAmount,
-    studioPayout,
+    gstAmount: 0,
+    securityDeposit: 0,
+    totalAmount:  subtotal,               // customer pays the listed price
+    studioPayout: subtotal - platformFee, // platform fee deducted internally
     commissionPercent: COMMISSION_PERCENT,
   }
 }
@@ -56,29 +54,17 @@ export interface PackagePricingBreakdown {
 }
 
 export function calculatePackagePricing(packagePrice: number): PackagePricingBreakdown {
-  const subtotal        = packagePrice
-  const platformFee     = Math.round(subtotal * (COMMISSION_PERCENT / 100))
-  const gstAmount       = Math.round(platformFee * (GST_PERCENT / 100))
-  const securityDeposit = SECURITY_DEPOSIT
-  const totalAmount     = subtotal + platformFee + gstAmount + securityDeposit
-  const studioPayout    = subtotal - platformFee
-  return { subtotal, platformFee, gstAmount, securityDeposit, totalAmount, studioPayout }
+  const subtotal    = packagePrice
+  const platformFee = Math.round(subtotal * (COMMISSION_PERCENT / 100))
+  return { subtotal, platformFee, gstAmount: 0, securityDeposit: 0, totalAmount: subtotal, studioPayout: subtotal - platformFee }
 }
 
-// For display in booking summary UI
+// For display in booking summary UI — pricing shown to customer is all-inclusive
 export function getPricingLineItems(breakdown: PricingBreakdown) {
   return [
     {
       label: `Studio (${breakdown.durationHours} hrs × ${formatINR(breakdown.studioRate)})`,
       amount: breakdown.subtotal,
-    },
-    {
-      label: `Platform fee (${breakdown.commissionPercent}%)`,
-      amount: breakdown.platformFee,
-    },
-    {
-      label: `GST (18% on fee)`,
-      amount: breakdown.gstAmount,
     },
     ...(breakdown.securityDeposit > 0
       ? [{
@@ -88,7 +74,7 @@ export function getPricingLineItems(breakdown: PricingBreakdown) {
         }]
       : []),
     {
-      label: 'Total payable',
+      label: 'Total (all inclusive)',
       amount: breakdown.totalAmount,
       isTotal: true,
     },

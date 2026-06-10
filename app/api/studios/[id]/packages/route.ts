@@ -33,8 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const body = await req.json()
   const {
     package_name, description, duration_hours, price, original_price,
-    included_equipment, included_amenities, included_extras,
-    max_people, rules, badge_text, display_order,
+    included_equipment, included_extras,
+    max_people, rules, badge_text, display_order, images,
   } = body
 
   if (!package_name || package_name.length < 2 || package_name.length > 100)
@@ -56,8 +56,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       price:              Number(price),
       original_price:     original_price ? Number(original_price) : null,
       included_equipment: included_equipment ?? [],
-      included_amenities: included_amenities ?? [],
       included_extras:    included_extras ?? [],
+      images:             Array.isArray(images) ? images : [],
       max_people:         max_people ? Number(max_people) : null,
       rules:              rules?.trim() || null,
       badge_text:         badge_text?.trim() || null,

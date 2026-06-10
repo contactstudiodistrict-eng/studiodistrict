@@ -1,7 +1,38 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { calculatePricing, calculatePackagePricing, formatINR } from '@/lib/pricing'
+import { calculatePricing, calculatePackagePricing, formatINR, WALLET_CAP, REFERRAL_DISCOUNT } from '@/lib/pricing'
+
+function makeTimeSlots(opening: string, closing: string): string[] {
+  const slots: string[] = []
+  const [oh, om] = (opening || '09:00').split(':').map(Number)
+  const [ch, cm] = (closing  || '21:00').split(':').map(Number)
+  for (let m = oh * 60 + om; m < ch * 60 + cm; m += 30) {
+    slots.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`)
+  }
+  return slots
+}
+
+function getNextWholeHour(slots: string[]): string {
+  const now  = new Date()
+  const nextH = now.getMinutes() > 0 ? now.getHours() + 1 : now.getHours()
+  if (nextH < 24) {
+    const candidate = `${String(nextH).padStart(2, '0')}:00`
+    if (slots.includes(candidate)) return candidate
+  }
+  return slots[0] || '09:00'
+}
+
+function todayLocalISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const DAY_MAP   = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const DAY_ABBR: Record<string, string> = {
+  sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat',
+}
 
 const SHOOT_TYPES = [
   'Model Portfolio', 'Product Creative', 'Social Media / Reels',
@@ -35,16 +66,49 @@ type Package = {
   badge_text: string | null
 }
 
+function getSmartDefault(s: Studio): { date: string; startTime: string } {
+  const now     = new Date()
+  const [ch, cm] = s.closing_time.slice(0, 5).split(':').map(Number)
+  const threshold = Math.max(0, ch - 1) * 60 + cm
+  const nowMins   = now.getHours() * 60 + now.getMinutes()
+  const openTime  = s.opening_time.slice(0, 5)
+
+  function fmt(d: Date) {
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+  }
+
+  if (s.working_days.includes(DAY_MAP[now.getDay()]) && nowMins < threshold) {
+    return { date: fmt(now), startTime: openTime }
+  }
+
+  const d = new Date(now)
+  d.setDate(d.getDate() + 1)
+  for (let i = 0; i < 7; i++) {
+    if (s.working_days.includes(DAY_MAP[d.getDay()])) {
+      return { date: fmt(d), startTime: openTime }
+    }
+    d.setDate(d.getDate() + 1)
+  }
+  return { date: fmt(now), startTime: openTime }
+}
+
+function toMins(t: string): number {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
+}
+
 export function BookingForm({ studio, userId }: { studio: Studio; userId: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const rebookId  = searchParams.get('rebook')
   const packageId = searchParams.get('package')
 
+  const timeSlots = makeTimeSlots(studio.opening_time, studio.closing_time)
+
   const [step, setStep]           = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]         = useState('')
-  const [rebookBanner, setRebookBanner] = useState(false)
+  const [rebookBanner, setRebookBanner] = useState(!!rebookId)
 
   // Package state
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null)
@@ -55,6 +119,10 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const [applyWallet, setApplyWallet]     = useState(false)
   const [walletLoading, setWalletLoading] = useState(false)
 
+  // Availability
+  const [bookedSlots,  setBookedSlots]  = useState<{ start_time: string; end_time: string }[]>([])
+  const [availLoading, setAvailLoading] = useState(false)
+
   // Referral code
   const [referralCode,   setReferralCode]   = useState('')
   const [referralStatus, setReferralStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
@@ -62,8 +130,8 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const [showReferral,   setShowReferral]   = useState(false)
 
   // Form fields
-  const [date,      setDate]      = useState('')
-  const [startTime, setStartTime] = useState('')
+  const [date,      setDate]      = useState(() => getSmartDefault(studio).date)
+  const [startTime, setStartTime] = useState(() => getSmartDefault(studio).startTime)
   const [duration,  setDuration]  = useState(studio.minimum_hours)
   const [name,      setName]      = useState('')
   const [phone,     setPhone]     = useState('')
@@ -104,29 +172,131 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           if (b.shoot_type)     setShootType(b.shoot_type)
           if (b.customer_name)  setName(b.customer_name)
           if (b.customer_phone) setPhone(b.customer_phone)
+          if (b.customer_email) setEmail(b.customer_email)
           if (b.notes)          setNotes(b.notes)
-          setRebookBanner(true)
+        })
+    } else {
+      // Pre-fill contact details from most recent booking
+      fetch('/api/bookings?limit=1')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (!d?.bookings?.length) return
+          const b = d.bookings[0]
+          if (b.customer_name)  setName(b.customer_name)
+          if (b.customer_phone) setPhone(b.customer_phone)
+          if (b.customer_email) setEmail(b.customer_email)
         })
     }
   }, [rebookId, packageId, studio.id])
 
+  // Fetch booked slots whenever date changes
+  useEffect(() => {
+    if (!date) return
+    setAvailLoading(true)
+    setBookedSlots([])
+    fetch(`/api/studios/${studio.id}/availability?date=${date}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d?.bookedSlots) return
+        setBookedSlots(d.bookedSlots)
+        // Auto-advance startTime if it's now past or blocked
+        setStartTime(prev => {
+          const first = firstAvailableSlot(d.bookedSlots, date)
+          if (!first) return prev
+          const isPast = isSlotPast(prev, date)
+          const isBooked = d.bookedSlots.some((b: any) => toMins(prev) >= toMins(b.start_time) && toMins(prev) < toMins(b.end_time))
+          return (isPast || isBooked) ? first : prev
+        })
+      })
+      .finally(() => setAvailLoading(false))
+  }, [date, studio.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function isSlotPast(slot: string, forDate: string): boolean {
+    if (forDate !== todayLocalISO()) return false
+    const now = new Date()
+    const nowMins = now.getHours() * 60 + now.getMinutes()
+    return toMins(slot) <= nowMins
+  }
+
+  function isSlotBooked(slot: string): boolean {
+    const sm = toMins(slot)
+    return bookedSlots.some(b => sm >= toMins(b.start_time) && sm < toMins(b.end_time))
+  }
+
+  function isSlotDisabled(slot: string): boolean {
+    return isSlotPast(slot, date) || isSlotBooked(slot)
+  }
+
+  function firstAvailableSlot(slots: { start_time: string; end_time: string }[], forDate: string): string | null {
+    return timeSlots.find(t => {
+      if (isSlotPast(t, forDate)) return false
+      const sm = toMins(t)
+      return !slots.some(b => sm >= toMins(b.start_time) && sm < toMins(b.end_time))
+    }) ?? null
+  }
+
+  // Returns the conflicting booked slot if startTime+duration overlaps one
+  function getConflict(): { start_time: string; end_time: string } | null {
+    if (!startTime) return null
+    const sm = toMins(startTime)
+    const em = sm + duration * 60
+    return bookedSlots.find(b => sm < toMins(b.end_time) && em > toMins(b.start_time)) ?? null
+  }
+
+  // First available slot that starts at or after `afterTime` and fits `duration` hours before closing
+  function nextAvailableAfter(afterTime: string): string | null {
+    const closingMins = toMins(studio.closing_time)
+    return timeSlots.find(t => {
+      if (toMins(t) < toMins(afterTime)) return false
+      if (isSlotDisabled(t)) return false
+      // Check the full duration fits without hitting another booking
+      const sm = toMins(t)
+      const em = sm + duration * 60
+      if (em > closingMins) return false
+      return !bookedSlots.some(b => sm < toMins(b.end_time) && em > toMins(b.start_time))
+    }) ?? null
+  }
+
+  const closingMinsConst = toMins(studio.closing_time)
+
   function calcEndTime(start: string, hrs: number): string {
     if (!start) return ''
     const [h, m] = start.split(':').map(Number)
-    const endH = h + hrs
-    if (endH > 23) return '23:59'
-    return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    const endMins = h * 60 + m + hrs * 60
+    return `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+  }
+
+  function latestValidStart(): string | null {
+    const targetMins = closingMinsConst - duration * 60
+    if (targetMins < toMins(studio.opening_time)) return null
+    const candidates = timeSlots.filter(t => toMins(t) <= targetMins && !isSlotDisabled(t))
+    return candidates.length > 0 ? candidates[candidates.length - 1] : null
+  }
+
+  function findNextWorkingDay(fromDate: string): string | null {
+    const d = new Date(fromDate + 'T00:00:00')
+    d.setDate(d.getDate() + 1)
+    for (let i = 0; i < 14; i++) {
+      if (studio.working_days.includes(DAY_MAP[d.getDay()])) {
+        return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+      }
+      d.setDate(d.getDate() + 1)
+    }
+    return null
   }
 
   const endTime = calcEndTime(startTime, duration)
+  const exceedsClosing = !!(startTime && toMins(startTime) + duration * 60 > closingMinsConst)
+  const availableHoursFloor = startTime ? Math.floor((closingMinsConst - toMins(startTime)) / 60) : 0
 
   // Pricing — package mode uses flat price
   const pricing = selectedPackage
     ? calculatePackagePricing(selectedPackage.price)
     : calculatePricing(studio.price_per_hour, duration)
 
-  const walletDiscount = applyWallet ? Math.min(walletBalance, pricing.totalAmount) : 0
-  const finalTotal     = pricing.totalAmount - walletDiscount
+  const referralDiscount = referralStatus === 'valid' ? REFERRAL_DISCOUNT : 0
+  const walletDiscount   = applyWallet ? Math.min(walletBalance, WALLET_CAP) : 0
+  const finalTotal       = Math.max(0, pricing.totalAmount - referralDiscount - walletDiscount)
 
   const packageItems = selectedPackage ? [
     ...(selectedPackage.included_equipment ?? []),
@@ -151,7 +321,12 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   function validateStep1(): string {
     if (!date)      return 'Please select a date'
     if (!startTime) return 'Please select a start time'
-    if (date < new Date().toISOString().split('T')[0]) return 'Please select a future date'
+    if (date < todayLocalISO()) return 'Please select a future date'
+    const dayIdx = new Date(date + 'T00:00:00').getDay()
+    if (studio.working_days?.length && !studio.working_days.includes(DAY_MAP[dayIdx]))
+      return `${studio.studio_name} is closed on ${DAY_NAMES[dayIdx]}s. Please pick a working day.`
+    if (exceedsClosing)
+      return `Booking end time exceeds closing time (${fTime(studio.closing_time)}). Use the suggestions below.`
     return ''
   }
   function validateStep2(): string {
@@ -226,8 +401,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   }
   function fTime(t: string) {
     if (!t) return ''
-    const [h, m] = t.split(':').map(Number)
-    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
+    return t.slice(0, 5)
   }
 
   const steps = ['Date & Time', 'Your Details', 'Review & Send']
@@ -312,25 +486,69 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           <div style={s.field}>
             <label style={s.label}>Booking date</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]} style={s.input}
+              min={todayLocalISO()} style={s.input}
               onFocus={e => e.target.style.borderColor = '#84cc16'}
               onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
+            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>
+              {studio.working_days?.length
+                ? `Open: ${studio.working_days.map(d => DAY_ABBR[d] ?? d).join(', ')}`
+                : 'Open daily'}
+              {' · '}
+              {fTime(studio.opening_time)} – {fTime(studio.closing_time)}
+            </div>
           </div>
 
           <div style={{ ...s.row2, marginBottom: '14px' }}>
             <div>
               <label style={s.label}>Start time</label>
-              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-                min={studio.opening_time} max={studio.closing_time} style={s.input}
-                onFocus={e => e.target.style.borderColor = '#84cc16'}
-                onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
+              <select value={startTime} onChange={e => setStartTime(e.target.value)} style={s.select}
+                disabled={availLoading}
+                onFocus={e => (e.target as HTMLSelectElement).style.borderColor = '#84cc16'}
+                onBlur={e => (e.target as HTMLSelectElement).style.borderColor = '#e5e7eb'}>
+                {timeSlots.map(t => {
+                  const past   = isSlotPast(t, date)
+                  const booked = isSlotBooked(t)
+                  return (
+                    <option key={t} value={t} disabled={past || booked}>
+                      {fTime(t)}{booked ? ' (Booked)' : past ? ' (Past)' : ''}
+                    </option>
+                  )
+                })}
+              </select>
+              {availLoading && (
+                <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>Checking availability…</div>
+              )}
             </div>
             <div>
               <label style={s.label}>End time</label>
-              <input type="time" value={endTime} readOnly
-                style={{ ...s.input, background: '#f9fafb', color: endTime ? '#374151' : '#9ca3af' }} />
+              <div style={{ ...s.input, background: exceedsClosing ? '#fffbeb' : '#f9fafb', color: exceedsClosing ? '#92400e' : (endTime ? '#374151' : '#9ca3af'), border: exceedsClosing ? '1px solid #fcd34d' : '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {endTime ? fTime(endTime) : '—'}{exceedsClosing && <span style={{ fontSize: '12px' }}>⚠️</span>}
+              </div>
             </div>
           </div>
+
+          {/* Conflict warning */}
+          {!availLoading && (() => {
+            const conflict = getConflict()
+            if (!conflict) return null
+            const next = nextAvailableAfter(conflict.end_time)
+            return (
+              <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '10px', padding: '12px 14px', marginBottom: '14px', fontSize: '13px', color: '#92400e' }}>
+                <div style={{ fontWeight: '600', marginBottom: '4px' }}>⚠️ This slot overlaps a booking ({fTime(conflict.start_time)} – {fTime(conflict.end_time)})</div>
+                {next ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <span>Next available start:</span>
+                    <button type="button" onClick={() => setStartTime(next)}
+                      style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', background: '#84cc16', color: '#111827', fontWeight: '700', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      {fTime(next)}
+                    </button>
+                  </div>
+                ) : (
+                  <div>No available slot fits {duration} hr{duration > 1 ? 's' : ''} on this date. Try another date.</div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Duration — locked in package mode */}
           {!selectedPackage ? (
@@ -345,7 +563,7 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
                 <button type="button" onClick={() => setDuration(d => Math.min(12, d + 1))}
                   style={{ padding: '11px 18px', background: '#f9fafb', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#374151', fontWeight: '300' }}>+</button>
               </div>
-              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>Minimum {studio.minimum_hours} hours · Opens {studio.opening_time} – Closes {studio.closing_time}</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '5px' }}>Minimum {studio.minimum_hours} hours · Opens {studio.opening_time.slice(0, 5)} – Closes {studio.closing_time.slice(0, 5)}</div>
             </div>
           ) : (
             <div style={{ ...s.field, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px' }}>
@@ -356,7 +574,47 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             </div>
           )}
 
-          {startTime && date && (
+          {/* Closing-time overflow warning */}
+          {exceedsClosing && !availLoading && (() => {
+            const latest = latestValidStart()
+            const nextDay = findNextWorkingDay(date)
+            const remMins = closingMinsConst - toMins(startTime)
+            const remH = Math.floor(remMins / 60)
+            const remM = remMins % 60
+            const remLabel = remM > 0 ? `${remH}h ${remM}min` : `${remH} hour${remH !== 1 ? 's' : ''}`
+            return (
+              <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '10px', padding: '14px', marginBottom: '14px', fontSize: '13px', color: '#92400e' }}>
+                <div style={{ fontWeight: '600', marginBottom: '10px' }}>
+                  ⚠️ Studio closes at {fTime(studio.closing_time)} — only {remLabel} available from {fTime(startTime)}. A {duration}-hour booking can&apos;t be accommodated.
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {availableHoursFloor >= studio.minimum_hours && (
+                    <button type="button"
+                      onClick={() => setDuration(availableHoursFloor)}
+                      style={{ padding: '7px 14px', borderRadius: '8px', border: 'none', background: '#84cc16', color: '#111827', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Book for {availableHoursFloor} hour{availableHoursFloor !== 1 ? 's' : ''}
+                    </button>
+                  )}
+                  {latest && (
+                    <button type="button"
+                      onClick={() => setStartTime(latest)}
+                      style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #d97706', background: '#fff', color: '#92400e', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Start at {fTime(latest)}
+                    </button>
+                  )}
+                  {nextDay && (
+                    <button type="button"
+                      onClick={() => setDate(nextDay)}
+                      style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #d97706', background: '#fff', color: '#92400e', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Try {new Date(nextDay + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
+          {startTime && date && !exceedsClosing && (
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', color: '#15803d', marginBottom: '14px' }}>
               ✅ {fDate(date)} · {fTime(startTime)} – {fTime(endTime)}
             </div>
@@ -506,18 +764,19 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             ) : (
               <div style={s.priceRow}><span>Studio ({duration} hrs × ₹{studio.price_per_hour.toLocaleString('en-IN')})</span><span>{formatINR(pricing.subtotal)}</span></div>
             )}
-            <div style={s.priceRow}><span>Platform fee (10%)</span><span>{formatINR(pricing.platformFee)}</span></div>
-            <div style={s.priceRow}><span>GST (18% on fee)</span><span>{formatINR(pricing.gstAmount)}</span></div>
-            {pricing.securityDeposit > 0 && (
-              <div style={s.priceRow}><span>Security deposit (refundable)</span><span>{formatINR(pricing.securityDeposit)}</span></div>
+            {referralDiscount > 0 && (
+              <div style={{ ...s.priceRow, color: '#16a34a', fontWeight: '600' }}>
+                <span>🎟 Referral discount</span><span>−{formatINR(referralDiscount)}</span>
+              </div>
             )}
             {applyWallet && walletDiscount > 0 && (
               <div style={{ ...s.priceRow, color: '#16a34a', fontWeight: '600' }}>
-                <span>💰 Wallet credit applied</span><span>−{formatINR(walletDiscount)}</span>
+                <span>💰 Wallet credit</span><span>−{formatINR(walletDiscount)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', color: '#111827', borderTop: '2px solid #f3f4f6', marginTop: '8px', paddingTop: '10px' }}>
-              <span>Total</span><span style={{ color: '#65a30d' }}>{formatINR(finalTotal)}</span>
+              <span>Total <span style={{ fontSize: '11px', fontWeight: '400', color: '#94a3b8' }}>(all inclusive)</span></span>
+              <span style={{ color: '#65a30d' }}>{formatINR(finalTotal)}</span>
             </div>
 
             {/* Savings line */}
@@ -554,9 +813,14 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <div style={{ background: '#f0fdf4', border: `1px solid ${applyWallet ? '#84cc16' : '#d1fae5'}`, borderRadius: '12px', padding: '14px 16px', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
-                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>💰 You have {formatINR(walletBalance)} wallet credit</div>
+                  <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>
+                    💰 Wallet: {formatINR(walletBalance)}
+                    {walletBalance > WALLET_CAP && <span style={{ fontSize: '12px', fontWeight: '400', color: '#64748b' }}> (max {formatINR(WALLET_CAP)}/booking)</span>}
+                  </div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                    {applyWallet ? `New total: ${formatINR(finalTotal)}` : 'Apply to this booking?'}
+                    {applyWallet
+                      ? `−${formatINR(walletDiscount)} applied · New total: ${formatINR(finalTotal)}`
+                      : `Apply up to ${formatINR(Math.min(walletBalance, WALLET_CAP))} to this booking?`}
                   </div>
                 </div>
                 <button type="button" onClick={() => setApplyWallet(v => !v)}

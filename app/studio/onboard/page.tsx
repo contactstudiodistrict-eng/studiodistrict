@@ -1,13 +1,14 @@
 'use client'
 // app/studio/onboard/page.tsx
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { studioOnboardSchema, type StudioOnboardData } from '@/lib/validations'
+import { ALL_AREAS } from '@/components/filters/types'
 
-type UploadedImage = { url: string; cloudinary_id: string; image_type: string }
+type UploadedImage = { url: string; cloudinary_id: string; image_type: string; dbId?: string }
 
 // ── Step definitions ───────────────────────────────────────────────────────
 const STEPS = [
@@ -23,53 +24,101 @@ const STEPS = [
   { id: 10,title: 'Review',        icon: '🚀' },
 ]
 
-const IDEAL_FOR_OPTIONS = [
-  'Model Portfolio', 'Product Creative', 'Brand Campaign',
-  'YouTube Content', 'Social Media / Reels', 'Podcast Recording',
-  'Music Recording', 'Corporate Videos', 'Personal / Family', 'Event Coverage',
-]
+const IDEAL_FOR_BY_TYPE: Record<string, string[]> = {
+  photography:  ['Model Portfolio', 'Product Creative', 'Brand Campaign', 'Social Media / Reels', 'Personal / Family', 'Event Coverage'],
+  videography:  ['YouTube Content', 'Social Media / Reels', 'Brand Campaign', 'Corporate Videos', 'Event Coverage', 'Personal / Family'],
+  audio:        ['Podcast Recording', 'YouTube Content', 'Corporate Videos', 'Social Media / Reels', 'Music Recording'],
+  music:        ['Music Recording', 'Podcast Recording', 'Corporate Videos', 'YouTube Content'],
+  mixed:        ['Model Portfolio', 'Product Creative', 'Brand Campaign', 'YouTube Content', 'Social Media / Reels', 'Podcast Recording', 'Music Recording', 'Corporate Videos', 'Personal / Family', 'Event Coverage'],
+}
 
 const DAYS = ['mon','tue','wed','thu','fri','sat','sun'] as const
 const DAY_LABELS: Record<string, string> = {
   mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun'
 }
 
-export default function StudioOnboardPage() {
+function StudioOnboardForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit')
+
   const [step, setStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
+  const [loadingEdit, setLoadingEdit] = useState(!!editId)
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
 
-  const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors } } = useForm<StudioOnboardData>({
-    mode: 'onChange',
-    defaultValues: {
-      studio_type: 'photography',
-      minimum_hours: 2,
-      max_people: 8,
-      no_smoking: true,
-      no_shoes: true,
-      food_allowed: false,
-      pets_allowed: false,
-      cancellation_policy: 'free_24h',
-      working_days: ['mon','tue','wed','thu','fri','sat'],
-      opening_time: '07:00',
-      closing_time: '21:00',
-      ideal_for: [],
-    },
+  const DEFAULT_VALUES: Partial<StudioOnboardData> = {
+    studio_type: 'photography',
+    minimum_hours: 2,
+    max_people: 8,
+    no_smoking: true,
+    no_shoes: true,
+    food_allowed: false,
+    pets_allowed: false,
+    cancellation_policy: 'free_24h',
+    working_days: ['mon','tue','wed','thu','fri','sat'],
+    opening_time: '07:00',
+    closing_time: '21:00',
+    ideal_for: [],
+  }
+
+  const { register, handleSubmit, watch, setValue, getValues, trigger, reset, formState: { errors } } = useForm<StudioOnboardData>({
+    resolver: zodResolver(studioOnboardSchema),
+    mode: 'onTouched',
+    defaultValues: DEFAULT_VALUES,
   })
 
-  const watchWorkingDays = watch('working_days') || []
-  const watchIdealFor = watch('ideal_for') || []
+  const watchWorkingDays   = watch('working_days') || []
+  const watchIdealFor      = watch('ideal_for') || []
+  const watchExtraCharges  = (watch('extra_charges_json') || {}) as Record<string, number>
 
-  // Watch required fields per step to drive Next button disabled state
-  const watchStep1 = watch(['studio_name', 'studio_type', 'owner_name', 'owner_phone', 'email', 'area', 'address'])
-  const watchStep2 = watch(['price_per_hour'])
+  useEffect(() => {
+    if (!editId) return
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/studios/${editId}`)
+        if (!res.ok) {
+          toast.error('Could not load studio data — please try again')
+          return
+        }
+        const { studio } = await res.json()
+        const amenities  = studio.studio_amenities?.[0] || {}
+        const equipment  = studio.studio_equipment?.[0]  || {}
+        const images     = (studio.studio_images || []) as Array<{ id: string; url: string; cloudinary_id: string; image_type: string }>
 
-  function isNextDisabled(): boolean {
-    if (step === 1) return watchStep1.some(v => !v || String(v).trim() === '')
-    if (step === 2) return !watchStep2[0] || Number(watchStep2[0]) <= 0
-    if (step === 8) return watchWorkingDays.length === 0
-    return false
+        // Restore uploaded images — carry dbId so individual deletes can target the right row
+        setUploadedImages(images.map(img => ({
+          url:            img.url,
+          cloudinary_id:  img.cloudinary_id || img.id, // fall back to DB id if cloudinary_id missing
+          image_type:     img.image_type === 'walkthrough' ? 'video' : img.image_type,
+          dbId:           img.id,
+        })))
+
+        // Build merged data, converting null → undefined for Zod
+        const merged: Record<string, any> = { ...DEFAULT_VALUES }
+        const allFields = { ...studio, ...amenities, ...equipment }
+        for (const [k, v] of Object.entries(allFields)) {
+          if (!['id','created_at','updated_at','owner_id','studio_amenities','studio_equipment','studio_images','thumbnail_url','status'].includes(k)) {
+            merged[k] = v === null ? undefined : v
+          }
+        }
+        reset(merged as StudioOnboardData)
+      } finally {
+        setLoadingEdit(false)
+      }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId])
+
+  const FIELD_LABELS: Partial<Record<keyof StudioOnboardData, string>> = {
+    studio_name:    'Studio name',
+    owner_name:     'Owner name',
+    owner_phone:    'WhatsApp number',
+    email:          'Email address',
+    area:           'Area / Locality',
+    address:        'Full address',
+    price_per_hour: 'Price per hour',
+    working_days:   'Working days',
   }
 
   function toggleDay(day: typeof DAYS[number]) {
@@ -85,7 +134,7 @@ export default function StudioOnboardPage() {
   }
 
   const STEP_FIELDS: Partial<Record<number, (keyof StudioOnboardData)[]>> = {
-    1: ['studio_name', 'studio_type', 'owner_name', 'owner_phone', 'email', 'area', 'address'],
+    1: ['studio_name', 'studio_type', 'owner_name', 'owner_phone', 'email', 'area', 'address', 'google_maps_link'],
     2: ['price_per_hour'],
     8: ['working_days'],
   }
@@ -94,12 +143,29 @@ export default function StudioOnboardPage() {
     const fields = STEP_FIELDS[step]
     if (fields && fields.length > 0) {
       const valid = await trigger(fields)
-      if (!valid) return
+      if (!valid) {
+        const values = getValues()
+        const empty = fields.filter(f => {
+          const v = values[f as keyof StudioOnboardData]
+          return v === undefined || v === null || v === '' || (typeof v === 'string' && !v.trim())
+        })
+        if (empty.length > 0) {
+          const names = empty.map(f => FIELD_LABELS[f as keyof StudioOnboardData] || f).join(', ')
+          toast.error(`Please fill in: ${names}`)
+        } else {
+          toast.error('Please fix the highlighted errors before continuing')
+        }
+        return
+      }
     }
-    if (step === 3) {
+    if (step === 8 && watchWorkingDays.length === 0) {
+      toast.error('Please select at least one working day')
+      return
+    }
+    if (step === 3 && !editId) {
       const photoCount = uploadedImages.filter(i => i.image_type !== 'video').length
-      if (photoCount > 0 && photoCount < 3) {
-        toast.error('Please upload at least 3 studio photos')
+      if (photoCount < 2) {
+        toast.error('Please upload at least 2 studio photos to continue')
         return
       }
     }
@@ -110,21 +176,37 @@ export default function StudioOnboardPage() {
     setUploadedImages(prev => [...prev, ...imgs])
   }
 
-  function removeImage(cloudinaryId: string) {
+  async function removeImage(cloudinaryId: string) {
+    // Find the image being removed to check if it has a DB id
+    const img = uploadedImages.find(i => i.cloudinary_id === cloudinaryId)
     setUploadedImages(prev => prev.filter(i => i.cloudinary_id !== cloudinaryId))
+
+    // If it's an existing DB image and we're in edit mode, delete it immediately
+    if (editId && img?.dbId) {
+      fetch(`/api/studios/${editId}/images/${img.dbId}`, { method: 'DELETE' })
+        .then(r => { if (!r.ok) console.error('[removeImage] Delete failed') })
+        .catch(err => console.error('[removeImage]', err))
+    }
   }
 
   const onSubmit = async (data: StudioOnboardData) => {
     setSubmitting(true)
     try {
-      const res = await fetch('/api/studios', {
-        method: 'POST',
+      const url    = editId ? `/api/studios/${editId}` : '/api/studios'
+      const method = editId ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, image_urls: uploadedImages }),
+        body: JSON.stringify({ ...data, status: 'pending', image_urls: uploadedImages }),
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Submission failed')
-      router.push('/studio/submitted')
+      if (editId) {
+        toast.success('Studio updated — pending re-approval')
+        router.push('/studio/dashboard')
+      } else {
+        router.push('/studio/submitted')
+      }
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -133,6 +215,14 @@ export default function StudioOnboardPage() {
   }
 
   const progress = (step / 10) * 100
+
+  if (loadingEdit) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500 text-sm">Loading studio details…</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -150,18 +240,41 @@ export default function StudioOnboardPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
+        {editId && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 flex items-center gap-2">
+            ✏️ <span>Editing your submission — update any details and re-submit for review.</span>
+          </div>
+        )}
+
         {/* Step tabs */}
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-8 pb-1">
           {STEPS.map(s => (
-            <button key={s.id} type="button" onClick={() => setStep(s.id)}
+            <button key={s.id} type="button"
+              onClick={() => (editId || s.id <= step) && setStep(s.id)}
+              disabled={!editId && s.id > step}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                ${step === s.id ? 'bg-brand-500 text-white' : s.id < step ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400 border border-gray-100'}`}>
-              {s.id < step ? '✓' : s.icon} {s.title}
+                ${step === s.id ? 'bg-brand-500 text-white' : (editId || s.id < step) ? 'bg-green-100 text-green-700 cursor-pointer' : 'bg-white text-gray-300 border border-gray-100 cursor-not-allowed'}`}>
+              {(editId || s.id < step) && step !== s.id ? '✓' : s.icon} {s.title}
             </button>
           ))}
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, (errs) => {
+          const stepFieldMap: Record<number, string[]> = {
+            1: ['studio_name','studio_type','owner_name','owner_phone','email','area','address'],
+            2: ['price_per_hour'],
+            8: ['working_days'],
+          }
+          const errorKeys = Object.keys(errs)
+          for (const [s, fields] of Object.entries(stepFieldMap)) {
+            if (fields.some(f => errorKeys.includes(f))) {
+              setStep(Number(s))
+              toast.error('Please fix the highlighted fields before submitting')
+              return
+            }
+          }
+          toast.error('Please check your form — some required fields are missing')
+        })}>
           {/* ── Step 1: Basic Info ────────────────────────────── */}
           {step === 1 && (
             <StepCard title="Basic Information" icon="🏠" subtitle="Tell us about your studio and how to reach you">
@@ -179,7 +292,11 @@ export default function StudioOnboardPage() {
                   </select>
                 </Field>
                 <Field label="Area / Locality" required error={errors.area?.message}>
-                  <input {...register('area')} placeholder="e.g. Velachery" className={inputCls} />
+                  <AreaAutosuggest
+                    value={watch('area') || ''}
+                    onChange={v => setValue('area', v, { shouldValidate: true })}
+                    error={errors.area?.message}
+                  />
                 </Field>
                 <Field label="Owner name" required error={errors.owner_name?.message}>
                   <input {...register('owner_name')} placeholder="Your full name" className={inputCls} />
@@ -202,7 +319,7 @@ export default function StudioOnboardPage() {
                 <Field label="Full address" span={2} required error={errors.address?.message}>
                   <input {...register('address')} placeholder="Street, area, Chennai, PIN" className={inputCls} />
                 </Field>
-                <Field label="Google Maps link" span={2}>
+                <Field label="Google Maps link" span={2} error={errors.google_maps_link?.message}>
                   <input {...register('google_maps_link')} type="url" placeholder="https://maps.google.com/…" className={inputCls} />
                 </Field>
               </div>
@@ -228,7 +345,7 @@ export default function StudioOnboardPage() {
               </div>
 
               <div className="mt-4 p-4 bg-brand-50 border border-brand-100 rounded-xl text-sm text-brand-700">
-                💡 Studio District charges a 10% platform fee on each booking. This is deducted from the customer&apos;s payment — your listed price is what you receive.
+                💡 Studio District deducts a 10% platform fee from your listed price — factor this into your pricing. E.g. if you list ₹1,200/hr, you receive ₹1,080/hr.
               </div>
 
               <div className="mt-4">
@@ -267,9 +384,12 @@ export default function StudioOnboardPage() {
                         type="number"
                         placeholder="0"
                         className={inputCls}
+                        value={watchExtraCharges[key] || ''}
                         onChange={e => {
                           const current = (getValues('extra_charges_json') as Record<string, number>) || {}
-                          setValue('extra_charges_json', { ...current, [key]: Number(e.target.value) })
+                          const val = e.target.value === '' ? undefined : Number(e.target.value)
+                          if (val === undefined) { const next = { ...current }; delete next[key]; setValue('extra_charges_json', next) }
+                          else setValue('extra_charges_json', { ...current, [key]: val })
                         }}
                       />
                     </div>
@@ -281,20 +401,22 @@ export default function StudioOnboardPage() {
 
           {/* ── Step 3: Media ─────────────────────────────────── */}
           {step === 3 && (
-            <StepCard title="Photos & Media" icon="📸" subtitle="Good photos get 3× more bookings. Minimum 5, up to 15.">
+            <StepCard title="Photos & Media" icon="📸" subtitle="Good photos get 3× more bookings. At least 2 photos required.">
               <div className="space-y-4">
-                <ImageUploadZone label="Studio photos (5–15)" sublabel="Main space, lighting setup, overall look" icon="🖼️"
-                  hint="First photo becomes your thumbnail. Landscape orientation works best."
+                <ImageUploadZone label="Studio photos (min. 2, up to 15)" sublabel="Main space, lighting setup, overall look" icon="🖼️"
+                  hint="First photo becomes your thumbnail. Landscape orientation works best. Max 10 MB per photo (JPG/PNG/WEBP)."
                   imageType="studio" images={uploadedImages.filter(i => i.image_type === 'studio')}
                   onAdd={addImages} onRemove={removeImage} multiple />
                 <ImageUploadZone label="Backdrop & set photos" sublabel="All available backdrops and set configurations" icon="🎨"
+                  hint="Max 10 MB per photo (JPG/PNG/WEBP)."
                   imageType="backdrop" images={uploadedImages.filter(i => i.image_type === 'backdrop')}
                   onAdd={addImages} onRemove={removeImage} multiple />
                 <ImageUploadZone label="Equipment photos" sublabel="Lights, cameras, audio gear, props" icon="🔧"
+                  hint="Max 10 MB per photo (JPG/PNG/WEBP)."
                   imageType="equipment" images={uploadedImages.filter(i => i.image_type === 'equipment')}
                   onAdd={addImages} onRemove={removeImage} multiple />
-                <ImageUploadZone label="Walkthrough video (optional)" sublabel="Short 1–3 min tour of the studio. MP4, max 100MB." icon="🎬"
-                  hint="Video tours convert 40% more visitors."
+                <ImageUploadZone label="Walkthrough video (optional)" sublabel="Short 1–3 min tour of the studio." icon="🎬"
+                  hint="MP4 or MOV format. Max 100 MB. Video tours convert 40% more visitors."
                   imageType="video" images={uploadedImages.filter(i => i.image_type === 'video')}
                   onAdd={addImages} onRemove={removeImage} accept="video/mp4,video/quicktime" resourceType="video" />
 
@@ -324,7 +446,7 @@ export default function StudioOnboardPage() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ideal for (select all that apply)</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {IDEAL_FOR_OPTIONS.map(item => (
+                    {(IDEAL_FOR_BY_TYPE[watch('studio_type')] ?? IDEAL_FOR_BY_TYPE.mixed).map(item => (
                       <button key={item} type="button" onClick={() => toggleIdealFor(item)}
                         className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm transition-all text-left
                           ${watchIdealFor.includes(item) ? 'border-brand-400 bg-brand-50 text-brand-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
@@ -336,6 +458,7 @@ export default function StudioOnboardPage() {
                       </button>
                     ))}
                   </div>
+                  <p className="text-xs text-gray-400 mt-2">Showing options relevant to your studio type. Change type in Step 1 to see different options.</p>
                 </div>
               </div>
             </StepCard>
@@ -568,10 +691,20 @@ export default function StudioOnboardPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Opening time">
-                    <input {...register('opening_time')} type="time" className={inputCls} />
+                    <select {...register('opening_time')} className={inputCls}>
+                      {Array.from({ length: 24 }, (_, h) => {
+                        const val = `${String(h).padStart(2, '0')}:00`
+                        return <option key={val} value={val}>{val}</option>
+                      })}
+                    </select>
                   </Field>
                   <Field label="Closing time">
-                    <input {...register('closing_time')} type="time" className={inputCls} />
+                    <select {...register('closing_time')} className={inputCls}>
+                      {Array.from({ length: 24 }, (_, h) => {
+                        const val = `${String(h).padStart(2, '0')}:00`
+                        return <option key={val} value={val}>{val}</option>
+                      })}
+                    </select>
                   </Field>
                 </div>
 
@@ -613,7 +746,10 @@ export default function StudioOnboardPage() {
 
           {/* ── Step 10: Review & Submit ──────────────────────── */}
           {step === 10 && (
-            <StepCard title="Ready to go live!" icon="🚀" subtitle="Review your submission before we send it for approval">
+            <StepCard
+              title={editId ? 'Update your submission' : 'Ready to go live!'}
+              icon="🚀"
+              subtitle={editId ? 'Review changes and re-submit for admin approval' : 'Review your submission before we send it for approval'}>
               <div className="space-y-4">
                 <ReviewRow label="Studio name" value={getValues('studio_name')} />
                 <ReviewRow label="Type" value={getValues('studio_type')} />
@@ -624,40 +760,58 @@ export default function StudioOnboardPage() {
                 <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
                   <div className="text-sm font-semibold text-green-700 mb-2">✅ What happens next</div>
                   <ul className="text-sm text-green-600 space-y-1">
-                    <li>1. Our team reviews your listing within 24–48 hours</li>
-                    <li>2. You&apos;ll receive a WhatsApp confirmation once live</li>
-                    <li>3. Your studio goes live and starts receiving bookings</li>
-                    <li>4. You can update photos and details any time</li>
+                    {editId ? (
+                      <>
+                        <li>1. Your updated listing goes back to our review queue</li>
+                        <li>2. Our team reviews changes within 24–48 hours</li>
+                        <li>3. You&apos;ll receive a WhatsApp confirmation once approved</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>1. Our team reviews your listing within 24–48 hours</li>
+                        <li>2. You&apos;ll receive a WhatsApp confirmation once live</li>
+                        <li>3. Your studio goes live and starts receiving bookings</li>
+                        <li>4. You can update photos and details any time</li>
+                      </>
+                    )}
                   </ul>
                 </div>
 
                 <button type="submit" disabled={submitting}
                   className="w-full py-4 rounded-xl bg-brand-500 text-white font-bold text-base hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {submitting ? 'Submitting…' : 'Submit for Review 🚀'}
+                  {submitting ? (editId ? 'Updating…' : 'Submitting…') : (editId ? 'Update Submission 🚀' : 'Submit for Review 🚀')}
                 </button>
               </div>
             </StepCard>
           )}
 
           {/* Navigation */}
-          {step < 10 && (
-            <div className="flex gap-3 mt-6">
-              {step > 1 && (
-                <button type="button" onClick={() => setStep(s => s - 1)}
-                  className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors">
-                  ← Back
-                </button>
-              )}
-              <button type="button" onClick={handleNext} disabled={isNextDisabled()}
-                className={`${step > 1 ? 'flex-[2]' : 'flex-1'} py-3.5 rounded-xl font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed`}
-                style={{ backgroundColor: isNextDisabled() ? '#d9f99d' : '#84cc16', color: '#111827' }}>
+          <div className="flex gap-3 mt-6">
+            {step > 1 && (
+              <button type="button" onClick={() => setStep(s => s - 1)}
+                className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors">
+                ← Back
+              </button>
+            )}
+            {step < 10 && (
+              <button type="button" onClick={handleNext}
+                className={`${step > 1 ? 'flex-[2]' : 'flex-[3]'} py-3.5 rounded-xl font-semibold transition-colors hover:opacity-90`}
+                style={{ backgroundColor: '#84cc16', color: '#111827' }}>
                 {step === 9 ? 'Review submission →' : 'Next →'}
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </form>
       </main>
     </div>
+  )
+}
+
+export default function StudioOnboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-500 text-sm">Loading…</div></div>}>
+      <StudioOnboardForm />
+    </Suspense>
   )
 }
 
@@ -778,19 +932,86 @@ function ImageUploadZone({
 
       {images.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-3">
-          {images.map(img => (
-            <div key={img.cloudinary_id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group flex-shrink-0">
-              {img.image_type === 'video'
-                ? <div className="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">🎬</div>
-                : <img src={img.url} alt="" className="w-full h-full object-cover" />
-              }
-              <button type="button" onClick={() => onRemove(img.cloudinary_id)}
-                className="absolute inset-0 bg-black/50 text-white text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                ✕
-              </button>
-            </div>
-          ))}
+          {images.map(img => {
+            const key = img.cloudinary_id || img.dbId || img.url
+            return (
+              <div key={key} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group flex-shrink-0">
+                {img.image_type === 'video'
+                  ? <div className="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">🎬</div>
+                  : <img src={img.url} alt="" className="w-full h-full object-cover" />
+                }
+                <button type="button" onClick={() => onRemove(img.cloudinary_id)}
+                  className="absolute inset-0 bg-black/50 text-white text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  title="Remove photo">
+                  ✕
+                </button>
+              </div>
+            )
+          })}
         </div>
+      )}
+    </div>
+  )
+}
+
+function AreaAutosuggest({
+  value, onChange, error,
+}: { value: string; onChange: (v: string) => void; error?: string }) {
+  const [query, setQuery] = useState(value || '')
+  const [open,  setOpen]  = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Sync when form prefills in edit mode
+  useEffect(() => { setQuery(value || '') }, [value])
+
+  useEffect(() => {
+    function away(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', away)
+    return () => document.removeEventListener('mousedown', away)
+  }, [])
+
+  const suggestions = query.trim().length === 0
+    ? ALL_AREAS
+    : ALL_AREAS.filter(a => a.toLowerCase().includes(query.toLowerCase()))
+
+  function select(area: string) {
+    setQuery(area)
+    onChange(area)
+    setOpen(false)
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        type="text"
+        value={query}
+        placeholder="e.g. Velachery, OMR, Anna Nagar…"
+        className={`${inputCls} ${error ? 'border-red-400' : ''}`}
+        onFocus={() => setOpen(true)}
+        onBlur={() => {
+          // Commit whatever is typed (accepts custom names)
+          onChange(query)
+        }}
+        onChange={e => {
+          setQuery(e.target.value)
+          onChange(e.target.value)
+          setOpen(true)
+        }}
+      />
+      {open && suggestions.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto py-1">
+          {suggestions.map(area => (
+            <li key={area}>
+              <button type="button" onMouseDown={() => select(area)}
+                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 hover:text-brand-700 transition-colors
+                  ${area === value ? 'bg-brand-50 text-brand-700 font-medium' : 'text-gray-700'}`}>
+                {area}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )

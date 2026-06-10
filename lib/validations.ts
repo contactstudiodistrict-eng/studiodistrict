@@ -26,13 +26,13 @@ export const studioOnboardSchema = z.object({
   // Step 1: Basic info
   studio_name:    z.string().min(3, 'Studio name must be at least 3 characters'),
   studio_type:    z.enum(['photography', 'videography', 'audio', 'music', 'mixed']),
-  owner_name:     z.string().min(2),
-  owner_phone:    z.string().regex(/^[6-9]\d{9}$/, 'Enter valid WhatsApp number'),
-  owner_alt_phone: z.string().optional(),
-  email:          z.string().email(),
-  address:        z.string().min(10),
-  google_maps_link: z.string().url().optional().or(z.literal('')),
-  area:           z.string().min(2),
+  owner_name:     z.string().min(2, 'Owner name is required'),
+  owner_phone:    z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit WhatsApp number'),
+  owner_alt_phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit number').optional().or(z.literal('')),
+  email:          z.string().email('Enter a valid email address'),
+  address:        z.string().min(10, 'Enter the full address (street, area, PIN)'),
+  google_maps_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
+  area:           z.string().min(2, 'Area / locality is required'),
 
   // Step 2: Pricing
   price_per_hour: z.number().min(200, 'Minimum ₹200/hr').max(50000),
@@ -108,10 +108,10 @@ export const studioOnboardSchema = z.object({
   closing_time:  z.string().default('21:00'),
 
   // Step 9: Payout
-  bank_account_name: z.string().optional(),
-  account_number:    z.string().optional(),
-  ifsc:              z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'Invalid IFSC').optional().or(z.literal('')),
-  upi_id:            z.string().optional(),
+  bank_account_name: z.string().min(2, 'Enter account holder name').optional().or(z.literal('')),
+  account_number:    z.string().regex(/^\d{9,18}$/, 'Enter a valid account number (9–18 digits)').optional().or(z.literal('')),
+  ifsc:              z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'Invalid IFSC code').optional().or(z.literal('')),
+  upi_id:            z.string().regex(/^[\w.\-]{2,256}@[a-zA-Z]{2,64}$/, 'Enter a valid UPI ID (e.g. name@upi)').optional().or(z.literal('')),
 })
 
 export type StudioOnboardData = z.infer<typeof studioOnboardSchema>

@@ -21,48 +21,49 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/dashboard')
 
-  const [profileResult, bookingsResult, pendingReviewsResult] = await Promise.all([
+  const [profileResult, bookingsResult] = await Promise.all([
     supabase.from('users').select('full_name, wallet_balance').eq('id', user.id).single(),
     supabase
       .from('bookings')
       .select(`
         id, booking_ref, status, booking_date, start_time, end_time,
-        shoot_type, total_amount, duration_hours,
-        studios(studio_name, area, thumbnail_url)
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20),
-    // Bookings that are paid/completed but have no submitted review
-    supabase
-      .from('bookings')
-      .select(`
-        id, booking_ref, booking_date,
-        studios(studio_name),
+        studio_id, shoot_type, total_amount, duration_hours,
+        studios(studio_name, area, thumbnail_url),
         reviews(id, rating)
       `)
       .eq('user_id', user.id)
-      .in('status', ['paid', 'completed'])
-      .order('booking_date', { ascending: false })
-      .limit(5),
+      .order('created_at', { ascending: false })
+      .limit(50),
   ])
 
-  const profile = profileResult.data
+  const profile  = profileResult.data
   const bookings = bookingsResult.data || []
 
-  // Filter to only bookings with no rating submitted
-  const pendingReviews = (pendingReviewsResult.data || []).filter((b: any) => {
-    const rev = b.reviews
-    if (!rev) return true
-    if (Array.isArray(rev)) return rev.length === 0 || rev.every((r: any) => !r.rating)
-    return !rev.rating
-  }).slice(0, 3)
+  // IST = UTC+5:30; server time is UTC so offset manually
+  const nowIST     = new Date(Date.now() + 330 * 60 * 1000)
+  const todayIST   = nowIST.toISOString().slice(0, 10)
+  const nowTimeIST = `${String(nowIST.getUTCHours()).padStart(2, '0')}:${String(nowIST.getUTCMinutes()).padStart(2, '0')}`
 
-  const upcoming = bookings.filter(b => ['pending','confirmed','awaiting_payment','paid'].includes(b.status))
-  const past = bookings.filter(b => ['completed','declined','cancelled'].includes(b.status))
+  function isStartPassed(booking_date: string, start_time: string): boolean {
+    if (booking_date < todayIST) return true
+    if (booking_date > todayIST) return false
+    return start_time.slice(0, 5) <= nowTimeIST
+  }
+
+  function hasReview(b: any): boolean {
+    const rev = b.reviews
+    if (!rev) return false
+    if (Array.isArray(rev)) return rev.some((r: any) => r.rating)
+    return !!rev.rating
+  }
+
+  const cancelled = bookings.filter(b => b.status === 'declined' || b.status === 'cancelled')
+  const active    = bookings.filter(b => b.status !== 'declined' && b.status !== 'cancelled')
+  const upcoming  = active.filter(b => !isStartPassed(b.booking_date, b.start_time))
+  const completed = active.filter(b => isStartPassed(b.booking_date, b.start_time))
 
   function formatDate(d: string) {
-    return new Date(d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+    return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
   }
   function formatTime(t: string) {
     const [h, m] = t.split(':').map(Number)
@@ -73,6 +74,8 @@ export default async function DashboardPage() {
     <>
       <SiteHeader />
       <main className="max-w-3xl mx-auto px-4 py-5 sm:py-8">
+
+        {/* Header */}
         <div className="mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-ink-900 tracking-tight">
             Hey {profile?.full_name?.split(' ')[0] || 'there'} 👋
@@ -90,37 +93,10 @@ export default async function DashboardPage() {
         {/* Referral card */}
         <ReferralCard />
 
-        {/* Pending reviews */}
-        {pendingReviews.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-base font-semibold text-gray-700 mb-3">Leave a review</h2>
-            <div className="space-y-2">
-              {pendingReviews.map((b: any) => {
-                const studio = b.studios
-                return (
-                  <div key={b.id} className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-ink-900 truncate">{studio?.studio_name}</div>
-                      <div className="text-xs text-slate-400">{formatDate(b.booking_date)}</div>
-                    </div>
-                    <Link
-                      href={`/review/${b.id}`}
-                      className="flex-shrink-0 px-3 py-1.5 bg-amber-400 text-amber-900 rounded-lg text-xs font-bold hover:bg-amber-500 transition-colors"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      ⭐ Rate
-                    </Link>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* Upcoming */}
+        {/* ── Upcoming ── */}
         <section className="mb-8">
           <h2 className="text-base font-semibold text-gray-700 mb-4">
-            Upcoming ({upcoming.length})
+            Upcoming {upcoming.length > 0 && <span className="text-gray-400 font-normal">({upcoming.length})</span>}
           </h2>
           {upcoming.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-2xl border border-gray-100">
@@ -133,7 +109,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="space-y-3">
               {upcoming.map(b => {
-                const badge = STATUS_BADGE[b.status]
+                const badge  = STATUS_BADGE[b.status]
                 const studio = (b as any).studios
                 return (
                   <Link key={b.id} href={`/bookings/${b.id}`}
@@ -142,7 +118,7 @@ export default async function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-ink-900 truncate text-sm sm:text-base">{studio?.studio_name}</div>
                       <div className="text-xs text-slate-400 mt-0.5 truncate">
-                        {formatDate(b.booking_date)} · {formatTime(b.start_time)}
+                        {formatDate(b.booking_date)} · {formatTime(b.start_time)} · {b.duration_hours}h
                       </div>
                       <div className="mt-1.5 flex items-center gap-2 flex-wrap">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${badge.classes}`}>{badge.label}</span>
@@ -159,29 +135,118 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        {/* Past */}
-        {past.length > 0 && (
-          <section>
-            <h2 className="text-base font-semibold text-gray-700 mb-4">Past ({past.length})</h2>
+        {/* ── Completed ── */}
+        {completed.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-base font-semibold text-gray-700 mb-4">
+              Completed <span className="text-gray-400 font-normal">({completed.length})</span>
+            </h2>
             <div className="space-y-3">
-              {past.map(b => {
-                const badge = STATUS_BADGE[b.status]
-                const studio = (b as any).studios
+              {completed.map(b => {
+                const badge    = STATUS_BADGE[b.status] ?? STATUS_BADGE.completed
+                const studio   = (b as any).studios
+                const studioId = (b as any).studio_id
+                const reviewed = hasReview(b)
                 return (
-                  <Link key={b.id} href={`/bookings/${b.id}`}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all opacity-75 hover:opacity-100">
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">📸</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-700 truncate">{studio?.studio_name}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{formatDate(b.booking_date)} · {b.shoot_type}</div>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${badge.classes}`}>{badge.label}</span>
-                  </Link>
+                  <div key={b.id} className="bg-white rounded-2xl border border-slate-100 hover:border-slate-200 transition-all overflow-hidden">
+                    {/* Summary row */}
+                    <Link href={`/bookings/${b.id}`}
+                      className="flex items-start gap-3 p-4"
+                      style={{ textDecoration: 'none' }}>
+                      <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-xl flex-shrink-0 mt-0.5">📸</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-ink-900 truncate text-sm">{studio?.studio_name}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {formatDate(b.booking_date)} · {formatTime(b.start_time)} · {b.duration_hours}h
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${badge.classes}`}>{badge.label}</span>
+                          <span className="text-xs text-slate-400">{b.shoot_type}</span>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <span className="text-sm font-bold text-ink-900">{formatINR(b.total_amount)}</span>
+                      </div>
+                    </Link>
+                    {/* Action buttons */}
+                    {(studioId || !reviewed) && (
+                      <div className="flex gap-2 px-4 pb-4 pt-0">
+                        {!reviewed && (
+                          <Link
+                            href={`/review/${b.id}`}
+                            className="flex-1 text-center px-3 py-2 rounded-lg text-xs font-semibold border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                            style={{ textDecoration: 'none' }}
+                          >
+                            ⭐ Write review
+                          </Link>
+                        )}
+                        {studioId && (
+                          <Link
+                            href={`/studios/${studioId}/book?rebook=${b.id}`}
+                            className="flex-1 text-center px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+                            style={{ background: '#84cc16', color: '#111827', textDecoration: 'none' }}
+                          >
+                            Book again →
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>
           </section>
         )}
+
+        {/* ── Cancelled ── */}
+        {cancelled.length > 0 && (
+          <section>
+            <h2 className="text-base font-semibold text-gray-700 mb-4">
+              Cancelled <span className="text-gray-400 font-normal">({cancelled.length})</span>
+            </h2>
+            <div className="space-y-2">
+              {cancelled.map(b => {
+                const badge    = STATUS_BADGE[b.status]
+                const studio   = (b as any).studios
+                const studioId = (b as any).studio_id
+                return (
+                  <div key={b.id} className="flex items-center gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-100 opacity-70 hover:opacity-100 transition-opacity">
+                    <Link href={`/bookings/${b.id}`} className="flex items-center gap-3 flex-1 min-w-0" style={{ textDecoration: 'none' }}>
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-base flex-shrink-0">📸</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-600 truncate text-sm">{studio?.studio_name}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{formatDate(b.booking_date)} · {b.shoot_type}</div>
+                      </div>
+                      <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium border ${badge.classes}`}>{badge.label}</span>
+                    </Link>
+                    {studioId && (
+                      <Link
+                        href={`/studios/${studioId}/book`}
+                        className="flex-shrink-0 ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-700 transition-colors"
+                        style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
+                      >
+                        Try again
+                      </Link>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Empty state when no bookings at all */}
+        {bookings.length === 0 && (
+          <div className="text-center py-16">
+            <div className="text-5xl mb-4">🎬</div>
+            <h2 className="text-lg font-semibold text-gray-700 mb-2">No bookings yet</h2>
+            <p className="text-gray-400 text-sm mb-6">Find a studio and make your first booking</p>
+            <Link href="/" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 text-white text-sm font-semibold hover:bg-brand-600 transition-colors">
+              Browse studios
+            </Link>
+          </div>
+        )}
+
       </main>
     </>
   )
