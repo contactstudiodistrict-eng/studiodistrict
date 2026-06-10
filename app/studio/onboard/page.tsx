@@ -134,7 +134,7 @@ function StudioOnboardForm() {
   }
 
   const STEP_FIELDS: Partial<Record<number, (keyof StudioOnboardData)[]>> = {
-    1: ['studio_name', 'studio_type', 'owner_name', 'owner_phone', 'email', 'area', 'address'],
+    1: ['studio_name', 'studio_type', 'owner_name', 'owner_phone', 'email', 'area', 'address', 'google_maps_link'],
     2: ['price_per_hour'],
     8: ['working_days'],
   }
@@ -319,7 +319,7 @@ function StudioOnboardForm() {
                 <Field label="Full address" span={2} required error={errors.address?.message}>
                   <input {...register('address')} placeholder="Street, area, Chennai, PIN" className={inputCls} />
                 </Field>
-                <Field label="Google Maps link" span={2}>
+                <Field label="Google Maps link" span={2} error={errors.google_maps_link?.message}>
                   <input {...register('google_maps_link')} type="url" placeholder="https://maps.google.com/…" className={inputCls} />
                 </Field>
               </div>
