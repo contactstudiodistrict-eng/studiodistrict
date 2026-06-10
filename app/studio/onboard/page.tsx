@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { studioOnboardSchema, type StudioOnboardData } from '@/lib/validations'
 import { ALL_AREAS } from '@/components/filters/types'
 
-type UploadedImage = { url: string; cloudinary_id: string; image_type: string }
+type UploadedImage = { url: string; cloudinary_id: string; image_type: string; dbId?: string }
 
 // ── Step definitions ───────────────────────────────────────────────────────
 const STEPS = [
@@ -84,13 +84,14 @@ function StudioOnboardForm() {
         const { studio } = await res.json()
         const amenities  = studio.studio_amenities?.[0] || {}
         const equipment  = studio.studio_equipment?.[0]  || {}
-        const images     = (studio.studio_images || []) as Array<{ url: string; cloudinary_id: string; image_type: string }>
+        const images     = (studio.studio_images || []) as Array<{ id: string; url: string; cloudinary_id: string; image_type: string }>
 
-        // Restore uploaded images
+        // Restore uploaded images — carry dbId so individual deletes can target the right row
         setUploadedImages(images.map(img => ({
           url:            img.url,
-          cloudinary_id:  img.cloudinary_id,
+          cloudinary_id:  img.cloudinary_id || img.id, // fall back to DB id if cloudinary_id missing
           image_type:     img.image_type === 'walkthrough' ? 'video' : img.image_type,
+          dbId:           img.id,
         })))
 
         // Build merged data, converting null → undefined for Zod
@@ -175,8 +176,17 @@ function StudioOnboardForm() {
     setUploadedImages(prev => [...prev, ...imgs])
   }
 
-  function removeImage(cloudinaryId: string) {
+  async function removeImage(cloudinaryId: string) {
+    // Find the image being removed to check if it has a DB id
+    const img = uploadedImages.find(i => i.cloudinary_id === cloudinaryId)
     setUploadedImages(prev => prev.filter(i => i.cloudinary_id !== cloudinaryId))
+
+    // If it's an existing DB image and we're in edit mode, delete it immediately
+    if (editId && img?.dbId) {
+      fetch(`/api/studios/${editId}/images/${img.dbId}`, { method: 'DELETE' })
+        .then(r => { if (!r.ok) console.error('[removeImage] Delete failed') })
+        .catch(err => console.error('[removeImage]', err))
+    }
   }
 
   const onSubmit = async (data: StudioOnboardData) => {
@@ -921,18 +931,22 @@ function ImageUploadZone({
 
       {images.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-3">
-          {images.map(img => (
-            <div key={img.cloudinary_id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group flex-shrink-0">
-              {img.image_type === 'video'
-                ? <div className="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">🎬</div>
-                : <img src={img.url} alt="" className="w-full h-full object-cover" />
-              }
-              <button type="button" onClick={() => onRemove(img.cloudinary_id)}
-                className="absolute inset-0 bg-black/50 text-white text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                ✕
-              </button>
-            </div>
-          ))}
+          {images.map(img => {
+            const key = img.cloudinary_id || img.dbId || img.url
+            return (
+              <div key={key} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group flex-shrink-0">
+                {img.image_type === 'video'
+                  ? <div className="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">🎬</div>
+                  : <img src={img.url} alt="" className="w-full h-full object-cover" />
+                }
+                <button type="button" onClick={() => onRemove(img.cloudinary_id)}
+                  className="absolute inset-0 bg-black/50 text-white text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  title="Remove photo">
+                  ✕
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

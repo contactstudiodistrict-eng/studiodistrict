@@ -23,11 +23,11 @@ const STUDIO_TYPES = [
   { label: 'Multi-use',       value: 'mixed' },
 ]
 
-const AREA_OPTIONS = [
+const AREA_OPTIONS_FALLBACK = [
   { label: 'Any area', value: '' },
   ...['Velachery','OMR','Anna Nagar','T. Nagar','Adyar',
       'Sholinganallur','Porur','Vadapalani','Mylapore','Tambaram']
-    .map(a => ({ label: a, value: a })),
+    .map(a => ({ label: a, value: a.toLowerCase() })),
 ]
 
 // HD Unsplash images – replace with actual studio photos once available
@@ -372,10 +372,11 @@ function PackageHeroCard({
 interface Props {
   thumbnails?: string[]
   packages?: HeroPackage[]
+  liveAreas?: string[]
   onSearch?: (type: string, area: string) => void
 }
 
-export function HeroBanner({ thumbnails = [], packages = [], onSearch }: Props) {
+export function HeroBanner({ thumbnails = [], packages = [], liveAreas = [], onSearch }: Props) {
   const [wordIdx,  setWordIdx]  = useState(0)
   const [wordAnim, setWordAnim] = useState<'enter' | 'exit'>('enter')
   const [type, setType] = useState('')
@@ -553,7 +554,11 @@ export function HeroBanner({ thumbnails = [], packages = [], onSearch }: Props) 
                 </div>
                 <div style={mobile ? { height: 1, background: '#e3e0dd', margin: '0 8px' } : { width: 1, background: '#e3e0dd', margin: '8px 0', flexShrink: 0 }} />
                 <div style={{ flex: 1, padding: mobile ? '10px 14px' : '10px 18px' }}>
-                  <HeroDropdown label="Area" options={AREA_OPTIONS} value={area} onChange={setArea} />
+                  <HeroDropdown label="Area"
+                    options={liveAreas.length > 0
+                      ? [{ label: 'Any area', value: '' }, ...liveAreas.map(a => ({ label: a, value: a.toLowerCase() }))]
+                      : AREA_OPTIONS_FALLBACK}
+                    value={area} onChange={setArea} />
                 </div>
                 <button type="submit" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexShrink: 0, font: `600 14px/1 ${FB}`, color: '#111827', background: '#84cc16', border: 'none', borderRadius: mobile ? 12 : 13, padding: mobile ? '14px 20px' : '0 24px', marginTop: mobile ? 4 : 0, cursor: 'pointer', transition: 'background .15s', whiteSpace: 'nowrap' }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#65a30d')}

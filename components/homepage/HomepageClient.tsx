@@ -65,6 +65,9 @@ export function HomepageClient({
   const liveFavStudios = allStudios.filter(s => liveFavIds.has(s.id))
   const liveFavIdsArray = Array.from(liveFavIds)
 
+  // Derive unique areas from live studios for search + filter
+  const liveAreas = [...new Set(allStudios.map((s: any) => s.area).filter(Boolean))] as string[]
+
   // Derived banners
   const announcementBanner = banners.find(b => b.type === 'announcement') ?? null
   const offerBanner        = banners.find(b => b.type === 'offer')        ?? null
@@ -108,7 +111,7 @@ export function HomepageClient({
 
       {announcementBanner && <AnnouncementBanner banner={announcementBanner} />}
 
-      <HeroBanner thumbnails={heroThumbnails} packages={heroPackages} onSearch={handleHeroSearch} />
+      <HeroBanner thumbnails={heroThumbnails} packages={heroPackages} onSearch={handleHeroSearch} liveAreas={liveAreas} />
 
       {offerBanner && (
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px' }}>
