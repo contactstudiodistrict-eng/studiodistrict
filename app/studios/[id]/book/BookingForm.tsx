@@ -92,6 +92,11 @@ function getSmartDefault(s: Studio): { date: string; startTime: string } {
   return { date: fmt(now), startTime: openTime }
 }
 
+function toMins(t: string): number {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
+}
+
 export function BookingForm({ studio, userId }: { studio: Studio; userId: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -113,6 +118,10 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
   const [walletBalance, setWalletBalance] = useState(0)
   const [applyWallet, setApplyWallet]     = useState(false)
   const [walletLoading, setWalletLoading] = useState(false)
+
+  // Availability
+  const [bookedSlots,  setBookedSlots]  = useState<{ start_time: string; end_time: string }[]>([])
+  const [availLoading, setAvailLoading] = useState(false)
 
   // Referral code
   const [referralCode,   setReferralCode]   = useState('')
@@ -168,6 +177,74 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
         })
     }
   }, [rebookId, packageId, studio.id])
+
+  // Fetch booked slots whenever date changes
+  useEffect(() => {
+    if (!date) return
+    setAvailLoading(true)
+    setBookedSlots([])
+    fetch(`/api/studios/${studio.id}/availability?date=${date}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d?.bookedSlots) return
+        setBookedSlots(d.bookedSlots)
+        // Auto-advance startTime if it's now past or blocked
+        setStartTime(prev => {
+          const first = firstAvailableSlot(d.bookedSlots, date)
+          if (!first) return prev
+          const isPast = isSlotPast(prev, date)
+          const isBooked = d.bookedSlots.some((b: any) => toMins(prev) >= toMins(b.start_time) && toMins(prev) < toMins(b.end_time))
+          return (isPast || isBooked) ? first : prev
+        })
+      })
+      .finally(() => setAvailLoading(false))
+  }, [date, studio.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function isSlotPast(slot: string, forDate: string): boolean {
+    if (forDate !== todayLocalISO()) return false
+    const now = new Date()
+    const nowMins = now.getHours() * 60 + now.getMinutes()
+    return toMins(slot) <= nowMins
+  }
+
+  function isSlotBooked(slot: string): boolean {
+    const sm = toMins(slot)
+    return bookedSlots.some(b => sm >= toMins(b.start_time) && sm < toMins(b.end_time))
+  }
+
+  function isSlotDisabled(slot: string): boolean {
+    return isSlotPast(slot, date) || isSlotBooked(slot)
+  }
+
+  function firstAvailableSlot(slots: { start_time: string; end_time: string }[], forDate: string): string | null {
+    return timeSlots.find(t => {
+      if (isSlotPast(t, forDate)) return false
+      const sm = toMins(t)
+      return !slots.some(b => sm >= toMins(b.start_time) && sm < toMins(b.end_time))
+    }) ?? null
+  }
+
+  // Returns the conflicting booked slot if startTime+duration overlaps one
+  function getConflict(): { start_time: string; end_time: string } | null {
+    if (!startTime) return null
+    const sm = toMins(startTime)
+    const em = sm + duration * 60
+    return bookedSlots.find(b => sm < toMins(b.end_time) && em > toMins(b.start_time)) ?? null
+  }
+
+  // First available slot that starts at or after `afterTime` and fits `duration` hours before closing
+  function nextAvailableAfter(afterTime: string): string | null {
+    const closingMins = toMins(studio.closing_time)
+    return timeSlots.find(t => {
+      if (toMins(t) < toMins(afterTime)) return false
+      if (isSlotDisabled(t)) return false
+      // Check the full duration fits without hitting another booking
+      const sm = toMins(t)
+      const em = sm + duration * 60
+      if (em > closingMins) return false
+      return !bookedSlots.some(b => sm < toMins(b.end_time) && em > toMins(b.start_time))
+    }) ?? null
+  }
 
   function calcEndTime(start: string, hrs: number): string {
     if (!start) return ''
@@ -390,17 +467,53 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
             <div>
               <label style={s.label}>Start time</label>
               <select value={startTime} onChange={e => setStartTime(e.target.value)} style={s.select}
+                disabled={availLoading}
                 onFocus={e => (e.target as HTMLSelectElement).style.borderColor = '#84cc16'}
                 onBlur={e => (e.target as HTMLSelectElement).style.borderColor = '#e5e7eb'}>
-                {timeSlots.map(t => <option key={t} value={t}>{fTime(t)}</option>)}
+                {timeSlots.map(t => {
+                  const past   = isSlotPast(t, date)
+                  const booked = isSlotBooked(t)
+                  return (
+                    <option key={t} value={t} disabled={past || booked}>
+                      {fTime(t)}{booked ? ' (Booked)' : past ? ' (Past)' : ''}
+                    </option>
+                  )
+                })}
               </select>
+              {availLoading && (
+                <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>Checking availability…</div>
+              )}
             </div>
             <div>
               <label style={s.label}>End time</label>
-              <input type="time" value={endTime} readOnly
-                style={{ ...s.input, background: '#f9fafb', color: endTime ? '#374151' : '#9ca3af' }} />
+              <div style={{ ...s.input, background: '#f9fafb', color: endTime ? '#374151' : '#9ca3af', display: 'flex', alignItems: 'center' }}>
+                {endTime ? fTime(endTime) : '—'}
+              </div>
             </div>
           </div>
+
+          {/* Conflict warning */}
+          {!availLoading && (() => {
+            const conflict = getConflict()
+            if (!conflict) return null
+            const next = nextAvailableAfter(conflict.end_time)
+            return (
+              <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '10px', padding: '12px 14px', marginBottom: '14px', fontSize: '13px', color: '#92400e' }}>
+                <div style={{ fontWeight: '600', marginBottom: '4px' }}>⚠️ This slot overlaps a booking ({fTime(conflict.start_time)} – {fTime(conflict.end_time)})</div>
+                {next ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <span>Next available start:</span>
+                    <button type="button" onClick={() => setStartTime(next)}
+                      style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', background: '#84cc16', color: '#111827', fontWeight: '700', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      {fTime(next)}
+                    </button>
+                  </div>
+                ) : (
+                  <div>No available slot fits {duration} hr{duration > 1 ? 's' : ''} on this date. Try another date.</div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Duration — locked in package mode */}
           {!selectedPackage ? (
