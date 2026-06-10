@@ -175,6 +175,17 @@ export function BookingForm({ studio, userId }: { studio: Studio; userId: string
           if (b.customer_email) setEmail(b.customer_email)
           if (b.notes)          setNotes(b.notes)
         })
+    } else {
+      // Pre-fill contact details from most recent booking
+      fetch('/api/bookings?limit=1')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (!d?.bookings?.length) return
+          const b = d.bookings[0]
+          if (b.customer_name)  setName(b.customer_name)
+          if (b.customer_phone) setPhone(b.customer_phone)
+          if (b.customer_email) setEmail(b.customer_email)
+        })
     }
   }, [rebookId, packageId, studio.id])
 
