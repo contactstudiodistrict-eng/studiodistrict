@@ -1,22 +1,33 @@
 // lib/pricing.ts
 // All pricing calculations in one place — easy to test and audit
 
-const COMMISSION_PERCENT = Number(process.env.PLATFORM_COMMISSION_PERCENT ?? 10)
 export const WALLET_CAP = 200
 export const REFERRAL_DISCOUNT = 100
-const GST_PERCENT = Number(process.env.GST_PERCENT ?? 18)
-const SECURITY_DEPOSIT = Number(process.env.SECURITY_DEPOSIT_AMOUNT ?? 1200)
+
+// Tiered commission: marginal brackets (like tax slabs)
+// ₹1–₹2,400 → 10% | ₹2,401–₹10,000 → 5% | ₹10,001+ → 2%
+function calculateTieredCommission(subtotal: number): number {
+  let fee = 0
+  if (subtotal <= 2400) {
+    fee = subtotal * 0.10
+  } else if (subtotal <= 10000) {
+    fee = 2400 * 0.10 + (subtotal - 2400) * 0.05
+  } else {
+    fee = 2400 * 0.10 + (10000 - 2400) * 0.05 + (subtotal - 10000) * 0.02
+  }
+  return Math.round(fee)
+}
 
 export interface PricingBreakdown {
   studioRate: number          // price per hour (₹)
   durationHours: number
   subtotal: number            // studioRate × durationHours
-  platformFee: number         // 10% of subtotal
-  gstAmount: number           // 18% of platformFee
-  securityDeposit: number     // fixed ₹1,200
+  platformFee: number         // tiered commission on subtotal
+  gstAmount: number
+  securityDeposit: number
   totalAmount: number         // subtotal + platformFee + gstAmount + securityDeposit
-  studioPayout: number        // subtotal − any add-on fees
-  commissionPercent: number
+  studioPayout: number        // subtotal − platformFee
+  commissionPercent: number   // effective rate for display
 }
 
 export function calculatePricing(
@@ -25,7 +36,7 @@ export function calculatePricing(
   _includeDeposit: boolean = true
 ): PricingBreakdown {
   const subtotal    = Math.round(pricePerHour * durationHours)
-  const platformFee = Math.round(subtotal * (COMMISSION_PERCENT / 100))
+  const platformFee = calculateTieredCommission(subtotal)
 
   return {
     studioRate: pricePerHour,
@@ -34,9 +45,9 @@ export function calculatePricing(
     platformFee,
     gstAmount: 0,
     securityDeposit: 0,
-    totalAmount:  subtotal,               // customer pays the listed price
-    studioPayout: subtotal - platformFee, // platform fee deducted internally
-    commissionPercent: COMMISSION_PERCENT,
+    totalAmount:  subtotal,
+    studioPayout: subtotal - platformFee,
+    commissionPercent: subtotal > 0 ? Math.round((platformFee / subtotal) * 100 * 10) / 10 : 0,
   }
 }
 
@@ -55,7 +66,7 @@ export interface PackagePricingBreakdown {
 
 export function calculatePackagePricing(packagePrice: number): PackagePricingBreakdown {
   const subtotal    = packagePrice
-  const platformFee = Math.round(subtotal * (COMMISSION_PERCENT / 100))
+  const platformFee = calculateTieredCommission(subtotal)
   return { subtotal, platformFee, gstAmount: 0, securityDeposit: 0, totalAmount: subtotal, studioPayout: subtotal - platformFee }
 }
 

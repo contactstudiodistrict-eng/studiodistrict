@@ -146,7 +146,7 @@ const FAQS = [
   },
   {
     q: 'Is there a commission?',
-    a: 'Yes, Studio District charges a 10% platform fee on each booking. The fee is deducted from your payout — customers pay exactly your listed price. You keep 90% of every booking.',
+    a: 'Yes, Studio District charges a tiered platform fee deducted from your payout — customers pay exactly your listed price. The rate is 10% on bookings up to ₹2,400, 5% on the portion between ₹2,401–₹10,000, and just 2% above ₹10,000. Higher-value bookings keep more in your pocket.',
   },
   {
     q: 'What if a customer cancels?',
@@ -170,7 +170,7 @@ const FAQS = [
   },
   {
     q: 'Are there any upfront costs?',
-    a: 'None. Listing is completely free. You only pay the 10% platform fee when you earn — completely risk-free to get started.',
+    a: 'None. Listing is completely free. You only pay a platform fee when you earn — and our tiered rates mean you keep more as your bookings grow. Completely risk-free to get started.',
   },
   {
     q: 'What support does Studio District provide?',
@@ -254,7 +254,7 @@ function EarningsBox() {
           <div className="space-y-2 text-sm">
             {[
               ['Monthly bookings (20 hrs)', '₹24,000'],
-              ['Platform fee (10%)',        '−₹2,400'],
+              ['Platform fee (tiered)',     '−₹900'],
             ].map(([label, val]) => (
               <div key={String(label)} className="flex justify-between py-1.5" style={{ borderBottom: '1px solid #1e293b' }}>
                 <span style={{ color: '#94a3b8' }}>{label}</span>
@@ -263,7 +263,7 @@ function EarningsBox() {
             ))}
             <div className="flex justify-between pt-2">
               <span className="font-semibold" style={{ color: '#a3e635' }}>Your monthly payout</span>
-              <span className="font-bold" style={{ color: '#a3e635' }}>₹21,600</span>
+              <span className="font-bold" style={{ color: '#a3e635' }}>₹23,100</span>
             </div>
           </div>
         </div>
@@ -271,9 +271,9 @@ function EarningsBox() {
           <p className="text-sm font-bold mb-4" style={{ color: '#111827' }}>Per single booking — ₹1,200 × 3 hrs</p>
           <div className="space-y-2 text-sm">
             {[
-              ['Customer pays',      '₹3,600', false],
-              ['Platform fee (10%)', '−₹360',  false],
-              ['You receive',        '₹3,240', true],
+              ['Customer pays',         '₹3,600', false],
+              ['Platform fee (tiered)', '−₹300',  false],
+              ['You receive',           '₹3,300', true],
             ].map(([label, val, highlight]) => (
               <div key={String(label)} className="flex justify-between py-1.5 border-b border-gray-50">
                 <span className={String(highlight) === 'true' ? 'font-semibold text-gray-900' : 'text-gray-500'}>{label}</span>

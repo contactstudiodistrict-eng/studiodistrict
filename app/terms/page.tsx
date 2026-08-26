@@ -95,7 +95,7 @@ export default function TermsPage() {
           <h2 style={S.h2}>5. Payments</h2>
           <p style={{ ...S.p, margin: 0 }}>
             All payments are processed via Razorpay. Studio District collects payment on behalf of studio
-            owners and transfers earnings after deducting the 10% platform fee and applicable GST on the fee.
+            owners and transfers earnings after deducting a tiered platform fee (10% up to ₹2,400 · 5% from ₹2,401–₹10,000 · 2% above ₹10,000) and applicable GST on the fee.
             Studio payouts are processed within 1 business day after payment is received.
           </p>
         </div>
