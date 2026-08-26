@@ -81,7 +81,7 @@ export default function AboutPage() {
             {[
               { label: 'Business type',   value: 'Online marketplace for studio space rental services' },
               { label: 'Location',        value: 'Chennai, Tamil Nadu, India' },
-              { label: 'Platform fee',    value: '10% per booking (deducted from studio payout)' },
+              { label: 'Platform fee',    value: 'Tiered: 10% up to ₹2,400 · 5% up to ₹10,000 · 2% above (deducted from studio payout)' },
               { label: 'Payment',         value: 'Secured via Razorpay' },
               { label: 'Notifications',   value: 'Via WhatsApp (Twilio)' },
               { label: 'Contact',         value: 'hello@studiodistrict.in' },

@@ -53,13 +53,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Studio not found or not available' }, { status: 404 })
     }
 
-    // 5. Check time overlap
+    // 5. Check time overlap — two slots overlap if start_A < end_B AND end_A > start_B
     const { data: overlap } = await adminClient
       .from('bookings')
       .select('id')
       .eq('studio_id', studio_id)
       .eq('booking_date', booking_date)
       .not('status', 'in', '("declined","cancelled")')
+      .lt('start_time', end_time)
+      .gt('end_time', start_time)
       .limit(1)
 
     if (overlap && overlap.length > 0) {

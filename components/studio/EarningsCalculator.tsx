@@ -3,7 +3,12 @@ import { useState } from 'react'
 
 const RATES  = [500, 800, 1000, 1200, 1500, 2000, 2500, 3000]
 const HOURS  = [5, 8, 10, 15, 20, 25, 30]
-const FEE    = 0.10
+
+function tieredFee(subtotal: number): number {
+  if (subtotal <= 2400)  return Math.round(subtotal * 0.10)
+  if (subtotal <= 10000) return Math.round(2400 * 0.10 + (subtotal - 2400) * 0.05)
+  return Math.round(2400 * 0.10 + (10000 - 2400) * 0.05 + (subtotal - 10000) * 0.02)
+}
 
 function fmt(n: number) {
   return '₹' + Math.round(n).toLocaleString('en-IN')
@@ -14,8 +19,9 @@ export function EarningsCalculator() {
   const [hours, setHours] = useState(10)
 
   const gross   = rate * hours
-  const payout  = gross * (1 - FEE)
-  const fee     = gross * FEE
+  const fee     = tieredFee(gross)
+  const payout  = gross - fee
+  const effRate = gross > 0 ? Math.round((fee / gross) * 100 * 10) / 10 : 0
 
   const selectCls = "w-full px-4 py-3 text-sm font-semibold rounded-xl focus:outline-none cursor-pointer appearance-none"
   const chevron   = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2384cc16'/%3E%3C/svg%3E")`
@@ -68,7 +74,7 @@ export function EarningsCalculator() {
         </div>
         <div className="flex justify-between text-xs mt-2 pt-2" style={{ borderTop: '1px solid #1e293b', color: '#475569' }}>
           <span>Gross: {fmt(gross)}</span>
-          <span>Platform fee: −{fmt(fee)} (10%)</span>
+          <span>Platform fee: −{fmt(fee)} ({effRate}% effective)</span>
         </div>
       </div>
 

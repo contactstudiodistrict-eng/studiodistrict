@@ -321,7 +321,7 @@ export default function StudioListPage() {
                 <div className="space-y-3">
                   {[
                     ['Your hourly rate', '100%', true],
-                    ['Platform fee (10%)', 'on subtotal', false],
+                    ['Platform fee (tiered)', '2–10% on subtotal', false],
                   ].map(([label, val, highlight]) => (
                     <div key={String(label)} className="flex justify-between items-center py-2" style={{ borderBottom: '1px solid #1e293b' }}>
                       <span className="text-sm" style={{ color: highlight ? '#a3e635' : '#94a3b8' }}>{label}</span>
@@ -336,8 +336,8 @@ export default function StudioListPage() {
                 <div className="space-y-3">
                   {[
                     ['Customer pays', '₹3,600', false],
-                    ['Platform fee (10%)', '− ₹360', false],
-                    ['Your payout', '₹3,240', true],
+                    ['Platform fee (tiered)', '− ₹300', false],
+                    ['Your payout', '₹3,300', true],
                   ].map(([label, val, highlight]) => (
                     <div key={String(label)} className="flex justify-between items-center py-2 border-b border-gray-50">
                       <span className={`text-sm ${highlight ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>{label}</span>
