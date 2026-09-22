@@ -1,7 +1,20 @@
 // app/page.tsx — Server Component
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { HomepageClient } from '@/components/homepage/HomepageClient'
 import type { Banner } from '@/types/database.types'
+
+export const metadata: Metadata = {
+  title: 'Studio District — Book Studio Spaces in Chennai',
+  description: 'Discover and book photography, podcast, video, and music studios across Chennai. See real photos, check live availability, and book in under 2 minutes.',
+  alternates: { canonical: 'https://studiodistrict.in' },
+  openGraph: {
+    title: 'Studio District — Book Studio Spaces in Chennai',
+    description: 'Discover verified studios across Chennai. Real photos, instant availability, transparent pricing.',
+    url: 'https://studiodistrict.in',
+    type: 'website',
+  },
+}
 
 interface SearchParams {
   type?: string
@@ -119,15 +132,22 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const favouriteStudios = favRows.map(r => r.studios).filter(Boolean)
 
   return (
-    <HomepageClient
-      allStudios={allStudios}
-      banners={allBanners}
-      heroThumbnails={heroThumbnails}
-      heroPackages={heroPackages}
-      favouriteIds={favouriteIds}
-      favouriteStudios={favouriteStudios}
-      isLoggedIn={!!user}
-      initialParams={searchParams as Record<string, string | undefined>}
-    />
+    <>
+      {/* Preload the hero background image before JS loads — critical for LCP */}
+      {heroThumbnails[0] && (
+        // eslint-disable-next-line @next/next/no-page-custom-font
+        <link rel="preload" as="image" href={heroThumbnails[0]} fetchPriority="high" />
+      )}
+      <HomepageClient
+        allStudios={allStudios}
+        banners={allBanners}
+        heroThumbnails={heroThumbnails}
+        heroPackages={heroPackages}
+        favouriteIds={favouriteIds}
+        favouriteStudios={favouriteStudios}
+        isLoggedIn={!!user}
+        initialParams={searchParams as Record<string, string | undefined>}
+      />
+    </>
   )
 }

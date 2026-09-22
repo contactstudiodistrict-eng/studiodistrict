@@ -46,23 +46,44 @@ const jetbrains = JetBrains_Mono({
   display: 'swap',
 })
 
+const BASE = 'https://studiodistrict.in'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE),
   title: { default: 'Studio District — Book Studio Spaces in Chennai', template: '%s | Studio District' },
-  description: 'Book photography, podcast, video, and music studios in Chennai. Instant availability, transparent pricing.',
-  keywords: ['studio rental', 'photography studio', 'podcast studio', 'Chennai', 'book studio'],
+  description: 'Book photography, podcast, video, and music studios in Chennai. See real photos, check availability, and book in under 2 minutes.',
+  keywords: ['studio rental Chennai', 'photography studio Chennai', 'podcast studio Chennai', 'music studio Chennai', 'video studio Chennai', 'book studio space'],
+  alternates: {
+    canonical: BASE,
+  },
   openGraph: {
     title: 'Studio District — Chennai Studio Booking',
-    description: 'Book the perfect studio for your next shoot in Chennai',
-    url: 'https://studiodistrict.vercel.app',
+    description: 'Book photography, podcast, video, and music studios in Chennai. Instant availability, transparent pricing.',
+    url: BASE,
     siteName: 'Studio District',
     locale: 'en_IN',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Studio District — Chennai Studio Booking',
+    description: 'Book photography, podcast, video, and music studios in Chennai.',
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmSerif.variable} ${spaceMono.variable} ${bricolage.variable} ${hanken.variable} ${jetbrains.variable}`}>
+      <head>
+        {/* Preconnect to image origins used for hero and studio thumbnails */}
+        <link rel="preconnect" href="https://khtzyxyqurkakdzsvhza.supabase.co" />
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+      </head>
       <body className="font-sans bg-white text-ink-900 antialiased">
         <ClientLayout>
           {children}
