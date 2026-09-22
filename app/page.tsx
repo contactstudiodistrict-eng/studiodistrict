@@ -133,11 +133,37 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   return (
     <>
-      {/* Preload the hero background image before JS loads — critical for LCP */}
+      {/* Preload the hero background image before JS loads */}
       {heroThumbnails[0] && (
         // eslint-disable-next-line @next/next/no-page-custom-font
         <link rel="preload" as="image" href={heroThumbnails[0]} fetchPriority="high" />
       )}
+
+      {/*
+        Server-rendered hero headline — visible immediately in HTML before JS hydrates.
+        This is the LCP element. The interactive HeroBanner renders on top once React loads.
+        Keep text + styles in sync with HeroBanner.tsx h1.
+      */}
+      <div aria-hidden="true" style={{
+        position: 'absolute', top: 0, left: 0, right: 0,
+        padding: '120px 48px 0',
+        pointerEvents: 'none', zIndex: 0,
+      }}>
+        {heroThumbnails[0] && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={heroThumbnails[0]} alt="" fetchPriority="high"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -1 }} />
+        )}
+        <h1 style={{
+          fontFamily: '"Bricolage Grotesque", system-ui, sans-serif',
+          fontWeight: 700, fontSize: 'clamp(40px, 6vw, 68px)',
+          letterSpacing: '-0.03em', lineHeight: 1.04,
+          color: 'oklch(0.18 0.012 60)', margin: 0,
+        }}>
+          Your next<br />Photography<br />studio is here.
+        </h1>
+      </div>
+
       <HomepageClient
         allStudios={allStudios}
         banners={allBanners}
