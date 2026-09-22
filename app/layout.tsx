@@ -46,17 +46,32 @@ const jetbrains = JetBrains_Mono({
   display: 'swap',
 })
 
+const BASE = 'https://studiodistrict.in'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE),
   title: { default: 'Studio District — Book Studio Spaces in Chennai', template: '%s | Studio District' },
-  description: 'Book photography, podcast, video, and music studios in Chennai. Instant availability, transparent pricing.',
-  keywords: ['studio rental', 'photography studio', 'podcast studio', 'Chennai', 'book studio'],
+  description: 'Book photography, podcast, video, and music studios in Chennai. See real photos, check availability, and book in under 2 minutes.',
+  keywords: ['studio rental Chennai', 'photography studio Chennai', 'podcast studio Chennai', 'music studio Chennai', 'video studio Chennai', 'book studio space'],
+  alternates: {
+    canonical: BASE,
+  },
   openGraph: {
     title: 'Studio District — Chennai Studio Booking',
-    description: 'Book the perfect studio for your next shoot in Chennai',
-    url: 'https://studiodistrict.vercel.app',
+    description: 'Book photography, podcast, video, and music studios in Chennai. Instant availability, transparent pricing.',
+    url: BASE,
     siteName: 'Studio District',
     locale: 'en_IN',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Studio District — Chennai Studio Booking',
+    description: 'Book photography, podcast, video, and music studios in Chennai.',
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 

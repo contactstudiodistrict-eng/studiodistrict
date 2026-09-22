@@ -1,7 +1,20 @@
 // app/page.tsx — Server Component
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { HomepageClient } from '@/components/homepage/HomepageClient'
 import type { Banner } from '@/types/database.types'
+
+export const metadata: Metadata = {
+  title: 'Studio District — Book Studio Spaces in Chennai',
+  description: 'Discover and book photography, podcast, video, and music studios across Chennai. See real photos, check live availability, and book in under 2 minutes.',
+  alternates: { canonical: 'https://studiodistrict.in' },
+  openGraph: {
+    title: 'Studio District — Book Studio Spaces in Chennai',
+    description: 'Discover verified studios across Chennai. Real photos, instant availability, transparent pricing.',
+    url: 'https://studiodistrict.in',
+    type: 'website',
+  },
+}
 
 interface SearchParams {
   type?: string

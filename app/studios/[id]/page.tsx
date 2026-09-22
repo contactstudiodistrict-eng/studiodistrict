@@ -27,11 +27,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!studio) return { title: 'Studio Not Found' }
 
+  const title       = `${studio.studio_name} — ${studio.area} | Studio District`
+  const description = studio.short_description ?? `Book ${studio.studio_name} in ${studio.area}, Chennai. Check availability and pricing.`
+  const images      = studio.thumbnail_url ? [{ url: studio.thumbnail_url }] : []
+  const canonical   = `https://studiodistrict.in/studios/${params.id}`
+
   return {
-    title: `${studio.studio_name} — ${studio.area}`,
-    description: studio.short_description ?? `Book ${studio.studio_name} in Chennai`,
+    title,
+    description,
+    alternates: { canonical },
     openGraph: {
-      images: studio.thumbnail_url ? [studio.thumbnail_url] : [],
+      title,
+      description,
+      url: canonical,
+      images,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: images.map(i => i.url),
     },
   }
 }
