@@ -196,11 +196,12 @@ function HeroDropdown({
 
 // ── Shoot card ─────────────────────────────────────────────────────────────
 function ShootCard({
-  shoot, imgH, isActive, onClick, onCta,
+  shoot, imgH, isActive, isFirst, onClick, onCta,
 }: {
   shoot: typeof SHOOT_TYPES[0]
   imgH: number
   isActive: boolean
+  isFirst: boolean
   onClick: () => void
   onCta: () => void
 }) {
@@ -222,7 +223,8 @@ function ShootCard({
           <img
             src={shoot.img}
             alt={shoot.title}
-            loading="lazy"
+            loading={isFirst ? 'eager' : 'lazy'}
+            decoding="async"
             onError={() => setImgErr(true)}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
@@ -508,7 +510,8 @@ export function HeroBanner({ thumbnails = [], packages = [], liveAreas = [], onS
       <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0 }}>
           {heroImg
-            ? <img src={heroImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> // eslint-disable-line @next/next/no-img-element
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={heroImg} alt="" fetchPriority="high" loading="eager" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#f7fee7 0%,#fef9c3 40%,#f0fdf4 100%)' }} />
           }
         </div>
@@ -609,7 +612,7 @@ export function HeroBanner({ thumbnails = [], packages = [], liveAreas = [], onS
                         }}>
                           {usePackages
                             ? <PackageHeroCard pkg={item} imgH={ih} isActive={isCenter} onClick={() => { setActive(i); resetTimer() }} />
-                            : <ShootCard shoot={item} imgH={ih} isActive={isCenter} onClick={() => { setActive(i); resetTimer() }} onCta={() => { onSearch?.(item.searchType, ''); resetTimer() }} />
+                            : <ShootCard shoot={item} imgH={ih} isActive={isCenter} isFirst={i === 0} onClick={() => { setActive(i); resetTimer() }} onCta={() => { onSearch?.(item.searchType, ''); resetTimer() }} />
                           }
                         </div>
                       )
@@ -651,7 +654,7 @@ export function HeroBanner({ thumbnails = [], packages = [], liveAreas = [], onS
                         <div key={usePackages ? item.id : item.title} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: stackCH, zIndex, opacity, transform, transition: 'all .55s cubic-bezier(.22,1,.36,1)' }}>
                           {usePackages
                             ? <PackageHeroCard pkg={item} imgH={stackIH} isActive={offset === 0} onClick={() => { setActive(i); resetTimer() }} />
-                            : <ShootCard shoot={item} imgH={stackIH} isActive={offset === 0} onClick={() => { setActive(i); resetTimer() }} onCta={() => { onSearch?.(item.searchType, ''); resetTimer() }} />
+                            : <ShootCard shoot={item} imgH={stackIH} isActive={offset === 0} isFirst={i === 0} onClick={() => { setActive(i); resetTimer() }} onCta={() => { onSearch?.(item.searchType, ''); resetTimer() }} />
                           }
                         </div>
                       )

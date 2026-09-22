@@ -63,6 +63,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmSerif.variable} ${spaceMono.variable} ${bricolage.variable} ${hanken.variable} ${jetbrains.variable}`}>
+      <head>
+        {/* Preconnect to image origins used for hero and studio thumbnails */}
+        <link rel="preconnect" href="https://khtzyxyqurkakdzsvhza.supabase.co" />
+        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+      </head>
       <body className="font-sans bg-white text-ink-900 antialiased">
         <ClientLayout>
           {children}

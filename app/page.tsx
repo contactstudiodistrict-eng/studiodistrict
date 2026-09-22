@@ -119,15 +119,22 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const favouriteStudios = favRows.map(r => r.studios).filter(Boolean)
 
   return (
-    <HomepageClient
-      allStudios={allStudios}
-      banners={allBanners}
-      heroThumbnails={heroThumbnails}
-      heroPackages={heroPackages}
-      favouriteIds={favouriteIds}
-      favouriteStudios={favouriteStudios}
-      isLoggedIn={!!user}
-      initialParams={searchParams as Record<string, string | undefined>}
-    />
+    <>
+      {/* Preload the hero background image before JS loads — critical for LCP */}
+      {heroThumbnails[0] && (
+        // eslint-disable-next-line @next/next/no-page-custom-font
+        <link rel="preload" as="image" href={heroThumbnails[0]} fetchPriority="high" />
+      )}
+      <HomepageClient
+        allStudios={allStudios}
+        banners={allBanners}
+        heroThumbnails={heroThumbnails}
+        heroPackages={heroPackages}
+        favouriteIds={favouriteIds}
+        favouriteStudios={favouriteStudios}
+        isLoggedIn={!!user}
+        initialParams={searchParams as Record<string, string | undefined>}
+      />
+    </>
   )
 }
